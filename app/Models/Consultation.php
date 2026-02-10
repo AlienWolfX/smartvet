@@ -1,0 +1,62 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\InventoryUsage;
+
+class Consultation extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'pet_id',
+        'consultation_type',
+        'chief_complaint',
+        'diagnosis',
+        'treatment',
+        'notes',
+        'consultation_fee',
+        'veterinarian',
+        'consultation_date',
+        'consultation_time',
+        'status',
+        'payment_status',
+    ];
+
+    protected $casts = [
+        'consultation_date' => 'date',
+        'consultation_fee' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    public function pet(): BelongsTo
+    {
+        return $this->belongsTo(Pet::class);
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(ConsultationFile::class);
+    }
+
+    public function medications(): HasMany
+    {
+        return $this->hasMany(Medication::class);
+    }
+
+    public function vaccinations(): HasMany
+    {
+        return $this->hasMany(Vaccination::class);
+    }
+
+    public function inventoryUsages(): MorphMany
+    {
+        return $this->morphMany(InventoryUsage::class, 'usable');
+    }
+}

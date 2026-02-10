@@ -1,0 +1,229 @@
+// SmartVet Database ERD
+// Copy this content to https://dbdiagram.io/d to visualize
+
+// ==================== USERS & AUTH ====================
+Table users {
+  id bigint [pk, increment]
+  name varchar
+  email varchar [unique]
+  email_verified_at timestamp [null]
+  password varchar
+  role enum('admin', 'vet', 'staff') [default: 'staff']
+  status enum('active', 'inactive') [default: 'active']
+  remember_token varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== OWNERS & PETS ====================
+Table owners {
+  id bigint [pk, increment]
+  name varchar
+  phone varchar
+  email varchar [null]
+  address text [null]
+  emergency_contact varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table pet_species {
+  id bigint [pk, increment]
+  name varchar [unique]
+  icon varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table pets {
+  id bigint [pk, increment]
+  name varchar
+  owner_id bigint [ref: > owners.id]
+  species_id bigint [ref: > pet_species.id]
+  breed varchar [null]
+  age int [null]
+  weight decimal(5,2) [null]
+  gender enum('male', 'female')
+  color varchar [null]
+  microchip_id varchar [unique, null]
+  image_path varchar [null]
+  status enum('active', 'inactive') [default: 'active']
+  last_visit timestamp [null]
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    (name, owner_id)
+    (species_id, status)
+  }
+}
+
+// ==================== CONSULTATIONS ====================
+Table consultations {
+  id bigint [pk, increment]
+  pet_id bigint [ref: > pets.id]
+  consultation_date date
+  reason varchar
+  symptoms text [null]
+  diagnosis text [null]
+  treatment text [null]
+  notes text [null]
+  weight decimal(5,2) [null]
+  temperature decimal(4,1) [null]
+  heart_rate int [null]
+  respiratory_rate int [null]
+  follow_up_date date [null]
+  payment_status enum('pending', 'paid', 'partial') [default: 'pending']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table consultation_files {
+  id bigint [pk, increment]
+  consultation_id bigint [ref: > consultations.id]
+  file_name varchar
+  file_path varchar
+  file_type varchar
+  file_size int
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== VACCINATIONS ====================
+Table vaccinations {
+  id bigint [pk, increment]
+  pet_id bigint [ref: > pets.id]
+  consultation_id bigint [null, ref: > consultations.id]
+  vaccine_name varchar
+  vaccine_type varchar [null]
+  vaccination_date date
+  next_due_date date [null]
+  batch_number varchar [null]
+  manufacturer varchar [null]
+  administered_by varchar [null]
+  clinic_location varchar [null]
+  notes text [null]
+  adverse_reactions text [null]
+  payment_status enum('pending', 'paid') [default: 'pending']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== MEDICATIONS ====================
+Table medications {
+  id bigint [pk, increment]
+  pet_id bigint [ref: > pets.id]
+  consultation_id bigint [null, ref: > consultations.id]
+  medication_name varchar
+  generic_name varchar [null]
+  dosage varchar
+  frequency varchar
+  route varchar [null]
+  purpose text [null]
+  start_date date
+  end_date date [null]
+  duration_days int [null]
+  cost decimal(10,2) [null]
+  prescribed_by varchar [null]
+  instructions text [null]
+  side_effects text [null]
+  notes text [null]
+  status enum('active', 'completed', 'discontinued') [default: 'active']
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== PAYMENTS ====================
+Table pet_payments {
+  id bigint [pk, increment]
+  pet_id bigint [ref: > pets.id]
+  consultation_id bigint [null, ref: > consultations.id]
+  vaccination_id bigint [null, ref: > vaccinations.id]
+  total_amount decimal(10,2)
+  payment_method enum('cash', 'card', 'gcash', 'bank_transfer') [null]
+  reference_number varchar [null]
+  notes text [null]
+  paid_at timestamp [null]
+  recorded_by bigint [null, ref: > users.id]
+  status enum('pending', 'paid', 'cancelled') [default: 'pending']
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table pet_payment_items {
+  id bigint [pk, increment]
+  pet_payment_id bigint [ref: > pet_payments.id]
+  service_type varchar
+  service_id bigint [null]
+  description varchar
+  amount decimal(10,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== INVENTORY ====================
+Table inventory_categories {
+  id bigint [pk, increment]
+  name varchar
+  slug varchar [unique]
+  icon varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_items {
+  id bigint [pk, increment]
+  item_code varchar [unique]
+  inventory_category_id bigint [ref: > inventory_categories.id]
+  name varchar
+  brand varchar [null]
+  batch_number varchar [null]
+  current_stock int [default: 0]
+  min_stock int [default: 0]
+  max_stock int [null]
+  unit_price decimal(10,2)
+  expiry_date date [null]
+  supplier varchar [null]
+  location varchar [null]
+  description text [null]
+  last_restocked_at date [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table inventory_usages {
+  id bigint [pk, increment]
+  inventory_item_id bigint [ref: > inventory_items.id]
+  usable_type varchar [note: 'Polymorphic: App\\Models\\Vaccination or App\\Models\\Medication']
+  usable_id bigint [note: 'References vaccinations.id or medications.id']
+  quantity int
+  unit_price decimal(10,2)
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ==================== AI ASSISTANT ====================
+Table ai_conversations {
+  id bigint [pk, increment]
+  user_id bigint [ref: > users.id]
+  title varchar [null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table ai_messages {
+  id bigint [pk, increment]
+  conversation_id bigint [ref: > ai_conversations.id]
+  role enum('user', 'assistant')
+  content text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table ai_configurations {
+  id bigint [pk, increment]
+  key varchar [unique]
+  value text
+  created_at timestamp
+  updated_at timestamp
+}

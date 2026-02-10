@@ -1,0 +1,1341 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
+    Modal,
+    ModalContent,
+    ModalDescription,
+    ModalFooter,
+    ModalHeader,
+    ModalTitle,
+    ModalTrigger,
+} from '@/components/ui/modal';
+import { cn } from '@/lib/utils';
+import AdminLayout from '@/layouts/admin-layout';
+import { dashboard } from '@/routes';
+import { type BreadcrumbItem } from '@/types';
+import { Head, useForm, router } from '@inertiajs/react';
+import { useToast } from '@/hooks/use-toast';
+import {
+    Heart,
+    Search,
+    Filter,
+    Plus,
+    Phone,
+    MapPin,
+    Activity,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    Syringe,
+    Pill,
+    FileText,
+    Download,
+    Loader2,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import AddressSelect, { type AddressData } from '@/components/address-select';
+
+interface Species {
+    id: string;
+    name: string;
+    icon: string;
+}
+
+interface Pet {
+    id: string;
+    name: string;
+    species: string;
+    speciesIcon: string;
+    breed: string;
+    age: number;
+    weight: number;
+    gender: string;
+    color: string;
+    microchipId: string;
+    imageUrl: string | null;
+    status: string;
+    lastVisit: string;
+    registrationDate: string;
+    owner: {
+        name: string;
+        phone: string;
+        email: string;
+        address: string;
+        street: string;
+        barangay: string;
+        city: string;
+        province: string;
+        zipCode: string;
+        emergencyContact: string;
+    };
+    medicalHistory: any[];
+    vaccinations: any[];
+    allergies: string[];
+    currentMedications: any[];
+}
+
+interface Props {
+    pets: Pet[];
+    species: Species[];
+}
+
+const formatPeso = (value: number) =>
+    `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+
+const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+};
+
+const getVaccinationStatusColor = (status: string) => {
+    switch (status) {
+        case 'current':
+            return 'border-transparent bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200';
+        case 'due-soon':
+            return 'border-transparent bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200';
+        case 'overdue':
+        case 'pending':
+            return 'border-transparent bg-rose-50 text-rose-700 dark:border-rose-400/30 dark:bg-rose-500/10 dark:text-rose-200';
+        default:
+            return 'border-transparent bg-neutral-50 text-neutral-700 dark:border-neutral-400/30 dark:bg-neutral-500/10 dark:text-neutral-200';
+    }
+};
+
+const getStatusIcon = (status: string) => {
+    switch (status) {
+        case 'current':
+            return <CheckCircle className="h-4 w-4" />;
+        case 'due-soon':
+            return <Clock className="h-4 w-4" />;
+        case 'overdue':
+        case 'pending':
+            return <AlertCircle className="h-4 w-4" />;
+        default:
+            return <Activity className="h-4 w-4" />;
+    }
+};
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: 'Dashboard',
+        href: dashboard.url(),
+    },
+    {
+        title: 'Pet Records',
+        href: '/pet-records',
+    },
+];
+
+export default function PetRecords({ pets, species }: Props) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedSpecies, setSelectedSpecies] = useState('all');
+    const [selectedStatus, setSelectedStatus] = useState('all');
+    const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+    const [exportSearch, setExportSearch] = useState('');
+    const [selectedPetForExport, setSelectedPetForExport] = useState<string>('');
+    const [exportPetPage, setExportPetPage] = useState(1);
+    const PETS_PER_PAGE = 3;
+    const [exportFilters, setExportFilters] = useState({
+        exportType: 'all' as 'all' | 'individual',
+        species: 'all',
+        status: 'all',
+        dateFrom: '',
+        dateTo: '',
+        includeConsultations: true,
+        includeVaccinations: true,
+        includeOwnerInfo: true,
+    });
+    const { success, error } = useToast();
+
+    const { data, setData, post, processing, errors, reset } = useForm({
+        petName: '',
+        species: '',
+        breed: '',
+        age: '',
+        weight: '',
+        gender: '',
+        color: '',
+        microchipId: '',
+        petImage: null as File | null,
+        ownerName: '',
+        phone: '',
+        email: '',
+        province: '',
+        city: '',
+        barangay: '',
+        street: '',
+        zipCode: '',
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Use FormData for file uploads
+        const formData = new FormData();
+        formData.append('petName', data.petName);
+        formData.append('species', data.species);
+        formData.append('breed', data.breed || '');
+        formData.append('age', data.age || '');
+        formData.append('weight', data.weight || '');
+        formData.append('gender', data.gender);
+        formData.append('color', data.color || '');
+        formData.append('microchipId', data.microchipId || '');
+        formData.append('ownerName', data.ownerName);
+        formData.append('phone', data.phone);
+        formData.append('email', data.email || '');
+        formData.append('province', data.province);
+        formData.append('city', data.city);
+        formData.append('barangay', data.barangay);
+        formData.append('street', data.street || '');
+        formData.append('zipCode', data.zipCode || '');
+        
+        if (data.petImage) {
+            formData.append('petImage', data.petImage);
+        }
+
+        router.post('/pet-records', formData, {
+            onSuccess: () => {
+                reset();
+                setIsAddModalOpen(false);
+                success('Pet registered successfully!');
+            },
+            onError: (errors: Record<string, string>) => {
+                console.log('Validation errors:', errors);
+                
+                // Handle specific validation errors (excluding petImage since it's optional)
+                if (errors.petName) {
+                    error('Pet name is required');
+                }
+                if (errors.species) {
+                    error('Please select a species');
+                }
+                if (errors.gender) {
+                    error('Please select a gender');
+                }
+                if (errors.ownerName) {
+                    error('Owner name is required');
+                }
+                if (errors.phone) {
+                    error('Phone number is required');
+                }
+                if (errors.province || errors.city || errors.barangay) {
+                    error('Please complete the address fields');
+                }
+                if (errors.microchipId) {
+                    error('This microchip ID is already registered');
+                }
+                if (errors.email) {
+                    error('Please enter a valid email address');
+                }
+                
+                // Only show image error if a file was actually selected but invalid
+                if (errors.petImage && data.petImage) {
+                    error('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
+                }
+                
+                // Generic error for any other validation issues (excluding known optional fields)
+                const errorKeys = Object.keys(errors);
+                const handledErrors = ['petName', 'species', 'gender', 'ownerName', 'phone', 'province', 'city', 'barangay', 'street', 'zipCode', 'microchipId', 'email', 'petImage'];
+                const unhandledErrors = errorKeys.filter(key => !handledErrors.includes(key));
+                
+                if (unhandledErrors.length > 0) {
+                    error('Please check the form for errors and try again');
+                }
+            }
+        });
+    };
+
+    const filteredPets = useMemo(() => {
+        return pets.filter((pet) => {
+            const matchesSearch = 
+                pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                pet.owner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                pet.id.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            const matchesSpecies = 
+                selectedSpecies === 'all' || pet.species.toLowerCase() === selectedSpecies;
+            
+            const matchesStatus = 
+                selectedStatus === 'all' || pet.status === selectedStatus;
+
+            return matchesSearch && matchesSpecies && matchesStatus;
+        });
+    }, [pets, searchTerm, selectedSpecies, selectedStatus]);
+
+    // Reset to page 1 when filters change
+    const totalPages = Math.ceil(filteredPets.length / ITEMS_PER_PAGE);
+    const paginatedPets = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredPets.slice(start, start + ITEMS_PER_PAGE);
+    }, [filteredPets, currentPage]);
+
+    // Reset page when filters change
+    useMemo(() => {
+        setCurrentPage(1);
+    }, [searchTerm, selectedSpecies, selectedStatus]);
+
+    const petStats = useMemo(() => {
+        const totalPets = pets.length;
+        const activePets = pets.filter(pet => pet.status === 'active').length;
+        const upcomingVaccinations = pets.reduce((count, pet) => {
+            return count + pet.vaccinations.filter(v => v.status === 'due-soon' || v.status === 'overdue').length;
+        }, 0);
+
+        return { totalPets, activePets, upcomingVaccinations };
+    }, [pets]);
+
+    const openExportModal = () => {
+        setExportFilters({
+            exportType: 'all',
+            species: selectedSpecies,
+            status: selectedStatus,
+            dateFrom: '',
+            dateTo: '',
+            includeConsultations: true,
+            includeVaccinations: true,
+            includeOwnerInfo: true,
+        });
+        setExportSearch('');
+        setSelectedPetForExport('');
+        setExportPetPage(1);
+        setIsExporting(false);
+        setIsExportModalOpen(true);
+    };
+
+    const closeExportModal = () => {
+        setIsExporting(false);
+        setIsExportModalOpen(false);
+    };
+
+    const filteredPetsForExport = useMemo(() => {
+        let filtered = pets;
+        if (exportSearch.trim()) {
+            const term = exportSearch.toLowerCase();
+            filtered = pets.filter((pet) =>
+                pet.name.toLowerCase().includes(term) ||
+                pet.owner.name.toLowerCase().includes(term) ||
+                pet.id.toLowerCase().includes(term)
+            );
+        }
+        return filtered;
+    }, [pets, exportSearch]);
+
+    const paginatedPetsForExport = useMemo(() => {
+        const startIndex = (exportPetPage - 1) * PETS_PER_PAGE;
+        return filteredPetsForExport.slice(startIndex, startIndex + PETS_PER_PAGE);
+    }, [filteredPetsForExport, exportPetPage]);
+
+    const totalExportPages = Math.ceil(filteredPetsForExport.length / PETS_PER_PAGE);
+
+    const handleExport = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isExporting) return;
+        
+        if (exportFilters.exportType === 'individual' && !selectedPetForExport) {
+            error('Please select a pet to export');
+            return;
+        }
+        
+        setIsExporting(true);
+
+        const params = new URLSearchParams();
+        
+        if (exportFilters.exportType === 'individual') {
+            params.append('type', 'individual');
+            params.append('pet_id', selectedPetForExport);
+            if (exportFilters.includeConsultations) params.append('include_consultations', '1');
+            if (exportFilters.includeVaccinations) params.append('include_vaccinations', '1');
+            if (exportFilters.includeOwnerInfo) params.append('include_owner_info', '1');
+        } else {
+            if (exportFilters.species && exportFilters.species !== 'all') {
+                params.append('species', exportFilters.species);
+            }
+            if (exportFilters.status && exportFilters.status !== 'all') {
+                params.append('status', exportFilters.status);
+            }
+            if (exportFilters.dateFrom) {
+                params.append('date_from', exportFilters.dateFrom);
+            }
+            if (exportFilters.dateTo) {
+                params.append('date_to', exportFilters.dateTo);
+            }
+        }
+
+        const query = params.toString();
+        const url = query ? `/pet-records/export?${query}` : '/pet-records/export';
+
+        window.location.href = url;
+
+        setTimeout(() => {
+            setIsExporting(false);
+            setIsExportModalOpen(false);
+            success('Export started successfully!');
+        }, 1500);
+    };
+
+    return (
+        <AdminLayout
+            breadcrumbs={breadcrumbs}
+            title="Pet Records"
+            description="Comprehensive pet health records, vaccination tracking, and medical history management."
+        >
+            <Head title="Pet Records" />
+            
+            {/* Stats Cards */}
+            <div className="grid gap-4 grid-cols-3">
+                <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Pets</CardTitle>
+                        <Heart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{petStats.totalPets}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Registered in system
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Active Patients</CardTitle>
+                        <Activity className="h-4 w-4 text-emerald-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-emerald-600">{petStats.activePets}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Currently under care
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Vaccination Alerts</CardTitle>
+                        <Syringe className="h-4 w-4 text-amber-600" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-amber-600">{petStats.upcomingVaccinations}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Due soon or overdue
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Filters and Search */}
+            <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
+                <CardHeader>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <CardTitle>Pet Records</CardTitle>
+                            <CardDescription>
+                                Manage pet health records, vaccinations, and medical history
+                            </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={openExportModal}>
+                                <Download className="h-4 w-4 mr-2" />
+                                Export
+                            </Button>
+                            <Modal open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+                                <ModalTrigger asChild>
+                                    <Button size="sm">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Pet
+                                    </Button>
+                                </ModalTrigger>
+                                <ModalContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                                    <ModalHeader>
+                                        <ModalTitle>Add New Pet Record</ModalTitle>
+                                        <ModalDescription>
+                                            Register a new pet in the system with complete information.
+                                        </ModalDescription>
+                                    </ModalHeader>
+                                    <form onSubmit={handleSubmit}>
+                                        <div className="grid gap-4 py-4">
+                                            {/* Pet Basic Information */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-semibold text-sm">Pet Information</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Pet Name *</label>
+                                                        <Input 
+                                                            placeholder="e.g., Buddy" 
+                                                            value={data.petName}
+                                                            onChange={(e) => setData('petName', e.target.value)}
+                                                            required
+                                                        />
+                                                        {errors.petName && <div className="text-red-500 text-xs">{errors.petName}</div>}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Species *</label>
+                                                        <Select value={data.species} onValueChange={(value) => setData('species', value)}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select species" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="Dog">Dog</SelectItem>
+                                                                <SelectItem value="Cat">Cat</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {errors.species && <div className="text-red-500 text-xs">{errors.species}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Breed</label>
+                                                        <Input 
+                                                            placeholder="e.g., Golden Retriever" 
+                                                            value={data.breed}
+                                                            onChange={(e) => setData('breed', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Age (years)</label>
+                                                        <Input 
+                                                            type="number" 
+                                                            placeholder="e.g., 3" 
+                                                            value={data.age}
+                                                            onChange={(e) => setData('age', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Weight (kg)</label>
+                                                        <Input 
+                                                            type="number" 
+                                                            step="0.1" 
+                                                            placeholder="e.g., 28.5" 
+                                                            value={data.weight}
+                                                            onChange={(e) => setData('weight', e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-3 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Gender *</label>
+                                                        <Select value={data.gender} onValueChange={(value) => setData('gender', value)}>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select gender" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="male">Male</SelectItem>
+                                                                <SelectItem value="female">Female</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                        {errors.gender && <div className="text-red-500 text-xs">{errors.gender}</div>}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Color/Markings</label>
+                                                        <Input 
+                                                            placeholder="e.g., Golden, Black and White" 
+                                                            value={data.color}
+                                                            onChange={(e) => setData('color', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Microchip ID</label>
+                                                        <Input 
+                                                            placeholder="e.g., 982000123456789" 
+                                                            value={data.microchipId}
+                                                            onChange={(e) => setData('microchipId', e.target.value)}
+                                                        />
+                                                        {errors.microchipId && <div className="text-red-500 text-xs">{errors.microchipId}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Pet Photo (Optional)</label>
+                                                    <div className="relative">
+                                                        <Input 
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                const file = e.target.files?.[0] || null;
+                                                                setData('petImage', file);
+                                                            }}
+                                                            className="hidden"
+                                                            id="petImage"
+                                                        />
+                                                        <label
+                                                            htmlFor="petImage"
+                                                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
+                                                        >
+                                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                                {data.petImage ? (
+                                                                    <div className="text-center">
+                                                                        <div className="text-green-600 mb-2">
+                                                                            <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                            </svg>
+                                                                        </div>
+                                                                        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                                                                            {data.petImage.name}
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                            Click to change photo
+                                                                        </p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-center">
+                                                                        <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400 mx-auto" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                                                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                                                        </svg>
+                                                                        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                                                            <span className="font-semibold">Click to upload</span> or drag and drop
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                            PNG, JPG or GIF (MAX. 5MB)
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Owner Information */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-semibold text-sm">Owner Information</h4>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Owner Name *</label>
+                                                        <Input 
+                                                            placeholder="e.g., John Smith" 
+                                                            value={data.ownerName}
+                                                            onChange={(e) => setData('ownerName', e.target.value)}
+                                                            required
+                                                        />
+                                                        {errors.ownerName && <div className="text-red-500 text-xs">{errors.ownerName}</div>}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Phone Number *</label>
+                                                        <Input 
+                                                            placeholder="+63 917 123 4567" 
+                                                            value={data.phone}
+                                                            onChange={(e) => setData('phone', e.target.value)}
+                                                            required
+                                                        />
+                                                        {errors.phone && <div className="text-red-500 text-xs">{errors.phone}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Email</label>
+                                                        <Input 
+                                                            type="email" 
+                                                            placeholder="owner@email.com" 
+                                                            value={data.email}
+                                                            onChange={(e) => setData('email', e.target.value)}
+                                                        />
+                                                        {errors.email && <div className="text-red-500 text-xs">{errors.email}</div>}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Address *</label>
+                                                    <AddressSelect
+                                                        value={{
+                                                            region: '',
+                                                            province: data.province,
+                                                            city: data.city,
+                                                            barangay: data.barangay,
+                                                            street: data.street,
+                                                            zipCode: data.zipCode,
+                                                        }}
+                                                        onChange={(addr: AddressData) => {
+                                                            setData(prev => ({
+                                                                ...prev,
+                                                                province: addr.province,
+                                                                city: addr.city,
+                                                                barangay: addr.barangay,
+                                                                street: addr.street,
+                                                                zipCode: addr.zipCode,
+                                                            }));
+                                                        }}
+                                                        errors={{
+                                                            province: errors.province,
+                                                            city: errors.city,
+                                                            barangay: errors.barangay,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <ModalFooter>
+                                            <Button type="button" variant="outline" onClick={() => {setIsAddModalOpen(false); reset();}}>
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit" disabled={processing}>
+                                                {processing ? 'Adding...' : 'Add Pet'}
+                                            </Button>
+                                        </ModalFooter>
+                                    </form>
+                                </ModalContent>
+                            </Modal>
+
+                            {/* Export Modal */}
+                            <Modal
+                                open={isExportModalOpen}
+                                onOpenChange={(open) => {
+                                    if (!open) closeExportModal();
+                                }}
+                            >
+                                <ModalContent className="max-w-md">
+                                    <ModalHeader>
+                                        <ModalTitle>Export Pet Records</ModalTitle>
+                                        <ModalDescription>
+                                            Choose which records to include in the Excel export.
+                                        </ModalDescription>
+                                    </ModalHeader>
+                                    <form onSubmit={handleExport}>
+                                        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Export Type</label>
+                                                <Select
+                                                    value={exportFilters.exportType}
+                                                    onValueChange={(value: 'all' | 'individual') => {
+                                                        setExportFilters((prev) => ({ ...prev, exportType: value }));
+                                                        setSelectedPetForExport('');
+                                                        setExportSearch('');
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select export type" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="all">All Records</SelectItem>
+                                                        <SelectItem value="individual">Individual Pet</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-neutral-500">
+                                                    {exportFilters.exportType === 'all' 
+                                                        ? 'Export a summary list of all pets'
+                                                        : 'Export detailed records for a specific pet'}
+                                                </p>
+                                            </div>
+
+                                            {exportFilters.exportType === 'individual' && (
+                                                <>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Search Pet</label>
+                                                        <div className="relative">
+                                                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                            <Input
+                                                                placeholder="Search by pet name, owner, or ID..."
+                                                                value={exportSearch}
+                                                                onChange={(e) => {
+                                                                    setExportSearch(e.target.value);
+                                                                    setExportPetPage(1);
+                                                                }}
+                                                                className="pl-8"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between">
+                                                            <label className="text-sm font-medium">Select Pet *</label>
+                                                            <span className="text-xs text-neutral-500">
+                                                                {filteredPetsForExport.length} pet(s) found
+                                                            </span>
+                                                        </div>
+                                                        <div className="border rounded-md">
+                                                            {filteredPetsForExport.length === 0 ? (
+                                                                <p className="p-3 text-sm text-neutral-500 text-center">No pets found</p>
+                                                            ) : (
+                                                                paginatedPetsForExport.map((pet) => (
+                                                                    <div
+                                                                        key={pet.id}
+                                                                        className={cn(
+                                                                            "flex items-center justify-between p-2 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 border-b last:border-b-0",
+                                                                            selectedPetForExport === pet.id && "bg-blue-50 dark:bg-blue-900/20"
+                                                                        )}
+                                                                        onClick={() => setSelectedPetForExport(pet.id)}
+                                                                    >
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Checkbox
+                                                                                checked={selectedPetForExport === pet.id}
+                                                                                onCheckedChange={() => setSelectedPetForExport(pet.id)}
+                                                                            />
+                                                                            <div>
+                                                                                <p className="text-sm font-medium">{pet.name}</p>
+                                                                                <p className="text-xs text-neutral-500">{pet.species} • {pet.owner.name}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <span className="text-xs text-neutral-400">{pet.id}</span>
+                                                                    </div>
+                                                                ))
+                                                            )}
+                                                        </div>
+                                                        {totalExportPages > 1 && (
+                                                            <div className="flex items-center justify-between pt-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setExportPetPage((p) => Math.max(1, p - 1))}
+                                                                    disabled={exportPetPage === 1}
+                                                                >
+                                                                    Previous
+                                                                </Button>
+                                                                <span className="text-xs text-neutral-500">
+                                                                    Page {exportPetPage} of {totalExportPages}
+                                                                </span>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setExportPetPage((p) => Math.min(totalExportPages, p + 1))}
+                                                                    disabled={exportPetPage === totalExportPages}
+                                                                >
+                                                                    Next
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-3 rounded-md border p-3">
+                                                        <label className="text-sm font-medium">Include in Export</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    id="includeConsultations"
+                                                                    checked={exportFilters.includeConsultations}
+                                                                    onCheckedChange={(checked) =>
+                                                                        setExportFilters((prev) => ({
+                                                                            ...prev,
+                                                                            includeConsultations: !!checked,
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor="includeConsultations" className="text-sm font-normal cursor-pointer">
+                                                                    Consultations
+                                                                </label>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    id="includeVaccinations"
+                                                                    checked={exportFilters.includeVaccinations}
+                                                                    onCheckedChange={(checked) =>
+                                                                        setExportFilters((prev) => ({
+                                                                            ...prev,
+                                                                            includeVaccinations: !!checked,
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor="includeVaccinations" className="text-sm font-normal cursor-pointer">
+                                                                    Vaccinations
+                                                                </label>
+                                                            </div>
+                                                            <div className="flex items-center space-x-2">
+                                                                <Checkbox
+                                                                    id="includeOwnerInfo"
+                                                                    checked={exportFilters.includeOwnerInfo}
+                                                                    onCheckedChange={(checked) =>
+                                                                        setExportFilters((prev) => ({
+                                                                            ...prev,
+                                                                            includeOwnerInfo: !!checked,
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor="includeOwnerInfo" className="text-sm font-normal cursor-pointer">
+                                                                    Owner Info
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {exportFilters.exportType === 'all' && (
+                                                <>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Species</label>
+                                                        <Select
+                                                            value={exportFilters.species}
+                                                            onValueChange={(value) =>
+                                                                setExportFilters((prev) => ({ ...prev, species: value }))
+                                                            }
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="All species" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Species</SelectItem>
+                                                                <SelectItem value="dog">Dog</SelectItem>
+                                                                <SelectItem value="cat">Cat</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Status</label>
+                                                        <Select
+                                                            value={exportFilters.status}
+                                                            onValueChange={(value) =>
+                                                                setExportFilters((prev) => ({ ...prev, status: value }))
+                                                            }
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="All status" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="all">All Status</SelectItem>
+                                                                <SelectItem value="active">Active</SelectItem>
+                                                                <SelectItem value="inactive">Inactive</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium">Date From</label>
+                                                            <Input
+                                                                type="date"
+                                                                value={exportFilters.dateFrom}
+                                                                onChange={(e) =>
+                                                                    setExportFilters((prev) => ({
+                                                                        ...prev,
+                                                                        dateFrom: e.target.value,
+                                                                    }))
+                                                                }
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <label className="text-sm font-medium">Date To</label>
+                                                            <Input
+                                                                type="date"
+                                                                value={exportFilters.dateTo}
+                                                                onChange={(e) =>
+                                                                    setExportFilters((prev) => ({
+                                                                        ...prev,
+                                                                        dateTo: e.target.value,
+                                                                    }))
+                                                                }
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            <p className="text-xs text-neutral-500">
+                                                The exported file can be opened in Excel or Google Sheets.
+                                            </p>
+                                        </div>
+                                        <ModalFooter>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={closeExportModal}
+                                                disabled={isExporting}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button type="submit" disabled={isExporting}>
+                                                {isExporting ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                        Exporting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Download className="h-4 w-4 mr-2" />
+                                                        Export
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </ModalFooter>
+                                    </form>
+                                </ModalContent>
+                            </Modal>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center">
+                        <div className="flex-1">
+                            <div className="relative">
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search pets, owners, or breeds..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-8"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Select value={selectedSpecies} onValueChange={setSelectedSpecies}>
+                                <SelectTrigger className="w-[140px]">
+                                    <Filter className="h-4 w-4 mr-2" />
+                                    <SelectValue placeholder="Species" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Species</SelectItem>
+                                    <SelectItem value="dog">Dog</SelectItem>
+                                    <SelectItem value="cat">Cat</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Status</SelectItem>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="inactive">Inactive</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Pet Records Grid */}
+            <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
+                <CardContent className="p-6">
+                    {/* Table Headers */}
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
+                        <div className="md:col-span-2">
+                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
+                                Pet Information
+                            </h3>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
+                                Owner Details
+                            </h3>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
+                                Health Status
+                            </h3>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
+                                Last Visit
+                            </h3>
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
+                                Actions
+                            </h3>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        {paginatedPets.map((pet) => {
+                            const overdueVaccinations = pet.vaccinations.filter(v => v.status === 'overdue' || v.status === 'due-soon').length;
+                            
+                            return (
+                                <div key={pet.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
+                                    <div className="md:col-span-2">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                                <img 
+                                                    src={pet.imageUrl || '/placeholder.png'} 
+                                                    alt={pet.name}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.currentTarget.src = '/placeholder.png';
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                                                    {pet.name}
+                                                </p>
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                                    {pet.breed} • {pet.age} yr • {pet.gender}
+                                                </p>
+                                                <p className="text-xs text-neutral-400">
+                                                    {pet.id} • {pet.weight}kg
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
+                                            {pet.owner.name}
+                                        </p>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <Phone className="h-3 w-3 text-neutral-400" />
+                                            <span className="text-xs text-neutral-500">
+                                                {pet.owner.phone}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <MapPin className="h-3 w-3 text-neutral-400" />
+                                            <span className="text-xs text-neutral-500 truncate">
+                                                {pet.owner.city || pet.owner.address}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        {overdueVaccinations > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                                                <Syringe className="h-3 w-3 mr-1" />
+                                                {overdueVaccinations} vaccines due
+                                            </Badge>
+                                        )}
+                                        {pet.currentMedications.length > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                                                <Pill className="h-3 w-3 mr-1" />
+                                                On medication
+                                            </Badge>
+                                        )}
+                                        {pet.allergies.length > 0 && (
+                                            <Badge variant="outline" className="text-xs bg-rose-50 text-rose-700 border-rose-200">
+                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                {pet.allergies.length} allergies
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    
+                                    <div>
+                                        <p className="text-sm font-medium">
+                                            {formatDate(pet.lastVisit)}
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <Button 
+                                            variant="default" 
+                                            size="sm"
+                                            onClick={() => router.get(`/pet-records/${pet.id}/manage`)}
+                                        >
+                                            <FileText className="h-4 w-4 mr-1" />
+                                            Manage Records
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        
+                        {filteredPets.length === 0 && (
+                            <div className="text-center py-8 text-neutral-500">
+                                No pet records found matching your criteria.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
+                            <p className="text-sm text-neutral-500">
+                                Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredPets.length)} of {filteredPets.length} records
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(1)}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronsLeft className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                >
+                                    <ChevronLeft className="h-4 w-4" />
+                                </Button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                                    .filter(page => {
+                                        if (totalPages <= 5) return true;
+                                        if (page === 1 || page === totalPages) return true;
+                                        return Math.abs(page - currentPage) <= 1;
+                                    })
+                                    .reduce<(number | string)[]>((acc, page, idx, arr) => {
+                                        if (idx > 0 && page - (arr[idx - 1] as number) > 1) acc.push('...');
+                                        acc.push(page);
+                                        return acc;
+                                    }, [])
+                                    .map((page, idx) =>
+                                        typeof page === 'string' ? (
+                                            <span key={`ellipsis-${idx}`} className="px-2 text-neutral-400">…</span>
+                                        ) : (
+                                            <Button
+                                                key={page}
+                                                variant={currentPage === page ? 'default' : 'outline'}
+                                                size="sm"
+                                                className="min-w-[36px]"
+                                                onClick={() => setCurrentPage(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        )
+                                    )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <ChevronRight className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setCurrentPage(totalPages)}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <ChevronsRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Pet Detail Modal */}
+            {selectedPet && (
+                <Modal open={!!selectedPet} onOpenChange={() => setSelectedPet(null)}>
+                    <ModalContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <ModalHeader>
+                            <ModalTitle>
+                                {selectedPet.name} - Medical Record
+                            </ModalTitle>
+                            <ModalDescription>
+                                Comprehensive health record and medical history
+                            </ModalDescription>
+                        </ModalHeader>
+                        
+                        <div className="grid gap-6 py-4">
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold">Pet Information</h4>
+                                    <div className="space-y-2 text-sm">
+                                        <p><span className="font-medium">Species:</span> {selectedPet.species}</p>
+                                        <p><span className="font-medium">Breed:</span> {selectedPet.breed}</p>
+                                        <p><span className="font-medium">Age:</span> {selectedPet.age} years</p>
+                                        <p><span className="font-medium">Weight:</span> {selectedPet.weight}kg</p>
+                                        <p><span className="font-medium">Color:</span> {selectedPet.color}</p>
+                                        <p><span className="font-medium">Microchip:</span> {selectedPet.microchipId}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <h4 className="font-semibold">Owner Information</h4>
+                                    <div className="space-y-2 text-sm">
+                                        <p><span className="font-medium">Name:</span> {selectedPet.owner.name}</p>
+                                        <p><span className="font-medium">Phone:</span> {selectedPet.owner.phone}</p>
+                                        <p><span className="font-medium">Email:</span> {selectedPet.owner.email}</p>
+                                        <p><span className="font-medium">Address:</span> {selectedPet.owner.address}</p>
+                                        {selectedPet.owner.city && (
+                                            <p className="text-xs text-neutral-500">
+                                                {[selectedPet.owner.street, selectedPet.owner.barangay, selectedPet.owner.city, selectedPet.owner.province, selectedPet.owner.zipCode].filter(Boolean).join(', ')}
+                                            </p>
+                                        )}
+                                        <p><span className="font-medium">Emergency:</span> {selectedPet.owner.emergencyContact}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Vaccinations */}
+                            <div>
+                                <h4 className="font-semibold mb-3">Vaccination Status</h4>
+                                <div className="grid gap-2">
+                                    {selectedPet.vaccinations.map((vax, index) => (
+                                        <div key={index} className="flex items-center justify-between p-2 border rounded">
+                                            <div>
+                                                <span className="font-medium">{vax.vaccine}</span>
+                                                <span className="text-sm text-neutral-500 ml-2">
+                                                    {vax.lastDate ? `Last: ${formatDate(vax.lastDate)}` : 'Not administered'}
+                                                </span>
+                                            </div>
+                                            <Badge variant="outline" className={getVaccinationStatusColor(vax.status)}>
+                                                {getStatusIcon(vax.status)}
+                                                <span className="ml-1 capitalize">{vax.status.replace('-', ' ')}</span>
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Current Medications */}
+                            {selectedPet.currentMedications.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold mb-3">Current Medications</h4>
+                                    <div className="space-y-2">
+                                        {selectedPet.currentMedications.map((med, index) => (
+                                            <div key={index} className="p-3 border rounded">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-medium">{med.name}</p>
+                                                        <p className="text-sm text-neutral-600">{med.dosage}</p>
+                                                        <p className="text-sm text-neutral-500">{med.purpose}</p>
+                                                    </div>
+                                                    <span className="text-xs bg-neutral-100 px-2 py-1 rounded">
+                                                        {med.duration}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Allergies */}
+                            {selectedPet.allergies.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold mb-3">Known Allergies</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedPet.allergies.map((allergy, index) => (
+                                            <Badge key={index} variant="outline" className="bg-rose-50 text-rose-700 border-rose-200">
+                                                {allergy}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <ModalFooter>
+                            <Button variant="outline" onClick={() => setSelectedPet(null)}>
+                                Close
+                            </Button>
+                        </ModalFooter>
+                    </ModalContent>
+                </Modal>
+            )}
+            
+            {/* Toast Container */}
+        </AdminLayout>
+    );
+}
