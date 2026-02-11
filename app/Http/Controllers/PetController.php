@@ -575,4 +575,35 @@ class PetController extends Controller
         // Set the first sheet as active
         $spreadsheet->setActiveSheetIndex(0);
     }
+
+    public function destroy($petId)
+    {
+        // Extract numeric ID from PET-XXX format
+        $numericId = (int) str_replace('PET-', '', $petId);
+
+        $pet = Pet::where('id', $numericId)->firstOrFail();
+
+        // Delete pet image if it exists
+        if ($pet->image_path) {
+            $imagePath = storage_path('app/public/' . $pet->image_path);
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+        }
+
+        // Delete consultation files
+        foreach ($pet->consultations as $consultation) {
+            foreach ($consultation->files as $file) {
+                $filePath = storage_path('app/public/' . $file->file_path);
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                }
+            }
+        }
+
+        $petName = $pet->name;
+        $pet->delete(); // Cascade handles related records
+
+        return redirect()->route('pet-records')->with('success', "{$petName}'s record has been deleted.");
+    }
 }

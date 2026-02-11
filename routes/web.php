@@ -21,6 +21,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('pet-records/export', [App\Http\Controllers\PetController::class, 'export'])->name('pet-records.export');
     Route::post('pet-records', [App\Http\Controllers\PetController::class, 'store'])->name('pet-records.store');
     Route::get('pet-records/{pet}/manage', [App\Http\Controllers\PetController::class, 'manage'])->name('pet-records.manage');
+    Route::delete('pet-records/{pet}', [App\Http\Controllers\PetController::class, 'destroy'])->name('pet-records.destroy');
     Route::post('pet-records/{pet}/consultations', [App\Http\Controllers\ConsultationController::class, 'store'])->name('consultations.store');
     Route::post('pet-records/{pet}/vaccinations', [App\Http\Controllers\VaccinationController::class, 'store'])->name('vaccinations.store');
     Route::put('pet-records/{pet}/vaccinations/{vaccination}', [App\Http\Controllers\VaccinationController::class, 'update'])->name('vaccinations.update');
@@ -46,6 +47,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('ai/conversations/{id}', [App\Http\Controllers\AiAssistantController::class, 'updateConversation'])->name('ai.conversations.update');
     Route::delete('ai/conversations/{id}', [App\Http\Controllers\AiAssistantController::class, 'deleteConversation'])->name('ai.conversations.delete');
     Route::post('ai/conversations/{conversationId}/messages', [App\Http\Controllers\AiAssistantController::class, 'sendMessage'])->name('ai.conversations.message');
+
+    // Notifications API
+    Route::get('notifications/inventory', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.inventory');
 
     Route::get('reports', [App\Http\Controllers\ReportsController::class, 'index'])->name('reports');
     Route::get('reports/export/financial', [App\Http\Controllers\ReportsController::class, 'exportFinancial'])->name('reports.export.financial');

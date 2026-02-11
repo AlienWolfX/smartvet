@@ -15,6 +15,7 @@ import { UserMenuContent } from '@/components/user-menu-content';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import AppearanceToggleDropdown from '@/components/appearance-dropdown';
 import { ChatbotSlider } from '@/components/chatbot-slider';
+import { NotificationBell } from '@/components/notification-bell';
 import { dashboard } from '@/routes';
 import { 
     Activity,
@@ -222,6 +223,7 @@ export default function AdminLayout({
                                     <span className="hidden sm:inline">AI Assistant</span>
                                     <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                 </Button>
+                                <NotificationBell />
                                 <AppearanceToggleDropdown />
                                 {/* Profile dropdown */}
                                 <DropdownMenu>

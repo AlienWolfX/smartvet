@@ -50,11 +50,13 @@ import {
     ChevronLeft,
     ChevronRight,
     ChevronsLeft,
-    ChevronsRight
+    ChevronsRight,
+    Trash2
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import AddressSelect, { type AddressData } from '@/components/address-select';
+import { getBreedsForSpecies } from '@/config/pet-breeds';
 
 interface Species {
     id: string;
@@ -175,6 +177,25 @@ export default function PetRecords({ pets, species }: Props) {
         includeOwnerInfo: true,
     });
     const { success, error } = useToast();
+    const [deletingPet, setDeletingPet] = useState<Pet | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [breedSelection, setBreedSelection] = useState('');
+    const [customBreed, setCustomBreed] = useState('');
+
+    const handleDeletePet = useCallback((pet: Pet) => {
+        setIsDeleting(true);
+        router.delete(`/pet-records/${pet.id}`, {
+            onSuccess: () => {
+                setDeletingPet(null);
+                setIsDeleting(false);
+                success('Pet record deleted successfully.');
+            },
+            onError: () => {
+                setIsDeleting(false);
+                error('Failed to delete pet record. Please try again.');
+            },
+        });
+    }, [router, success, error]);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         petName: '',
@@ -199,32 +220,12 @@ export default function PetRecords({ pets, species }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Use FormData for file uploads
-        const formData = new FormData();
-        formData.append('petName', data.petName);
-        formData.append('species', data.species);
-        formData.append('breed', data.breed || '');
-        formData.append('age', data.age || '');
-        formData.append('weight', data.weight || '');
-        formData.append('gender', data.gender);
-        formData.append('color', data.color || '');
-        formData.append('microchipId', data.microchipId || '');
-        formData.append('ownerName', data.ownerName);
-        formData.append('phone', data.phone);
-        formData.append('email', data.email || '');
-        formData.append('province', data.province);
-        formData.append('city', data.city);
-        formData.append('barangay', data.barangay);
-        formData.append('street', data.street || '');
-        formData.append('zipCode', data.zipCode || '');
-        
-        if (data.petImage) {
-            formData.append('petImage', data.petImage);
-        }
-
-        router.post('/pet-records', formData, {
+        post('/pet-records', {
+            forceFormData: true,
             onSuccess: () => {
                 reset();
+                setBreedSelection('');
+                setCustomBreed('');
                 setIsAddModalOpen(false);
                 success('Pet registered successfully!');
             },
@@ -500,7 +501,7 @@ export default function PetRecords({ pets, species }: Props) {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Species *</label>
-                                                        <Select value={data.species} onValueChange={(value) => setData('species', value)}>
+                                                        <Select value={data.species} onValueChange={(value) => { setData(prev => ({ ...prev, species: value, breed: '' })); setBreedSelection(''); setCustomBreed(''); }}>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Select species" />
                                                             </SelectTrigger>
@@ -515,11 +516,45 @@ export default function PetRecords({ pets, species }: Props) {
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Breed</label>
-                                                        <Input 
-                                                            placeholder="e.g., Golden Retriever" 
-                                                            value={data.breed}
-                                                            onChange={(e) => setData('breed', e.target.value)}
-                                                        />
+                                                        {data.species ? (
+                                                            <>
+                                                                <Select value={breedSelection} onValueChange={(value) => {
+                                                                    setBreedSelection(value);
+                                                                    if (value === '__other') {
+                                                                        setData('breed', customBreed);
+                                                                    } else {
+                                                                        setData('breed', value);
+                                                                        setCustomBreed('');
+                                                                    }
+                                                                }}>
+                                                                    <SelectTrigger>
+                                                                        <SelectValue placeholder="Select breed" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {getBreedsForSpecies(data.species).map((breed) => (
+                                                                            <SelectItem key={breed} value={breed}>{breed}</SelectItem>
+                                                                        ))}
+                                                                        <SelectItem value="__other">Other (specify)</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                                {breedSelection === '__other' && (
+                                                                    <Input
+                                                                        placeholder="Enter breed name"
+                                                                        className="mt-2"
+                                                                        value={customBreed}
+                                                                        onChange={(e) => {
+                                                                            setCustomBreed(e.target.value);
+                                                                            setData('breed', e.target.value);
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <Input
+                                                                placeholder="Select a species first"
+                                                                disabled
+                                                            />
+                                                        )}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Age (years)</label>
@@ -1025,7 +1060,7 @@ export default function PetRecords({ pets, species }: Props) {
             <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
                 <CardContent className="p-6">
                     {/* Table Headers */}
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
                         <div className="md:col-span-2">
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Pet Information
@@ -1058,7 +1093,7 @@ export default function PetRecords({ pets, species }: Props) {
                             const overdueVaccinations = pet.vaccinations.filter(v => v.status === 'overdue' || v.status === 'due-soon').length;
                             
                             return (
-                                <div key={pet.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
+                                <div key={pet.id} className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
                                     <div className="md:col-span-2">
                                         <div className="flex items-start gap-3">
                                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
@@ -1130,7 +1165,7 @@ export default function PetRecords({ pets, species }: Props) {
                                         </p>
                                     </div>
                                     
-                                    <div className="flex gap-2">
+                                    <div className="md:col-span-2 flex items-center gap-2 flex-wrap">
                                         <Button 
                                             variant="default" 
                                             size="sm"
@@ -1139,6 +1174,48 @@ export default function PetRecords({ pets, species }: Props) {
                                             <FileText className="h-4 w-4 mr-1" />
                                             Manage Records
                                         </Button>
+                                        <Modal open={deletingPet?.id === pet.id} onOpenChange={(open) => !open && setDeletingPet(null)}>
+                                            <ModalTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 dark:border-red-800"
+                                                    onClick={() => setDeletingPet(pet)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </ModalTrigger>
+                                            <ModalContent>
+                                                <ModalHeader>
+                                                    <ModalTitle>Delete Pet Record</ModalTitle>
+                                                    <ModalDescription>
+                                                        Are you sure you want to delete <strong>{pet.name}</strong>'s record? This will permanently remove all associated consultations, vaccinations, medications, and payment records. This action cannot be undone.
+                                                    </ModalDescription>
+                                                </ModalHeader>
+                                                <ModalFooter>
+                                                    <Button variant="outline" onClick={() => setDeletingPet(null)}>
+                                                        Cancel
+                                                    </Button>
+                                                    <Button
+                                                        variant="destructive"
+                                                        disabled={isDeleting}
+                                                        onClick={() => handleDeletePet(pet)}
+                                                    >
+                                                        {isDeleting ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                                                Deleting...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Trash2 className="h-4 w-4 mr-1" />
+                                                                Delete Record
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </ModalFooter>
+                                            </ModalContent>
+                                        </Modal>
                                     </div>
                                 </div>
                             );
