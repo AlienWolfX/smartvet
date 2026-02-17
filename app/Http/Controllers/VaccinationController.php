@@ -6,6 +6,7 @@ use App\Models\Consultation;
 use App\Models\Pet;
 use App\Models\PetPayment;
 use App\Models\Vaccination;
+use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,11 +15,12 @@ use Illuminate\Support\Facades\DB;
 
 class VaccinationController extends Controller
 {
+    use ScopesToTenant;
     public function store(Request $request, string $petId): RedirectResponse
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = Pet::find($numericId);
+        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
@@ -90,7 +92,7 @@ class VaccinationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = Pet::find($numericId);
+        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }

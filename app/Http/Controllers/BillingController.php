@@ -5,17 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Consultation;
 use App\Models\PetPayment;
 use App\Models\Vaccination;
+use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class BillingController extends Controller
 {
+    use ScopesToTenant;
     public function index()
     {
         // Fetch all pending payments from PetPayment table (both consultations and vaccinations)
-        $pendingPayments = PetPayment::with(['pet.owner', 'consultation', 'vaccination'])
-            ->where('status', 'pending')
+        $pendingPayments = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'consultation', 'vaccination'])
+            ->where('status', 'pending'))
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($payment) {
@@ -38,8 +40,8 @@ class BillingController extends Controller
                 ];
             });
 
-        $paymentHistory = PetPayment::with(['pet.owner', 'recordedBy'])
-            ->where('status', 'paid')
+        $paymentHistory = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'recordedBy'])
+            ->where('status', 'paid'))
             ->orderBy('paid_at', 'desc')
             ->get()
             ->map(function ($payment) {
@@ -66,6 +68,15 @@ class BillingController extends Controller
 
     public function processPayment(Request $request, PetPayment $payment)
     {
+        // Verify ownership
+        $user = auth()->user();
+        if (!$user->isAdmin()) {
+            $ownerUserId = $payment->pet?->owner?->user_id;
+            if ($ownerUserId !== $user->id) {
+                abort(403);
+            }
+        }
+
         $validated = $request->validate([
             'payment_method' => 'required|string|in:cash,gcash,maya,credit_card,debit_card,bank_transfer',
             'reference_number' => 'nullable|string|max:255',

@@ -33,6 +33,7 @@ export interface SharedData {
 export interface User {
     id: number;
     name: string;
+    clinic_name?: string;
     email: string;
     avatar?: string;
     created_at: string;

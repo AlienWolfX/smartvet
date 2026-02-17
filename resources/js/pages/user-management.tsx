@@ -59,8 +59,9 @@ import { useToast } from '@/hooks/use-toast';
 interface User {
     id: number;
     name: string;
+    clinicName: string;
     email: string;
-    role: 'admin' | 'staff';
+    role: 'admin' | 'clinic';
     status: 'active' | 'inactive' | 'suspended';
     lastLogin: string | null;
     createdAt: string;
@@ -115,7 +116,7 @@ export default function UserManagement({ users, stats }: Props) {
         email: '',
         password: '',
         password_confirmation: '',
-        role: 'staff',
+        role: 'clinic',
         status: 'active',
     });
 
@@ -138,7 +139,7 @@ export default function UserManagement({ users, stats }: Props) {
         switch (role) {
             case 'admin':
                 return 'border-transparent bg-red-50 text-red-700 dark:border-red-400/30 dark:bg-red-500/10 dark:text-red-200';
-            case 'staff':
+            case 'clinic':
                 return 'border-transparent bg-blue-50 text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-200';
             default:
                 return 'border-transparent bg-gray-50 text-gray-700 dark:border-gray-400/30 dark:bg-gray-500/10 dark:text-gray-200';
@@ -320,13 +321,13 @@ export default function UserManagement({ users, stats }: Props) {
 
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Staff Members</CardTitle>
+                        <CardTitle className="text-sm font-medium">Clinic Accounts</CardTitle>
                         <Users className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-blue-600">{stats.staffUsers}</div>
                         <p className="text-xs text-muted-foreground">
-                            Operational staff
+                            Registered clinics
                         </p>
                     </CardContent>
                 </Card>
@@ -447,7 +448,7 @@ export default function UserManagement({ users, stats }: Props) {
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="admin">Administrator</SelectItem>
-                                                    <SelectItem value="staff">Staff</SelectItem>
+                                                    <SelectItem value="clinic">Clinic</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -494,7 +495,7 @@ export default function UserManagement({ users, stats }: Props) {
                                                 <SelectContent>
                                                     <SelectItem value="all">All Roles</SelectItem>
                                                     <SelectItem value="admin">Administrator</SelectItem>
-                                                    <SelectItem value="staff">Staff</SelectItem>
+                                                    <SelectItem value="clinic">Clinic</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -600,7 +601,7 @@ export default function UserManagement({ users, stats }: Props) {
                                 <SelectContent>
                                     <SelectItem value="all">All Roles</SelectItem>
                                     <SelectItem value="admin">Administrator</SelectItem>
-                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="clinic">Clinic</SelectItem>
                                 </SelectContent>
                             </Select>
                             <Select value={selectedStatus} onValueChange={(v) => { setSelectedStatus(v); setCurrentPage(1); }}>
@@ -765,7 +766,7 @@ export default function UserManagement({ users, stats }: Props) {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="admin">Administrator</SelectItem>
-                                            <SelectItem value="staff">Staff</SelectItem>
+                                            <SelectItem value="clinic">Clinic</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

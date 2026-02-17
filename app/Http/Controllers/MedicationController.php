@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Consultation;
 use App\Models\Medication;
 use App\Models\Pet;
+use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,11 +14,12 @@ use Carbon\Carbon;
 
 class MedicationController extends Controller
 {
+    use ScopesToTenant;
     public function store(Request $request, string $petId): RedirectResponse
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = Pet::find($numericId);
+        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }

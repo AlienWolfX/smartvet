@@ -21,8 +21,9 @@ class UserController extends Controller
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'clinicName' => $user->clinic_name ?? '',
                     'email' => $user->email,
-                    'role' => $user->role ?? 'staff',
+                    'role' => $user->role ?? 'clinic',
                     'status' => $user->status ?? 'active',
                     'lastLogin' => $user->last_login_at?->toISOString(),
                     'createdAt' => $user->created_at->toISOString(),
@@ -32,7 +33,7 @@ class UserController extends Controller
         $stats = [
             'totalUsers' => User::count(),
             'activeUsers' => User::where('status', 'active')->count(),
-            'staffUsers' => User::where('role', 'staff')->count(),
+            'staffUsers' => User::where('role', 'clinic')->count(),
             'adminUsers' => User::where('role', 'admin')->count(),
         ];
 
@@ -48,7 +49,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::defaults()],
-            'role' => 'required|in:admin,staff',
+            'role' => 'required|in:admin,clinic',
         ]);
 
         User::create([
@@ -67,7 +68,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'role' => 'required|in:admin,staff',
+            'role' => 'required|in:admin,clinic',
             'status' => 'required|in:active,inactive,suspended',
         ]);
 
@@ -98,7 +99,7 @@ class UserController extends Controller
     public function export(Request $request)
     {
         $request->validate([
-            'role' => ['nullable', 'in:all,admin,staff'],
+            'role' => ['nullable', 'in:all,admin,clinic'],
             'status' => ['nullable', 'in:all,active,inactive,suspended'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
@@ -150,7 +151,7 @@ class UserController extends Controller
             $sheet->setCellValue("A{$row}", $user->id);
             $sheet->setCellValue("B{$row}", $user->name);
             $sheet->setCellValue("C{$row}", $user->email);
-            $sheet->setCellValue("D{$row}", ucfirst($user->role ?? 'staff'));
+            $sheet->setCellValue("D{$row}", ucfirst($user->role ?? 'clinic'));
             $sheet->setCellValue("E{$row}", ucfirst($user->status ?? 'active'));
             $sheet->setCellValue("F{$row}", $user->last_login_at?->format('Y-m-d H:i:s') ?? 'Never');
             $sheet->setCellValue("G{$row}", $user->created_at?->format('Y-m-d H:i:s'));

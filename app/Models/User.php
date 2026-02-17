@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -12,7 +13,7 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     const ROLE_ADMIN = 'admin';
-    const ROLE_STAFF = 'staff';
+    const ROLE_CLINIC = 'clinic';
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +22,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'clinic_name',
+        'clinic_logo',
+        'theme_name',
+        'theme_color',
+        'is_setup_complete',
         'email',
         'password',
         'role',
@@ -48,6 +54,7 @@ class User extends Authenticatable
         return [
             'password' => 'hashed',
             'last_login_at' => 'datetime',
+            'is_setup_complete' => 'boolean',
         ];
     }
 
@@ -60,11 +67,11 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is staff
+     * Check if user is clinic
      */
-    public function isStaff(): bool
+    public function isClinic(): bool
     {
-        return $this->role === self::ROLE_STAFF;
+        return $this->role === self::ROLE_CLINIC;
     }
 
     /**
@@ -81,5 +88,15 @@ class User extends Authenticatable
     public function hasAnyRole(array $roles): bool
     {
         return in_array($this->role, $roles);
+    }
+
+    public function owners(): HasMany
+    {
+        return $this->hasMany(Owner::class);
+    }
+
+    public function inventoryItems(): HasMany
+    {
+        return $this->hasMany(InventoryItem::class);
     }
 }

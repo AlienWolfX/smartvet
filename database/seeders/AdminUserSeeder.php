@@ -17,7 +17,11 @@ class AdminUserSeeder extends Seeder
             ['email' => $email],
             [
                 'name' => 'SmartVet Administrator',
+                'clinic_name' => 'SmartVet Veterinary Clinic',
                 'password' => Hash::make($password),
+                'role' => 'admin',
+                'status' => 'active',
+                'is_setup_complete' => true,
             ]
         );
     }

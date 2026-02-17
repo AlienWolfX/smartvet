@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Owner;
+use App\Models\User;
 
 class OwnerSeeder extends Seeder
 {
@@ -12,6 +13,9 @@ class OwnerSeeder extends Seeder
      */
     public function run(): void
     {
+        $adminUser = User::where('role', 'admin')->first();
+        $userId = $adminUser?->id;
+
         $owners = [
             [
                 'name' => 'Juan Dela Cruz',
@@ -114,7 +118,7 @@ class OwnerSeeder extends Seeder
         foreach ($owners as $owner) {
             Owner::firstOrCreate(
                 ['email' => $owner['email']],
-                $owner
+                array_merge($owner, ['user_id' => $userId])
             );
         }
     }

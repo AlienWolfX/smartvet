@@ -6,6 +6,7 @@ use App\Models\Pet;
 use App\Models\Owner;
 use App\Models\PetSpecies;
 use App\Models\InventoryItem;
+use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -13,9 +14,10 @@ use Illuminate\Support\Str;
 
 class PetController extends Controller
 {
+    use ScopesToTenant;
     public function index()
     {
-        $pets = Pet::with(['owner', 'species'])
+        $pets = $this->scopePetToUser(Pet::with(['owner', 'species']))
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($pet) {
@@ -111,6 +113,7 @@ class PetController extends Controller
 
             // Create or find owner
             $owner = Owner::create([
+                'user_id' => $this->tenantUserId(),
                 'name' => $request->ownerName,
                 'phone' => $request->phone,
                 'email' => $request->email,
@@ -154,7 +157,7 @@ class PetController extends Controller
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
         
-        $pet = Pet::with([
+        $pet = $this->scopePetToUser(Pet::with([
                 'owner',
                 'species',
                 'consultations.files',
@@ -162,7 +165,7 @@ class PetController extends Controller
                 'consultations.medications',
                 'vaccinations.consultation',
                 'medications.consultation',
-            ])
+            ]))
             ->where('id', $numericId)
             ->firstOrFail();
 
@@ -291,7 +294,7 @@ class PetController extends Controller
             'consultationOptions' => $consultationOptions,
         ];
 
-        $inventoryItems = InventoryItem::with('category')
+        $inventoryItems = $this->scopeToUser(InventoryItem::with('category'))
             ->orderBy('name')
             ->get()
             ->map(fn ($item) => [
@@ -352,7 +355,7 @@ class PetController extends Controller
         $includeVaccinations = $request->has('include_vaccinations') || $request->input('include_vaccinations') === '1';
         $includeOwnerInfo = $request->has('include_owner_info') || $request->input('include_owner_info') === '1';
 
-        $petsQuery = Pet::with(['owner', 'species']);
+        $petsQuery = $this->scopePetToUser(Pet::with(['owner', 'species']));
 
         if ($exportType === 'individual') {
             // Load relationships for detailed export
@@ -581,7 +584,7 @@ class PetController extends Controller
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = Pet::where('id', $numericId)->firstOrFail();
+        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->firstOrFail();
 
         // Delete pet image if it exists
         if ($pet->image_path) {

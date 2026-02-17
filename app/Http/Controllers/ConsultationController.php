@@ -7,6 +7,7 @@ use App\Models\ConsultationFile;
 use App\Models\InventoryItem;
 use App\Models\Pet;
 use App\Models\PetPayment;
+use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,13 +16,14 @@ use Illuminate\Support\Str;
 
 class ConsultationController extends Controller
 {
+    use ScopesToTenant;
     public function store(Request $request, $petId)
     {
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
         
-        // Validate pet exists
-        $pet = Pet::find($numericId);
+        // Validate pet exists and belongs to this user
+        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (!$pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }

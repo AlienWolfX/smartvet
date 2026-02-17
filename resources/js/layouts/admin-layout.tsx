@@ -13,22 +13,18 @@ import {
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { Breadcrumbs } from '@/components/breadcrumbs';
-import AppearanceToggleDropdown from '@/components/appearance-dropdown';
-import { ChatbotSlider } from '@/components/chatbot-slider';
 import { NotificationBell } from '@/components/notification-bell';
 import { dashboard } from '@/routes';
 import { 
     Activity,
     ChevronDown, 
     Menu, 
-    Settings, 
     Users, 
     BarChart3,
     Boxes,
-    Bot,
-    Bell,
     Heart,
-    CreditCard
+    CreditCard,
+    Settings
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -54,71 +50,92 @@ export default function AdminLayout({
 }: AdminLayoutProps) {
     const { auth } = usePage<SharedData>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [chatbotOpen, setChatbotOpen] = useState(false);
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
     
     const isAdmin = (auth.user as { role?: string })?.role === 'admin';
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
+    const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
+    const clinicLogo = (auth.user as { clinic_logo?: string })?.clinic_logo;
 
     const navigation = [
         {
             name: 'Dashboard',
             href: dashboard().url,
             icon: Activity,
-            current: false,
-            adminOnly: false
+            adminOnly: false,
+            clinicOnly: true
         },
            {
             name: 'Pet Records',
             href: '/pet-records',
             icon: Heart,
-            current: false,
-            adminOnly: false
+            adminOnly: false,
+            clinicOnly: true
         },
         {
             name: 'Inventory Management',
             href: '/inventory-management',
             icon: Boxes,
-            current: false,
-            adminOnly: false
+            adminOnly: false,
+            clinicOnly: true
         },
         {
             name: 'Billing & Payments',
             href: '/billing',
             icon: CreditCard,
-            current: false,
-            adminOnly: false
+            adminOnly: false,
+            clinicOnly: true
         },
         {
             name: 'Reports & Analytics',
             href: '/reports',
             icon: BarChart3,
-            current: false,
-            adminOnly: false
+            adminOnly: false,
+            clinicOnly: true
         },
         {
             name: 'User Management',
             href: '/user-management',
             icon: Users,
-            current: false,
-            adminOnly: true
+            adminOnly: true,
+            clinicOnly: false
         },
         {
             name: 'System Settings',
-            href: '/system-settings',
+            href: '/clinic-settings',
             icon: Settings,
-            current: false,
-            adminOnly: true
+            adminOnly: true,
+            clinicOnly: false
         }
-    ].filter(item => !item.adminOnly || isAdmin);
+    ].filter(item => {
+        if (item.adminOnly && !isAdmin) return false;
+        if (item.clinicOnly && isAdmin) return false;
+        return true;
+    })
+     .map(item => ({
+         ...item,
+         current: item.href === '/dashboard' || item.href === '/'
+             ? currentPath === item.href || currentPath === '/dashboard'
+             : currentPath.startsWith(item.href),
+     }));
 
     const SidebarContent = () => (
-        <div className="flex h-full flex-col border-r border-slate-900/40 bg-slate-950 text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)] backdrop-blur dark:border-white/5 dark:bg-neutral-950/95">
+        <div className="flex h-full flex-col border-r text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]" style={{ backgroundColor: themeColor }}>
             {/* Logo */}
-            <div className="flex h-16 shrink-0 items-center px-6 border-b border-black/5 dark:border-white/10">
+            <div className="flex h-16 shrink-0 items-center px-6 border-b border-white/10">
                 <Link href={dashboard().url} className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">SV</span>
-                    </div>
-                    <span className="text-white font-semibold">SmartVet Ops</span>
+                    {clinicLogo ? (
+                        <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
+                    ) : (
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">
+                                {clinicName.substring(0, 2).toUpperCase()}
+                            </span>
+                        </div>
+                    )}
+                    <span className="text-white font-semibold text-sm truncate max-w-[140px]">
+                        {clinicName}
+                    </span>
                 </Link>
             </div>
 
@@ -158,7 +175,7 @@ export default function AdminLayout({
                             {auth.user.name}
                         </p>
                         <p className="text-xs text-white/60 capitalize">
-                            {(auth.user as { role?: string })?.role || 'Staff'}
+                            {(auth.user as { role?: string })?.role || 'Clinic'}
                         </p>
                     </div>
                 </div>
@@ -170,7 +187,7 @@ export default function AdminLayout({
         <>
             <Head title={title} />
             
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_42%),_#f1f5f9] dark:bg-neutral-950 flex flex-col">
+            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_42%),_#f1f5f9] flex flex-col">
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     <SheetContent side="left" className="p-0 w-72">
@@ -186,7 +203,7 @@ export default function AdminLayout({
                 {/* Main content */}
                 <div className="lg:pl-72 flex flex-col min-h-screen">
                     {/* Top navigation */}
-                    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/60 bg-white/95 px-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-neutral-950/95 sm:gap-x-6 sm:px-6 lg:px-8">
+                    <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/60 bg-white/95 px-4 shadow-sm backdrop-blur sm:gap-x-6 sm:px-6 lg:px-8">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -207,24 +224,13 @@ export default function AdminLayout({
                                     <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">
                                         Admin Console
                                     </p>
-                                    <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-50">
+                                    <p className="text-sm font-semibold text-neutral-800">
                                         {title}
                                     </p>
                                 </div>
                             </div>
                         </div>                            <div className="flex items-center gap-x-4 lg:gap-x-6">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setChatbotOpen(true)}
-                                    className="relative flex items-center gap-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-                                >
-                                    <Bot className="h-4 w-4" />
-                                    <span className="hidden sm:inline">AI Assistant</span>
-                                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                </Button>
                                 <NotificationBell />
-                                <AppearanceToggleDropdown />
                                 {/* Profile dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -256,11 +262,11 @@ export default function AdminLayout({
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
-                                <h1 className="text-3xl font-semibold text-neutral-900 dark:text-white">
+                                <h1 className="text-3xl font-semibold text-neutral-900">
                                     {title}
                                 </h1>
                                 {description && (
-                                    <p className="mt-1 max-w-3xl text-sm text-neutral-500 dark:text-neutral-300">
+                                    <p className="mt-1 max-w-3xl text-sm text-neutral-500">
                                         {description}
                                     </p>
                                 )}
@@ -279,22 +285,16 @@ export default function AdminLayout({
                         <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                             <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-slate-950 rounded-lg flex items-center justify-center">
-                                        <span className="text-white font-bold text-xs">SV</span>
+                                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: themeColor }}>
+                                        <span className="text-white font-bold text-xs">{clinicName.substring(0, 2).toUpperCase()}</span>
                                     </div>
-                                    <span className="font-medium">SmartVet V1</span>
+                                    <span className="font-medium">{clinicName}</span>
                                 </div>
                             </div>
                         </div>
                     </footer>
                 </div>
             </div>
-
-            {/* Chatbot Slider */}
-            <ChatbotSlider 
-                isOpen={chatbotOpen} 
-                onClose={() => setChatbotOpen(false)} 
-            />
         </>
     );
 }

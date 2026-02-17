@@ -12,6 +12,7 @@ class InventoryItem extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'item_code',
         'inventory_category_id',
         'name',
@@ -45,5 +46,10 @@ class InventoryItem extends Model
     public function usages(): HasMany
     {
         return $this->hasMany(InventoryUsage::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

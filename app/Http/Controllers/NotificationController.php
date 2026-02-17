@@ -3,20 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\InventoryItem;
+use App\Http\Traits\ScopesToTenant;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 
 class NotificationController extends Controller
 {
+    use ScopesToTenant;
     public function index(): JsonResponse
     {
         $today = Carbon::today();
         $thirtyDaysFromNow = Carbon::today()->addDays(30);
 
         // Expired items
-        $expired = InventoryItem::with('category')
+        $expired = $this->scopeToUser(InventoryItem::with('category')
             ->whereNotNull('expiry_date')
-            ->where('expiry_date', '<', $today)
+            ->where('expiry_date', '<', $today))
             ->orderBy('expiry_date')
             ->get()
             ->map(fn ($item) => [
@@ -32,10 +34,10 @@ class NotificationController extends Controller
             ]);
 
         // Expiring soon (within 30 days)
-        $expiringSoon = InventoryItem::with('category')
+        $expiringSoon = $this->scopeToUser(InventoryItem::with('category')
             ->whereNotNull('expiry_date')
             ->where('expiry_date', '>=', $today)
-            ->where('expiry_date', '<=', $thirtyDaysFromNow)
+            ->where('expiry_date', '<=', $thirtyDaysFromNow))
             ->orderBy('expiry_date')
             ->get()
             ->map(fn ($item) => [
@@ -51,8 +53,8 @@ class NotificationController extends Controller
             ]);
 
         // Out of stock
-        $outOfStock = InventoryItem::with('category')
-            ->where('current_stock', 0)
+        $outOfStock = $this->scopeToUser(InventoryItem::with('category')
+            ->where('current_stock', 0))
             ->orderBy('name')
             ->get()
             ->map(fn ($item) => [
@@ -68,9 +70,9 @@ class NotificationController extends Controller
             ]);
 
         // Low stock (at or below min_stock, but not zero)
-        $lowStock = InventoryItem::with('category')
+        $lowStock = $this->scopeToUser(InventoryItem::with('category')
             ->where('current_stock', '>', 0)
-            ->whereColumn('current_stock', '<=', 'min_stock')
+            ->whereColumn('current_stock', '<=', 'min_stock'))
             ->orderByRaw('current_stock / min_stock ASC')
             ->get()
             ->map(fn ($item) => [

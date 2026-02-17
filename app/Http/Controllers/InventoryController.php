@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\InventoryCategory;
 use App\Models\InventoryItem;
+use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,10 +17,11 @@ use Inertia\Response;
 
 class InventoryController extends Controller
 {
+    use ScopesToTenant;
     public function index(): Response
     {
         $categories = InventoryCategory::orderBy('name')->get();
-        $items = InventoryItem::with('category')->orderByDesc('created_at')->get();
+        $items = $this->scopeToUser(InventoryItem::with('category'))->orderByDesc('created_at')->get();
 
         return Inertia::render('inventory-management', [
             'categories' => $categories->map(fn ($category) => [
@@ -76,6 +78,7 @@ class InventoryController extends Controller
             $code = 'INV-' . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
 
             InventoryItem::create([
+                'user_id' => $this->tenantUserId(),
                 'item_code' => $code,
                 'inventory_category_id' => $validated['inventory_category_id'],
                 'name' => $validated['name'],
@@ -98,6 +101,12 @@ class InventoryController extends Controller
 
     public function update(Request $request, InventoryItem $item): RedirectResponse
     {
+        // Verify ownership
+        $user = auth()->user();
+        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand' => 'nullable|string|max:255',
@@ -137,6 +146,12 @@ class InventoryController extends Controller
 
     public function restock(Request $request, InventoryItem $item): RedirectResponse
     {
+        // Verify ownership
+        $user = auth()->user();
+        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'nullable|numeric|min:0',
@@ -163,6 +178,12 @@ class InventoryController extends Controller
 
     public function destroy(InventoryItem $item): RedirectResponse
     {
+        // Verify ownership
+        $user = auth()->user();
+        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+            abort(403);
+        }
+
         $item->delete();
 
         return redirect()->back()->with('success', 'Inventory item deleted successfully!');
@@ -177,7 +198,7 @@ class InventoryController extends Controller
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
 
-        $itemsQuery = InventoryItem::with('category')->orderBy('name');
+        $itemsQuery = $this->scopeToUser(InventoryItem::with('category'))->orderBy('name');
 
         $category = $request->string('category')->toString();
         if ($category && $category !== 'all') {

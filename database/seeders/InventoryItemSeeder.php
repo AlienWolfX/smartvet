@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\InventoryItem;
 use App\Models\InventoryCategory;
+use App\Models\User;
 use Carbon\Carbon;
 
 class InventoryItemSeeder extends Seeder
@@ -15,6 +16,8 @@ class InventoryItemSeeder extends Seeder
     public function run(): void
     {
         $categories = InventoryCategory::all()->keyBy('slug');
+        $adminUser = User::where('role', 'admin')->first();
+        $userId = $adminUser?->id;
 
         $items = [
             // Vaccines
@@ -339,6 +342,7 @@ class InventoryItemSeeder extends Seeder
                 InventoryItem::firstOrCreate(
                     ['item_code' => $itemData['item_code']],
                     [
+                        'user_id' => $userId,
                         'item_code' => $itemData['item_code'],
                         'inventory_category_id' => $category->id,
                         'name' => $itemData['name'],
