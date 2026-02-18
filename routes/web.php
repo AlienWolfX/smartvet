@@ -43,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('billing/process/{payment}', [App\Http\Controllers\BillingController::class, 'processPayment'])->name('billing.process');
     });
 
+    // Clinic Settings (all authenticated users)
+    Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
+    Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
+
     // Admin-only routes
     Route::middleware(['role:admin'])->group(function () {
         Route::get('user-management', [App\Http\Controllers\UserController::class, 'index'])->name('user-management');
@@ -51,10 +55,6 @@ Route::middleware(['auth'])->group(function () {
         Route::put('user-management/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('user-management.update');
         Route::patch('user-management/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('user-management.toggle-status');
         Route::delete('user-management/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('user-management.destroy');
-
-        // System Settings (admin only)
-        Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
-        Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
     });
 });
 

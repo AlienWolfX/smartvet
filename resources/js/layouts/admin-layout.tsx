@@ -104,7 +104,7 @@ export default function AdminLayout({
             name: 'System Settings',
             href: '/clinic-settings',
             icon: Settings,
-            adminOnly: true,
+            adminOnly: false,
             clinicOnly: false
         }
     ].filter(item => {

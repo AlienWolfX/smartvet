@@ -126,7 +126,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     ];
 
     return (
-        <AdminLayout breadcrumbs={breadcrumbs}>
+        <AdminLayout title="Billing & Payments" description="Manage invoices, process payments, and track financial transactions." breadcrumbs={breadcrumbs}>
             <Head title="Billing & Payments" />
             <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
