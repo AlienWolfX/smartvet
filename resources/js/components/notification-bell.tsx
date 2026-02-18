@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, AlertTriangle, Clock, PackageX, PackageMinus, ExternalLink } from 'lucide-react';
+import { Bell, AlertTriangle, Clock, PackageX, PackageMinus, ExternalLink, Check, CheckCheck, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,6 +23,7 @@ interface NotificationItem {
     daysLeft?: number;
     currentStock?: number;
     minStock?: number;
+    dismissed?: boolean;
 }
 
 interface NotificationData {
@@ -39,6 +40,8 @@ export function NotificationBell() {
     const [data, setData] = useState<NotificationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
+    const [dismissing, setDismissing] = useState<string | null>(null);
+    const [showDismissed, setShowDismissed] = useState(false);
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -67,7 +70,55 @@ export function NotificationBell() {
         if (open) fetchNotifications();
     }, [open, fetchNotifications]);
 
+    const dismissNotification = async (itemId: number, type: string) => {
+        const key = `${itemId}:${type}`;
+        setDismissing(key);
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/notifications/dismiss', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                },
+                body: JSON.stringify({ inventory_item_id: itemId, notification_type: type }),
+            });
+            if (response.ok) {
+                await fetchNotifications();
+            }
+        } catch {
+            // silently fail
+        } finally {
+            setDismissing(null);
+        }
+    };
+
+    const dismissAllNotifications = async () => {
+        setDismissing('all');
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const response = await fetch('/notifications/dismiss-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                },
+            });
+            if (response.ok) {
+                await fetchNotifications();
+            }
+        } catch {
+            // silently fail
+        } finally {
+            setDismissing(null);
+        }
+    };
+
     const totalCount = data?.totalCount ?? 0;
+    const totalAllCount = (data?.expired?.length ?? 0) + (data?.expiringSoon?.length ?? 0) + (data?.outOfStock?.length ?? 0) + (data?.lowStock?.length ?? 0);
+    const hasDismissed = totalAllCount > totalCount;
 
     const typeConfig = {
         expired: {
@@ -105,9 +156,11 @@ export function NotificationBell() {
     };
 
     const renderSection = (items: NotificationItem[], type: keyof typeof typeConfig) => {
-        if (!items || items.length === 0) return null;
+        const visibleItems = showDismissed ? items : items.filter(i => !i.dismissed);
+        if (!visibleItems || visibleItems.length === 0) return null;
         const config = typeConfig[type];
         const Icon = config.icon;
+        const activeCount = items.filter(i => !i.dismissed).length;
 
         return (
             <div className="mb-3 last:mb-0">
@@ -117,14 +170,14 @@ export function NotificationBell() {
                         {config.label}
                     </span>
                     <span className={`ml-auto inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold ${config.badgeClass}`}>
-                        {items.length}
+                        {activeCount}
                     </span>
                 </div>
                 <div className="space-y-1 px-2">
-                    {items.map((item) => (
+                    {visibleItems.map((item) => (
                         <div
                             key={`${type}-${item.id}`}
-                            className={`rounded-lg border px-3 py-2 ${config.bgColor} ${config.borderColor}`}
+                            className={`rounded-lg border px-3 py-2 ${config.bgColor} ${config.borderColor} ${item.dismissed ? 'opacity-50' : ''}`}
                         >
                             <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
@@ -135,9 +188,26 @@ export function NotificationBell() {
                                         {item.brand} · {item.itemCode}
                                     </p>
                                 </div>
-                                <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
-                                    {item.category}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                    <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
+                                        {item.category}
+                                    </span>
+                                    {!item.dismissed && (
+                                        <button
+                                            onClick={() => dismissNotification(item.id, item.type)}
+                                            disabled={dismissing === `${item.id}:${item.type}`}
+                                            className="ml-1 rounded-full p-0.5 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                                            title="Mark as read"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    )}
+                                    {item.dismissed && (
+                                        <span className="ml-1 text-green-500" title="Read">
+                                            <Check className="h-3 w-3" />
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <p className={`mt-1 text-xs font-medium ${config.color}`}>
                                 {item.message}
@@ -189,6 +259,32 @@ export function NotificationBell() {
                     </Link>
                 </div>
 
+                {/* Actions bar */}
+                {totalAllCount > 0 && (
+                    <div className="flex items-center justify-between border-b px-4 py-2">
+                        {hasDismissed ? (
+                            <button
+                                onClick={() => setShowDismissed(!showDismissed)}
+                                className="text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors"
+                            >
+                                {showDismissed ? 'Hide read' : 'Show read'}
+                            </button>
+                        ) : (
+                            <span />
+                        )}
+                        {totalCount > 0 && (
+                            <button
+                                onClick={dismissAllNotifications}
+                                disabled={dismissing === 'all'}
+                                className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 transition-colors"
+                            >
+                                <CheckCheck className="h-3 w-3" />
+                                {dismissing === 'all' ? 'Marking...' : 'Mark all as read'}
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Content */}
                 <ScrollArea className="max-h-[400px]">
                     <div className="p-2">
@@ -196,11 +292,17 @@ export function NotificationBell() {
                             <div className="flex items-center justify-center py-8">
                                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-600" />
                             </div>
-                        ) : totalCount === 0 ? (
+                        ) : totalAllCount === 0 ? (
                             <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
                                 <Bell className="mb-2 h-8 w-8" />
                                 <p className="text-sm font-medium">All clear!</p>
                                 <p className="text-xs">No inventory alerts at this time.</p>
+                            </div>
+                        ) : totalCount === 0 && !showDismissed ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
+                                <CheckCheck className="mb-2 h-8 w-8 text-green-500" />
+                                <p className="text-sm font-medium">All caught up!</p>
+                                <p className="text-xs">All notifications have been read.</p>
                             </div>
                         ) : (
                             <>

@@ -120,7 +120,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
             href: '/dashboard',
         },
         {
-            title: 'Billing',
+            title: 'Billing & Payments',
             href: '/billing',
         },
     ];

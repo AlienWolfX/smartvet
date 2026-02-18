@@ -230,7 +230,7 @@ export default function AdminLayout({
                                 </div>
                             </div>
                         </div>                            <div className="flex items-center gap-x-4 lg:gap-x-6">
-                                <NotificationBell />
+                                {!isAdmin && <NotificationBell />}
                                 {/* Profile dropdown */}
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>

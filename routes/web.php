@@ -34,6 +34,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Notifications API
         Route::get('notifications/inventory', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.inventory');
+        Route::post('notifications/dismiss', [App\Http\Controllers\NotificationController::class, 'dismiss'])->name('notifications.dismiss');
+        Route::post('notifications/dismiss-all', [App\Http\Controllers\NotificationController::class, 'dismissAll'])->name('notifications.dismiss-all');
 
         Route::get('reports', [App\Http\Controllers\ReportsController::class, 'index'])->name('reports');
         Route::get('reports/export/financial', [App\Http\Controllers\ReportsController::class, 'exportFinancial'])->name('reports.export.financial');

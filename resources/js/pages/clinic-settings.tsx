@@ -36,15 +36,18 @@ const themePresets: ThemePreset[] = [
     { name: 'purple', label: 'Violet', color: '#2e1065', description: 'Royal violet' },
 ];
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: dashboard().url },
-    { title: 'System Settings', href: '/clinic-settings' },
-];
-
 export default function ClinicSettings({ settings }: ClinicSettingsProps) {
     const { success } = useToast();
     const { auth } = usePage<SharedData>().props;
+    const isAdmin = (auth.user as { role?: string })?.role === 'admin';
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
+
+    const breadcrumbs: BreadcrumbItem[] = isAdmin
+        ? [{ title: 'System Settings', href: '/clinic-settings' }]
+        : [
+            { title: 'Dashboard', href: dashboard().url },
+            { title: 'System Settings', href: '/clinic-settings' },
+        ];
 
     const [logoPreview, setLogoPreview] = useState<string | null>(settings.clinic_logo);
     const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'default');
