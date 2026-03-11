@@ -79,6 +79,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('pet-records', [App\Http\Controllers\PetController::class, 'index'])->name('pet-records');
         Route::get('pet-records/export', [App\Http\Controllers\PetController::class, 'export'])->name('pet-records.export');
         Route::get('pet-records/scan', [App\Http\Controllers\PetController::class, 'scannerPage'])->name('pet-records.scan');
+        Route::get('pet-records/scan-lookup/{token}', [App\Http\Controllers\PetScanController::class, 'clinicScan'])->name('pet-records.scan-lookup');
         Route::post('pet-records', [App\Http\Controllers\PetController::class, 'store'])->name('pet-records.store');
         Route::get('pet-records/{pet}/manage', [App\Http\Controllers\PetController::class, 'manage'])->name('pet-records.manage');
         Route::delete('pet-records/{pet}', [App\Http\Controllers\PetController::class, 'destroy'])->name('pet-records.destroy');
