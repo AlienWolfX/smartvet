@@ -73,13 +73,13 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     const [referenceNumber, setReferenceNumber] = useState('');
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
-    
+
     // Pagination states
     const [pendingPage, setPendingPage] = useState(1);
     const [historyPage, setHistoryPage] = useState(1);
     const pendingPerPage = 5;
     const historyPerPage = 10;
-    
+
     // Calculate paginated data
     const paginatedPending = pendingPayments.slice((pendingPage - 1) * pendingPerPage, pendingPage * pendingPerPage);
     const paginatedHistory = paymentHistory.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage);
@@ -174,7 +174,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                     </Card>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-1">
+                <div className="grid gap-4 lg:grid-cols-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>Pending Payments</CardTitle>
@@ -183,8 +183,9 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <div className="overflow-auto max-h-52">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
                                         <TableHead>Date</TableHead>
                                         <TableHead>Owner / Pet</TableHead>
@@ -228,6 +229,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     )}
                                 </TableBody>
                             </Table>
+                            </div>
                             {totalPendingPages > 1 && (
                                 <div className="flex items-center justify-between mt-4">
                                     <p className="text-sm text-muted-foreground">
@@ -265,8 +267,9 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
+                            <div className="overflow-auto max-h-52">
                             <Table>
-                                <TableHeader>
+                                <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
                                         <TableHead>Date</TableHead>
                                         <TableHead>Owner / Pet</TableHead>
@@ -309,6 +312,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     )}
                                 </TableBody>
                             </Table>
+                            </div>
                             {totalHistoryPages > 1 && (
                                 <div className="flex items-center justify-between mt-4">
                                     <p className="text-sm text-muted-foreground">

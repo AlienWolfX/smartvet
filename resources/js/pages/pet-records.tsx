@@ -175,6 +175,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
     const { auth } = usePage<SharedData>().props;
     const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
     const clinicLogo = (auth.user as { clinic_logo?: string })?.clinic_logo;
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [qrCardPet, setQrCardPet] = useState<NewPetQr | null>(newPetQr ?? null);
     const qrCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -189,9 +190,112 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         }
     }, [qrCardPet]);
 
-    useEffect(() => {
-        if (newPetQr) setQrCardPet(newPetQr);
-    }, [newPetQr]);
+    const downloadQrCard = async () => {
+        if (!qrCardPet || !qrCanvasRef.current) return;
+
+        const qrSize = 180;
+        const padding = 24;
+        const headerH = 110;
+        const footerH = 100;
+        const cardW = qrSize + padding * 2;
+        const cardH = headerH + qrSize + padding * 2 + footerH;
+        const scale = 2;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = cardW * scale;
+        canvas.height = cardH * scale;
+        const ctx = canvas.getContext('2d')!;
+        ctx.scale(scale, scale);
+
+        // Rounded rect helper
+        const roundRect = (x: number, y: number, w: number, h: number, r: number) => {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.arcTo(x + w, y, x + w, y + r, r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+            ctx.lineTo(x + r, y + h);
+            ctx.arcTo(x, y + h, x, y + h - r, r);
+            ctx.lineTo(x, y + r);
+            ctx.arcTo(x, y, x + r, y, r);
+            ctx.closePath();
+        };
+
+        // Card background (white, rounded)
+        roundRect(0, 0, cardW, cardH, 16);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.save();
+        roundRect(0, 0, cardW, cardH, 16);
+        ctx.clip();
+
+        // Header background
+        ctx.fillStyle = themeColor;
+        ctx.fillRect(0, 0, cardW, headerH);
+
+        // Clinic name / logo + subtitle
+        const subtitleY = headerH - 14;
+        const nameAreaH = headerH - 28; // space above subtitle
+
+        if (clinicLogo) {
+            await new Promise<void>((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const maxH = 36, maxW = cardW - padding * 2;
+                    const ratio = Math.min(maxW / img.width, maxH / img.height);
+                    const dw = img.width * ratio, dh = img.height * ratio;
+                    ctx.drawImage(img, (cardW - dw) / 2, (nameAreaH - dh) / 2, dw, dh);
+                    resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = `/storage/${clinicLogo}`;
+            });
+        } else {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(clinicName, cardW / 2, nameAreaH / 2 + 6);
+        }
+
+        // "Veterinary Clinic" subtitle
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('VETERINARY CLINIC', cardW / 2, subtitleY);
+
+        // QR canvas
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(padding, headerH + padding, qrSize, qrSize);
+        ctx.drawImage(qrCanvasRef.current, padding, headerH + padding, qrSize, qrSize);
+
+        // Footer text
+        const footerStart = headerH + qrSize + padding * 2;
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(qrCardPet.name, cardW / 2, footerStart + 20);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`${qrCardPet.species} · ${qrCardPet.breed}`, cardW / 2, footerStart + 40);
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px monospace';
+        ctx.fillText(qrCardPet.petId, cardW / 2, footerStart + 60);
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('Scan to view pet profile & visit history', cardW / 2, footerStart + 78);
+
+        ctx.restore();
+
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `${qrCardPet.name.replace(/\s+/g, '_')}_qr_card.png`;
+        a.click();
+    };
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -1490,9 +1594,9 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                         {/* Card */}
                         <div id="qr-card" className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                             {/* Clinic header */}
-                            <div className="flex flex-col items-center gap-2 px-6 pt-6 pb-4 bg-slate-900">
+                            <div className="flex flex-col items-center gap-2 px-6 pt-6 pb-4" style={{ backgroundColor: themeColor }}>
                                 {clinicLogo ? (
-                                    <img src={clinicLogo} alt={clinicName} className="h-12 object-contain" />
+                                    <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-12 object-contain" />
                                 ) : (
                                     <span className="text-2xl font-bold text-white tracking-wide">{clinicName}</span>
                                 )}
@@ -1524,18 +1628,8 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                             </Button>
                             <Button
                                 className="flex-1 gap-2"
-                                onClick={async () => {
-                                    const canvas = qrCanvasRef.current;
-                                    if (!canvas) return;
-                                    // Build a composite card image via off-screen canvas
-                                    const cardEl = document.getElementById('qr-card');
-                                    if (!cardEl) return;
-                                    const url = canvas.toDataURL('image/png');
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${qrCardPet.petId}-qr.png`;
-                                    a.click();
-                                }}
+                                style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                                onClick={downloadQrCard}
                             >
                                 <Download className="h-4 w-4" />
                                 Download QR

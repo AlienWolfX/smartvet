@@ -71,7 +71,7 @@ class PetController extends Controller
         return Inertia::render('pet-records', [
             'pets' => $pets,
             'species' => $species,
-            'newPetQr' => session('newPetQr'),
+            'newPetQr' => session()->pull('newPetQr'),
         ]);
     }
 

@@ -11,33 +11,34 @@ interface ChartDataPoint {
 interface RevenueChartProps {
     data: ChartDataPoint[];
     className?: string;
+    height?: number;
 }
 
-export function RevenueChart({ data, className }: RevenueChartProps) {
+export function RevenueChart({ data, className, height = 300 }: RevenueChartProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerWidth, setContainerWidth] = useState(800);
-    
+
     useEffect(() => {
         const updateWidth = () => {
             if (containerRef.current) {
                 setContainerWidth(containerRef.current.offsetWidth);
             }
         };
-        
+
         updateWidth();
         window.addEventListener('resize', updateWidth);
         return () => window.removeEventListener('resize', updateWidth);
     }, []);
 
-    const maxRevenue = Math.max(...data.map(d => d.revenue));
-    const maxProfit = Math.max(...data.map(d => d.netProfit));
-    const maxValue = Math.max(maxRevenue, maxProfit);
-    
-    const chartHeight = 300;
+    const maxRevenue = data.length > 0 ? Math.max(...data.map(d => d.revenue)) : 0;
+    const maxProfit = data.length > 0 ? Math.max(...data.map(d => d.netProfit)) : 0;
+    const maxValue = Math.max(maxRevenue, maxProfit, 1); // guard against 0 / empty
+
+    const chartHeight = height;
     const chartPadding = 60;
     const chartWidth = containerWidth;
     const availableWidth = chartWidth - (chartPadding * 2);
-    const groupWidth = availableWidth / data.length;
+    const groupWidth = data.length > 0 ? availableWidth / data.length : availableWidth;
     const barWidth = Math.min(groupWidth * 0.35, 50);
 
     const formatPeso = (value: number) => {
@@ -52,6 +53,16 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
     const getYPosition = (value: number) => {
         return chartHeight - chartPadding - ((value / maxValue) * (chartHeight - chartPadding * 2));
     };
+
+    if (data.length === 0) {
+        return (
+            <div className={cn("w-full", className)}>
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                    <p className="text-sm">No revenue data available</p>
+                </div>
+            </div>
+        );
+    }
 
     // Generate grid lines
     const gridLines = [];
@@ -73,7 +84,7 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
                     <span>Net Profit</span>
                 </div>
             </div>
-            
+
             <div className="relative w-full">
                 <svg
                     width="100%"
@@ -110,7 +121,7 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
                         const x = chartPadding + (index * groupWidth) + (groupWidth - barWidth * 2) / 2;
                         const revenueHeight = ((item.revenue / maxValue) * (chartHeight - chartPadding * 2));
                         const profitHeight = ((item.netProfit / maxValue) * (chartHeight - chartPadding * 2));
-                        
+
                         return (
                             <g key={index}>
                                 {/* Revenue bar */}
@@ -123,7 +134,7 @@ export function RevenueChart({ data, className }: RevenueChartProps) {
                                     className="hover:fill-blue-600 transition-colors"
                                     rx="2"
                                 />
-                                
+
                                 {/* Profit bar */}
                                 <rect
                                     x={x + barWidth}
@@ -169,13 +180,13 @@ export function ServiceDonutChart({ data, className }: DonutChartProps) {
     // Always use count for chart segment sizes (visual distribution)
     const totalCount = data.reduce((sum, item) => sum + item.count, 0);
     const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-    
+
     const chartSize = 280;
     const centerX = chartSize / 2;
     const centerY = chartSize / 2;
     const radius = 90;
     const innerRadius = 55;
-    
+
     const colors = [
         '#3B82F6', // blue
         '#10B981', // emerald
@@ -212,23 +223,23 @@ export function ServiceDonutChart({ data, className }: DonutChartProps) {
         const angle = totalCount > 0 ? (item.count / totalCount) * 360 : 0;
         const startAngle = currentAngle;
         const endAngle = currentAngle + angle;
-        
+
         // Calculate arc path
         const startAngleRad = (startAngle * Math.PI) / 180;
         const endAngleRad = (endAngle * Math.PI) / 180;
-        
+
         const outerStartX = centerX + radius * Math.cos(startAngleRad);
         const outerStartY = centerY + radius * Math.sin(startAngleRad);
         const outerEndX = centerX + radius * Math.cos(endAngleRad);
         const outerEndY = centerY + radius * Math.sin(endAngleRad);
-        
+
         const innerStartX = centerX + innerRadius * Math.cos(startAngleRad);
         const innerStartY = centerY + innerRadius * Math.sin(startAngleRad);
         const innerEndX = centerX + innerRadius * Math.cos(endAngleRad);
         const innerEndY = centerY + innerRadius * Math.sin(endAngleRad);
-        
+
         const largeArcFlag = angle > 180 ? 1 : 0;
-        
+
         const pathData = [
             `M ${outerStartX} ${outerStartY}`,
             `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${outerEndX} ${outerEndY}`,
@@ -236,16 +247,16 @@ export function ServiceDonutChart({ data, className }: DonutChartProps) {
             `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStartX} ${innerStartY}`,
             'Z'
         ].join(' ');
-        
+
         // Calculate label position
         const labelAngle = (startAngle + endAngle) / 2;
         const labelAngleRad = (labelAngle * Math.PI) / 180;
         const labelRadius = (radius + innerRadius) / 2;
         const labelX = centerX + labelRadius * Math.cos(labelAngleRad);
         const labelY = centerY + labelRadius * Math.sin(labelAngleRad);
-        
+
         currentAngle = endAngle;
-        
+
         return {
             ...item,
             pathData,
@@ -286,7 +297,7 @@ export function ServiceDonutChart({ data, className }: DonutChartProps) {
                                 )}
                             </g>
                         ))}
-                        
+
                         {/* Center text */}
                         <text
                             x={centerX}
@@ -306,14 +317,14 @@ export function ServiceDonutChart({ data, className }: DonutChartProps) {
                         </text>
                     </svg>
                 </div>
-                
+
                 {/* Legend */}
                 <div className="space-y-3 flex-1 min-w-0">
                     {segments.map((segment, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div 
-                                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                                <div
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
                                     style={{ backgroundColor: segment.color }}
                                 />
                                 <div className="min-w-0 flex-1">

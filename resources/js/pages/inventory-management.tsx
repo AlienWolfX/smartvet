@@ -387,16 +387,16 @@ export default function InventoryManagement({ categories, items }: InventoryPage
 
     const filteredItems = useMemo(() => {
         return items.filter((item) => {
-            const matchesSearch = 
+            const matchesSearch =
                 item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 item.id.toLowerCase().includes(searchTerm.toLowerCase());
-            
-            const matchesCategory = 
+
+            const matchesCategory =
                 selectedCategory === 'all' || item.categorySlug === selectedCategory;
-            
+
             const itemStatus = getStockLevel(item);
-            const matchesStatus = 
+            const matchesStatus =
                 selectedStatus === 'all' || itemStatus === selectedStatus;
 
             return matchesSearch && matchesCategory && matchesStatus;
@@ -420,7 +420,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
             description="Track medical supplies, equipment, and medications across all clinic locations."
         >
             <Head title="Inventory Management" />
-            
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
@@ -537,11 +537,11 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                                     {errors.brand && <p className="text-xs text-red-500">{errors.brand}</p>}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Category *</label>
-                                                    <Select 
+                                                    <Select
                                                         value={data.inventory_category_id ? String(data.inventory_category_id) : undefined}
                                                         onValueChange={(value) => setData('inventory_category_id', Number(value))}
                                                         disabled={processing || categories.length === 0}
@@ -583,7 +583,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                                     {errors.supplier && <p className="text-xs text-red-500">{errors.supplier}</p>}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="grid grid-cols-3 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Current Stock *</label>
@@ -619,7 +619,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                                     {errors.max_stock && <p className="text-xs text-red-500">{errors.max_stock}</p>}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Unit Price (₱) *</label>
@@ -644,7 +644,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                                     {errors.expiry_date && <p className="text-xs text-red-500">{errors.expiry_date}</p>}
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Location</label>
                                                 <Input
@@ -655,7 +655,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                                 />
                                                 {errors.location && <p className="text-xs text-red-500">{errors.location}</p>}
                                             </div>
-                                            
+
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Description</label>
                                                 <Textarea
@@ -670,9 +670,9 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             </div>
                                         </div>
                                         <ModalFooter>
-                                            <Button 
+                                            <Button
                                                 type="button"
-                                                variant="outline" 
+                                                variant="outline"
                                                 onClick={() => {
                                                     reset();
                                                     setIsAddModalOpen(false);
@@ -1173,12 +1173,12 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                             </h3>
                         </div>
                     </div>
-                    
-                    <div className="space-y-4">
+
+                    <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-760px)]">
                         {filteredItems.map((item) => {
                             const status = getStockLevel(item);
                             const totalValue = item.currentStock * item.unitPrice;
-                            
+
                             return (
                                 <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800">
                                     <div className="md:col-span-2">
@@ -1192,14 +1192,14 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             {item.categoryName}
                                         </p>
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium">{item.currentStock}</span>
                                         <span className="text-xs text-neutral-500">
                                             / {item.maxStock}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="flex items-center">
                                         <Badge
                                             variant="outline"
@@ -1211,7 +1211,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             </span>
                                         </Badge>
                                     </div>
-                                    
+
                                     <div>
                                         <p className="font-medium text-sm">
                                             {formatPeso(item.unitPrice)}
@@ -1220,7 +1220,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             Total: {formatPeso(totalValue)}
                                         </p>
                                     </div>
-                                    
+
                                     <div className="flex items-center">
                                         <Select
                                             value={actionSelections[item.dbId]}
@@ -1239,7 +1239,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                 </div>
                             );
                         })}
-                        
+
                         {filteredItems.length === 0 && (
                             <div className="text-center py-8 text-neutral-500">
                                 No items found matching your criteria.

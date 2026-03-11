@@ -1,4 +1,5 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 import AdminLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
@@ -54,6 +55,9 @@ const fmt = (d: string) =>
     new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
 
 export default function PetScanner() {
+    const { auth } = usePage<SharedData>().props;
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
+
     const [scanning, setScanning] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
     const [manualToken, setManualToken] = useState('');
@@ -164,8 +168,8 @@ export default function PetScanner() {
                             Camera Scanner
                         </h2>
                         {scanning && (
-                            <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: themeColor }}>
+                                <span className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: themeColor }} />
                                 Scanning…
                             </span>
                         )}
@@ -240,7 +244,7 @@ export default function PetScanner() {
                         {/* Loading state */}
                         {loading && (
                             <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
-                                <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                                <Loader2 className="h-8 w-8 animate-spin" style={{ color: themeColor }} />
                                 <p className="text-sm">Loading pet profile…</p>
                             </div>
                         )}
@@ -248,7 +252,7 @@ export default function PetScanner() {
                         {result && (
                             <>
                                 {/* Pet hero */}
-                                <div className="relative h-40 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-t-2xl overflow-hidden">
+                                <div className="relative h-40 rounded-t-2xl overflow-hidden" style={{ backgroundColor: themeColor }}>
                                     {result.pet.imageUrl ? (
                                         <img src={result.pet.imageUrl} alt={result.pet.name} className="w-full h-full object-cover opacity-60" style={{ objectPosition: 'center 25%' }} />
                                     ) : (
@@ -262,7 +266,8 @@ export default function PetScanner() {
                                         <p className="text-sm text-white/80">{result.pet.species} · {result.pet.breed}</p>
                                     </div>
                                     <Badge
-                                        className={`absolute top-3 left-4 capitalize ${result.pet.status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500'}`}
+                                        className={`absolute top-3 left-4 capitalize ${result.pet.status === 'active' ? 'bg-white/90 border-white/60' : 'bg-slate-100/80 text-slate-500'}`}
+                                        style={result.pet.status === 'active' ? { color: themeColor } : {}}
                                         variant="outline"
                                     >
                                         {result.pet.status}
