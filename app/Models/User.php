@@ -14,6 +14,7 @@ class User extends Authenticatable
 
     const ROLE_ADMIN = 'admin';
     const ROLE_CLINIC = 'clinic';
+    const ROLE_OWNER = 'owner';
 
     /**
      * The attributes that are mass assignable.
@@ -72,6 +73,14 @@ class User extends Authenticatable
     public function isClinic(): bool
     {
         return $this->role === self::ROLE_CLINIC;
+    }
+
+    /**
+     * Check if user is a pet owner
+     */
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
     }
 
     /**

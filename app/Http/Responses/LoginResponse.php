@@ -36,6 +36,13 @@ class LoginResponse implements LoginResponseContract
             );
         }
 
+        // Owner users → owner portal
+        if ($user && $user->isOwner()) {
+            return $request->wantsJson()
+                ? new JsonResponse('', 204)
+                : redirect()->route('owner.pets');
+        }
+
         return $request->wantsJson()
             ? new JsonResponse('', 204)
             : redirect()->intended('/dashboard');

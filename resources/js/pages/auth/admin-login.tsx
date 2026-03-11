@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
 interface AdminLoginProps {
@@ -122,20 +122,7 @@ export default function AdminLogin({ status }: AdminLoginProps) {
                             </Button>
                         </form>
 
-                        <div className="space-y-2 text-center text-sm text-slate-500">
-                            <p>
-                                Are you a pet owner?{' '}
-                                <Link href="/login" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
-                                    Owner login
-                                </Link>
-                            </p>
-                            <p>
-                                Are you a clinic?{' '}
-                                <Link href="/clinic" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
-                                    Clinic login
-                                </Link>
-                            </p>
-                        </div>
+
                     </div>
                 </div>
             </div>

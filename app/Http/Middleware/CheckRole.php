@@ -28,7 +28,16 @@ class CheckRole
                 ], 403);
             }
 
-            // Redirect to dashboard with error message
+            // Redirect to the appropriate portal based on role
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            if ($user->isOwner()) {
+                return redirect()->route('owner.pets')->with('error', 'You do not have permission to access this page.');
+            }
+            if ($user->isAdmin()) {
+                return redirect()->route('user-management')->with('error', 'You do not have permission to access this page.');
+            }
+
             return redirect()->route('dashboard')->with('error', 'You do not have permission to access this page.');
         }
 

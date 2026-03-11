@@ -126,17 +126,11 @@ export default function Login({ status }: LoginProps) {
                             </Button>
                         </form>
 
-                        <div className="space-y-2 text-center text-sm text-slate-500">
+                        <div className="text-center text-sm text-slate-500">
                             <p>
-                                Are you a clinic?{' '}
-                                <Link href="/clinic" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
-                                    Clinic login
-                                </Link>
-                            </p>
-                            <p>
-                                Are you an admin?{' '}
-                                <Link href="/admin" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
-                                    Admin login
+                                Don't have an account?{' '}
+                                <Link href="/register" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
+                                    Create one
                                 </Link>
                             </p>
                         </div>

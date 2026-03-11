@@ -1,11 +1,37 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->isOwner())  return redirect()->route('owner.pets');
+        if ($user->isClinic()) return redirect()->route('dashboard');
+        if ($user->isAdmin())  return redirect()->route('user-management');
+    }
     return redirect()->route('login');
 })->name('home');
+
+// Smart portal home (used as Fortify's home redirect)
+Route::get('portal-home', function () {
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->isOwner())  return redirect()->route('owner.pets');
+        if ($user->isClinic()) return redirect()->route('dashboard');
+        if ($user->isAdmin())  return redirect()->route('user-management');
+    }
+    return redirect()->route('login');
+})->name('portal.home');
+
+// Owner self-registration
+Route::middleware('guest')->group(function () {
+    Route::get('register', [App\Http\Controllers\OwnerRegisterController::class, 'showForm'])->name('owner.register');
+    Route::post('register', [App\Http\Controllers\OwnerRegisterController::class, 'register'])->name('owner.register.submit');
+});
 
 // Admin login routes
 Route::middleware('guest')->group(function () {
@@ -24,6 +50,12 @@ Route::middleware('guest')->group(function () {
 Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 'logout'])
     ->name('clinic.logout')
     ->middleware('auth');
+
+// Owner portal routes
+Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
+    Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
+    Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
+});
 
 Route::middleware(['auth'])->group(function () {
     // Setup route (must be before EnsureSetupComplete middleware check)
