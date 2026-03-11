@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class OwnerPortalController extends Controller
@@ -22,12 +23,13 @@ class OwnerPortalController extends Controller
                     'id'          => $pet->id,
                     'name'        => $pet->name,
                     'species'     => $pet->species?->name ?? 'Unknown',
+                    'speciesId'   => $pet->species_id,
                     'speciesIcon' => $pet->species?->icon ?? '🐾',
                     'breed'       => $pet->breed ?? '—',
                     'age'         => $pet->age,
                     'weight'      => $pet->weight,
-                    'gender'      => $pet->gender ?? '—',
-                    'color'       => $pet->color ?? '—',
+                    'gender'      => $pet->gender ?: '—',
+                    'color'       => $pet->color ?: '—',
                     'status'      => $pet->status ?? 'Healthy',
                     'lastVisit'   => $pet->last_visit?->format('M d, Y'),
                     'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
@@ -36,8 +38,15 @@ class OwnerPortalController extends Controller
             });
         })->values()->all();
 
+        $speciesList = \App\Models\PetSpecies::orderBy('name')->get()->map(fn ($s) => [
+            'id'   => $s->id,
+            'name' => $s->name,
+            'icon' => $s->icon,
+        ])->all();
+
         return Inertia::render('owner/my-pets', [
-            'pets' => $pets,
+            'pets'        => $pets,
+            'speciesList' => $speciesList,
         ]);
     }
 
@@ -71,5 +80,39 @@ class OwnerPortalController extends Controller
                 'diagnosis' => $c->diagnosis,
             ]),
         ]);
+    }
+
+    public function updatePet(Request $request, $petId)
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        $ownerIds = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
+        $pet = \App\Models\Pet::whereIn('owner_id', $ownerIds)->findOrFail($petId);
+
+        $validated = $request->validate([
+            'name'       => 'required|string|max:100',
+            'species_id' => 'required|exists:pet_species,id',
+            'breed'      => 'nullable|string|max:100',
+            'age'        => 'nullable|integer|min:0|max:100',
+            'weight'     => 'nullable|numeric|min:0|max:999',
+            'gender'     => 'nullable|in:Male,Female',
+            'color'      => 'nullable|string|max:100',
+            'petImage'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+        ]);
+
+        if ($request->hasFile('petImage')) {
+            // Delete old image
+            if ($pet->image_path) {
+                Storage::disk('public')->delete($pet->image_path);
+            }
+            $validated['image_path'] = $request->file('petImage')->store('pets', 'public');
+        }
+
+        unset($validated['petImage']);
+
+        $pet->update($validated);
+
+        return redirect()->route('owner.pets')->with('success', "{$pet->name}'s info has been updated.");
     }
 }

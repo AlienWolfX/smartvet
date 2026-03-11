@@ -1,11 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import OwnerLayout from '@/layouts/owner-layout';
-import { Head } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     CalendarDays,
-    PawPrint,
     Ruler,
     Scale,
     VenusAndMars,
@@ -15,6 +17,7 @@ import {
     X,
     Syringe,
     Stethoscope,
+    Pencil,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import QRCodeLib from 'qrcode';
@@ -23,6 +26,7 @@ interface Pet {
     id: string | number;
     name: string;
     species: string;
+    speciesId: number | null;
     speciesIcon: string;
     breed: string;
     age: number;
@@ -33,6 +37,12 @@ interface Pet {
     lastVisit: string | null;
     imageUrl: string | null;
     qrToken: string | null;
+}
+
+interface Species {
+    id: number;
+    name: string;
+    icon: string;
 }
 
 interface Vaccination {
@@ -50,6 +60,7 @@ interface Consultation {
 
 interface MyPetsProps {
     pets: Pet[];
+    speciesList: Species[];
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -59,13 +70,13 @@ const statusConfig: Record<string, { label: string; className: string }> = {
     Critical: { label: 'Critical', className: 'bg-red-100 text-red-800 border-red-300' },
 };
 
-function PetCard({ pet, onShowQr, onShowRecord }: { pet: Pet; onShowQr: (pet: Pet) => void; onShowRecord: (pet: Pet) => void }) {
+function PetCard({ pet, onShowQr, onShowRecord, onEdit }: { pet: Pet; onShowQr: (pet: Pet) => void; onShowRecord: (pet: Pet) => void; onEdit: (pet: Pet) => void }) {
     const status = statusConfig[pet.status] ?? { label: pet.status, className: 'bg-slate-50 text-slate-600 border-slate-200' };
 
     return (
-        <Card className="overflow-hidden transition-all hover:shadow-md">
-            {/* Card Header – species colour band */}
-            <div className="relative h-40 bg-gradient-to-br from-[#0e4d3a] to-[#1a7a5e] flex items-center justify-center">
+        <Card className="overflow-hidden flex flex-col transition-all hover:shadow-md">
+            {/* Hero image / icon */}
+            <div className="relative h-40 shrink-0 bg-gradient-to-br from-[#0e4d3a] to-[#1a7a5e] flex items-center justify-center">
                 {pet.imageUrl ? (
                     <img
                         src={pet.imageUrl}
@@ -75,7 +86,6 @@ function PetCard({ pet, onShowQr, onShowRecord }: { pet: Pet; onShowQr: (pet: Pe
                 ) : (
                     <span className="text-5xl select-none">{pet.speciesIcon}</span>
                 )}
-                {/* Status badge */}
                 <div className="absolute bottom-2 right-2">
                     <Badge variant="outline" className={`text-xs font-medium ${status.className}`}>
                         {status.label}
@@ -83,72 +93,74 @@ function PetCard({ pet, onShowQr, onShowRecord }: { pet: Pet; onShowQr: (pet: Pe
                 </div>
             </div>
 
-            <CardHeader className="pb-2 pt-4">
-                <div className="flex items-start justify-between gap-2">
-                    <div>
-                        <p className="text-lg font-semibold leading-tight text-neutral-900">{pet.name}</p>
-                        <p className="text-sm text-neutral-500">
-                            {pet.species} · {pet.breed}
-                        </p>
-                    </div>
-                </div>
-            </CardHeader>
+            {/* Name block – fixed height, truncated */}
+            <div className="px-4 pt-4 pb-3 border-b border-neutral-100 shrink-0">
+                <p className="font-semibold text-neutral-900 leading-tight line-clamp-1">{pet.name}</p>
+                <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">{pet.species} · {pet.breed}</p>
+            </div>
 
-            <CardContent className="pb-5">
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                    <div className="flex items-center gap-2 text-neutral-600">
-                        <CalendarDays className="h-4 w-4 shrink-0 text-neutral-400" />
-                        <span>{pet.age} yr{pet.age !== 1 ? 's' : ''} old</span>
+            {/* Info grid */}
+            <div className="px-4 py-3 flex-1">
+                <dl className="grid grid-cols-2 gap-y-2.5 text-sm">
+                    <div className="flex items-center gap-1.5 text-neutral-600">
+                        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <span className="truncate">{pet.age != null ? `${pet.age} yr${pet.age !== 1 ? 's' : ''}` : '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-neutral-600">
-                        <Scale className="h-4 w-4 shrink-0 text-neutral-400" />
-                        <span>{pet.weight} kg</span>
+                    <div className="flex items-center gap-1.5 text-neutral-600">
+                        <Scale className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <span className="truncate">{pet.weight ? `${pet.weight} kg` : '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-neutral-600">
-                        <VenusAndMars className="h-4 w-4 shrink-0 text-neutral-400" />
-                        <span>{pet.gender}</span>
+                    <div className="flex items-center gap-1.5 text-neutral-600">
+                        <VenusAndMars className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <span className="truncate">{pet.gender || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-neutral-600">
-                        <Ruler className="h-4 w-4 shrink-0 text-neutral-400" />
-                        <span>{pet.color}</span>
+                    <div className="flex items-center gap-1.5 text-neutral-600">
+                        <Ruler className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                        <span className="truncate">{pet.color || '—'}</span>
                     </div>
                 </dl>
+                <p className="mt-2.5 text-xs text-neutral-400">
+                    Last visit: <span className="font-medium text-neutral-500">{pet.lastVisit ?? '—'}</span>
+                </p>
+            </div>
 
-                {pet.lastVisit && (
-                    <p className="mt-3 text-xs text-neutral-400">
-                        Last visit: <span className="font-medium text-neutral-500">{pet.lastVisit}</span>
-                    </p>
+            {/* Actions – always pinned to bottom */}
+            <div className="px-4 pb-4 pt-3 border-t border-neutral-100 shrink-0 flex gap-2">
+                {pet.qrToken && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => onShowQr(pet)}
+                    >
+                        <QrCode className="h-3.5 w-3.5 mr-1" />
+                        QR
+                    </Button>
                 )}
-
-                {/* Action buttons */}
-                <div className="mt-4 flex gap-2">
-                        {pet.qrToken && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex-1 text-xs"
-                                onClick={() => onShowQr(pet)}
-                            >
-                                <QrCode className="h-3.5 w-3.5 mr-1" />
-                                View QR
-                            </Button>
-                        )}
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-xs"
-                            onClick={() => onShowRecord(pet)}
-                        >
-                            <ClipboardList className="h-3.5 w-3.5 mr-1" />
-                            Pet Record
-                        </Button>
-                    </div>
-            </CardContent>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => onShowRecord(pet)}
+                >
+                    <ClipboardList className="h-3.5 w-3.5 mr-1" />
+                    Record
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs"
+                    onClick={() => onEdit(pet)}
+                >
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    Edit
+                </Button>
+            </div>
         </Card>
     );
 }
 
-export default function MyPets({ pets }: MyPetsProps) {
+export default function MyPets({ pets, speciesList }: MyPetsProps) {
     const hasPets = pets.length > 0;
 
     // QR modal
@@ -184,6 +196,46 @@ export default function MyPets({ pets }: MyPetsProps) {
         }
     };
 
+    // Edit modal
+    const [editPet, setEditPet] = useState<Pet | null>(null);
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+        name: '',
+        species_id: '',
+        breed: '',
+        age: '',
+        weight: '',
+        gender: '',
+        color: '',
+        petImage: null as File | null,
+        _method: 'PUT',
+    });
+
+    const openEdit = (pet: Pet) => {
+        setEditPet(pet);
+        reset();
+        clearErrors();
+        setData({
+            name: pet.name,
+            species_id: pet.speciesId ? String(pet.speciesId) : '',
+            breed: pet.breed === '—' ? '' : pet.breed,
+            age: pet.age ? String(pet.age) : '',
+            weight: pet.weight ? String(pet.weight) : '',
+            gender: pet.gender === '—' ? '' : pet.gender,
+            color: pet.color === '—' ? '' : pet.color,
+            petImage: null,
+            _method: 'PUT',
+        });
+    };
+
+    const handleEditSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editPet) return;
+        post(`/owner/pets/${editPet.id}`, {
+            forceFormData: true,
+            onSuccess: () => setEditPet(null),
+        });
+    };
+
     return (
         <OwnerLayout
             title="My Pets"
@@ -203,7 +255,7 @@ export default function MyPets({ pets }: MyPetsProps) {
             {hasPets && (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {pets.map((pet) => (
-                        <PetCard key={pet.id} pet={pet} onShowQr={setQrPet} onShowRecord={handleShowRecord} />
+                        <PetCard key={pet.id} pet={pet} onShowQr={setQrPet} onShowRecord={handleShowRecord} onEdit={openEdit} />
                     ))}
                 </div>
             )}
@@ -303,6 +355,130 @@ export default function MyPets({ pets }: MyPetsProps) {
                                 </>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* Edit Pet Modal */}
+            {editPet && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditPet(null)}>
+                    <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between border-b px-5 py-4">
+                            <div>
+                                <p className="text-lg font-semibold text-neutral-900">Edit {editPet.name}</p>
+                                <p className="text-sm text-neutral-500">Update your pet's basic information</p>
+                            </div>
+                            <button onClick={() => setEditPet(null)} className="rounded-full p-1 text-neutral-400 hover:text-neutral-700">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditSubmit} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2 space-y-1">
+                                    <Label htmlFor="edit-name">Pet Name *</Label>
+                                    <Input
+                                        id="edit-name"
+                                        value={data.name}
+                                        onChange={(e) => setData('name', e.target.value)}
+                                        disabled={processing}
+                                    />
+                                    {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                                </div>
+                                <div className="col-span-2 space-y-1">
+                                    <Label>Species *</Label>
+                                    <Select value={data.species_id} onValueChange={(v) => setData('species_id', v)} disabled={processing}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select species" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {speciesList.map((s) => (
+                                                <SelectItem key={s.id} value={String(s.id)}>
+                                                    {s.icon} {s.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.species_id && <p className="text-xs text-red-500">{errors.species_id}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-breed">Breed</Label>
+                                    <Input
+                                        id="edit-breed"
+                                        value={data.breed}
+                                        onChange={(e) => setData('breed', e.target.value)}
+                                        disabled={processing}
+                                    />
+                                    {errors.breed && <p className="text-xs text-red-500">{errors.breed}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-color">Color</Label>
+                                    <Input
+                                        id="edit-color"
+                                        value={data.color}
+                                        onChange={(e) => setData('color', e.target.value)}
+                                        disabled={processing}
+                                    />
+                                    {errors.color && <p className="text-xs text-red-500">{errors.color}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-age">Age (years)</Label>
+                                    <Input
+                                        id="edit-age"
+                                        type="number"
+                                        min={0}
+                                        value={data.age}
+                                        onChange={(e) => setData('age', e.target.value)}
+                                        disabled={processing}
+                                    />
+                                    {errors.age && <p className="text-xs text-red-500">{errors.age}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label htmlFor="edit-weight">Weight (kg)</Label>
+                                    <Input
+                                        id="edit-weight"
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        value={data.weight}
+                                        onChange={(e) => setData('weight', e.target.value)}
+                                        disabled={processing}
+                                    />
+                                    {errors.weight && <p className="text-xs text-red-500">{errors.weight}</p>}
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Gender</Label>
+                                    <Select value={data.gender} onValueChange={(v) => setData('gender', v)} disabled={processing}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select gender" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Male">Male</SelectItem>
+                                            <SelectItem value="Female">Female</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
+                                </div>
+                                <div className="col-span-2 space-y-1">
+                                    <Label htmlFor="edit-photo">Photo (optional)</Label>
+                                    <Input
+                                        id="edit-photo"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setData('petImage', e.target.files?.[0] ?? null)}
+                                        disabled={processing}
+                                        className="cursor-pointer"
+                                    />
+                                    {errors.petImage && <p className="text-xs text-red-500">{errors.petImage}</p>}
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-2 pb-1">
+                                <Button type="button" variant="outline" className="flex-1" onClick={() => setEditPet(null)} disabled={processing}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" className="flex-1" disabled={processing}>
+                                    {processing ? 'Saving...' : 'Save Changes'}
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

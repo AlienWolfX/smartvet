@@ -56,6 +56,7 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
     Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
     Route::get('pets/{pet}/record', [App\Http\Controllers\OwnerPortalController::class, 'petRecord'])->name('owner.pet.record');
+    Route::put('pets/{pet}', [App\Http\Controllers\OwnerPortalController::class, 'updatePet'])->name('owner.pet.update');
 });
 
 // Public pet QR scan page (no auth required)
