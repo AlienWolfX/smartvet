@@ -104,6 +104,11 @@ class User extends Authenticatable
         return $this->hasMany(Owner::class);
     }
 
+    public function ownersAsAccount(): HasMany
+    {
+        return $this->hasMany(Owner::class, 'account_user_id');
+    }
+
     public function inventoryItems(): HasMany
     {
         return $this->hasMany(InventoryItem::class);

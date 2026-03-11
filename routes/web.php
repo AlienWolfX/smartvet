@@ -107,6 +107,12 @@ Route::middleware(['auth'])->group(function () {
         Route::put('user-management/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('user-management.update');
         Route::patch('user-management/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('user-management.toggle-status');
         Route::delete('user-management/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('user-management.destroy');
+
+        // Owner account management
+        Route::get('owner-management', [App\Http\Controllers\OwnerManagementController::class, 'index'])->name('owner-management');
+        Route::put('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'update'])->name('owner-management.update');
+        Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('owner-management.toggle-status');
+        Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('owner-management.destroy');
     });
 });
 

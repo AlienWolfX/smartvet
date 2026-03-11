@@ -3,28 +3,27 @@ import { ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuSeparator, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { NotificationBell } from '@/components/notification-bell';
 import { dashboard } from '@/routes';
-import { 
+import {
     Activity,
-    ChevronDown, 
-    Menu, 
-    Users, 
+    ChevronDown,
+    Menu,
+    Users,
     BarChart3,
     Boxes,
     Heart,
-    CreditCard,
-    Settings
+    CreditCard,    PawPrint,    Settings
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -36,8 +35,8 @@ interface AdminLayoutProps {
     actions?: ReactNode;
 }
 
-export default function AdminLayout({ 
-    children, 
+export default function AdminLayout({
+    children,
     title = 'SmartVet Control Center',
     description = 'Monitor hospital performance, triage schedules, and handle operational workflows.',
     breadcrumbs = [
@@ -51,7 +50,7 @@ export default function AdminLayout({
     const { auth } = usePage<SharedData>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    
+
     const isAdmin = (auth.user as { role?: string })?.role === 'admin';
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
@@ -97,6 +96,13 @@ export default function AdminLayout({
             name: 'User Management',
             href: '/user-management',
             icon: Users,
+            adminOnly: true,
+            clinicOnly: false
+        },
+        {
+            name: 'Owner Management',
+            href: '/owner-management',
+            icon: PawPrint,
             adminOnly: true,
             clinicOnly: false
         },
@@ -186,7 +192,7 @@ export default function AdminLayout({
     return (
         <>
             <Head title={title} />
-            
+
             <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_42%),_#f1f5f9] flex flex-col">
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
