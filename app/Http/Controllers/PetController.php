@@ -33,6 +33,7 @@ class PetController extends Controller
                     'color' => $pet->color ?? 'Unknown',
                     'microchipId' => $pet->microchip_id ?? 'Not assigned',
                     'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
+                    'qrUrl' => $pet->qr_token ? url('/scan/' . $pet->qr_token) : null,
                     'status' => $pet->status,
                     'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
                     'registrationDate' => $pet->created_at->toISOString(),
@@ -70,6 +71,7 @@ class PetController extends Controller
         return Inertia::render('pet-records', [
             'pets' => $pets,
             'species' => $species,
+            'newPetQr' => session('newPetQr'),
         ]);
     }
 
@@ -140,7 +142,7 @@ class PetController extends Controller
             ]);
 
             // Create pet
-            Pet::create([
+            $pet = Pet::create([
                 'name' => $request->petName,
                 'owner_id' => $owner->id,
                 'species_id' => $species->id,
@@ -150,13 +152,29 @@ class PetController extends Controller
                 'gender' => $request->gender,
                 'color' => $request->color,
                 'microchip_id' => $request->microchipId,
+                'qr_token' => Str::uuid(),
                 'image_path' => $imagePath,
                 'status' => 'active',
                 'last_visit' => now(),
             ]);
+
+            session([
+                'newPetQr' => [
+                    'petId'   => 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT),
+                    'name'    => $pet->name,
+                    'species' => $species->name,
+                    'breed'   => $pet->breed ?? 'Mixed',
+                    'qrUrl'   => url('/scan/' . $pet->qr_token),
+                ],
+            ]);
         });
 
         return redirect()->back()->with('success', 'Pet registered successfully!');
+    }
+
+    public function scannerPage()
+    {
+        return Inertia::render('clinic/pet-scanner');
     }
 
     public function manage($petId)

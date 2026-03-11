@@ -23,7 +23,8 @@ import {
     BarChart3,
     Boxes,
     Heart,
-    CreditCard,    PawPrint,    Settings
+    CreditCard,    PawPrint,    Settings,
+    QrCode
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -64,10 +65,17 @@ export default function AdminLayout({
             adminOnly: false,
             clinicOnly: true
         },
-           {
+        {
             name: 'Pet Records',
             href: '/pet-records',
             icon: Heart,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Scan Pet QR',
+            href: '/pet-records/scan',
+            icon: QrCode,
             adminOnly: false,
             clinicOnly: true
         },

@@ -57,6 +57,9 @@ Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
 });
 
+// Public pet QR scan page (no auth required)
+Route::get('scan/{token}', [App\Http\Controllers\PetScanController::class, 'scan'])->name('pet.scan');
+
 Route::middleware(['auth'])->group(function () {
     // Setup route (must be before EnsureSetupComplete middleware check)
     Route::get('setup', [App\Http\Controllers\SetupController::class, 'show'])->name('setup');
@@ -74,6 +77,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('pet-records', [App\Http\Controllers\PetController::class, 'index'])->name('pet-records');
         Route::get('pet-records/export', [App\Http\Controllers\PetController::class, 'export'])->name('pet-records.export');
+        Route::get('pet-records/scan', [App\Http\Controllers\PetController::class, 'scannerPage'])->name('pet-records.scan');
         Route::post('pet-records', [App\Http\Controllers\PetController::class, 'store'])->name('pet-records.store');
         Route::get('pet-records/{pet}/manage', [App\Http\Controllers\PetController::class, 'manage'])->name('pet-records.manage');
         Route::delete('pet-records/{pet}', [App\Http\Controllers\PetController::class, 'destroy'])->name('pet-records.destroy');

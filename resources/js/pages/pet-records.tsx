@@ -51,12 +51,17 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
-    Trash2
+    Trash2,
+    QrCode,
+    X,
 } from 'lucide-react';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import AddressSelect, { type AddressData } from '@/components/address-select';
 import { getBreedsForSpecies } from '@/config/pet-breeds';
+import QRCode from 'qrcode';
+import { usePage } from '@inertiajs/react';
+import { type SharedData } from '@/types';
 
 interface Species {
     id: string;
@@ -76,6 +81,7 @@ interface Pet {
     color: string;
     microchipId: string;
     imageUrl: string | null;
+    qrUrl: string | null;
     status: string;
     lastVisit: string;
     registrationDate: string;
@@ -97,9 +103,18 @@ interface Pet {
     currentMedications: any[];
 }
 
+interface NewPetQr {
+    petId: string;
+    name: string;
+    species: string;
+    breed: string;
+    qrUrl: string;
+}
+
 interface Props {
     pets: Pet[];
     species: Species[];
+    newPetQr?: NewPetQr | null;
 }
 
 const formatPeso = (value: number) =>
@@ -152,12 +167,31 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-export default function PetRecords({ pets, species }: Props) {
+export default function PetRecords({ pets, species, newPetQr }: Props) {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSpecies, setSelectedSpecies] = useState('all');
     const [selectedStatus, setSelectedStatus] = useState('all');
     const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
+    const { auth } = usePage<SharedData>().props;
+    const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
+    const clinicLogo = (auth.user as { clinic_logo?: string })?.clinic_logo;
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [qrCardPet, setQrCardPet] = useState<NewPetQr | null>(newPetQr ?? null);
+    const qrCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (qrCardPet?.qrUrl && qrCanvasRef.current) {
+            QRCode.toCanvas(qrCanvasRef.current, qrCardPet.qrUrl, {
+                width: 180,
+                margin: 1,
+                color: { dark: '#0f172a', light: '#ffffff' },
+            });
+        }
+    }, [qrCardPet]);
+
+    useEffect(() => {
+        if (newPetQr) setQrCardPet(newPetQr);
+    }, [newPetQr]);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -219,7 +253,7 @@ export default function PetRecords({ pets, species }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         post('/pet-records', {
             forceFormData: true,
             onSuccess: () => {
@@ -231,7 +265,7 @@ export default function PetRecords({ pets, species }: Props) {
             },
             onError: (errors: Record<string, string>) => {
                 console.log('Validation errors:', errors);
-                
+
                 // Handle specific validation errors (excluding petImage since it's optional)
                 if (errors.petName) {
                     error('Pet name is required');
@@ -257,17 +291,17 @@ export default function PetRecords({ pets, species }: Props) {
                 if (errors.email) {
                     error('Please enter a valid email address');
                 }
-                
+
                 // Only show image error if a file was actually selected but invalid
                 if (errors.petImage && data.petImage) {
                     error('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
                 }
-                
+
                 // Generic error for any other validation issues (excluding known optional fields)
                 const errorKeys = Object.keys(errors);
                 const handledErrors = ['petName', 'species', 'gender', 'ownerName', 'phone', 'province', 'city', 'barangay', 'street', 'zipCode', 'microchipId', 'email', 'petImage'];
                 const unhandledErrors = errorKeys.filter(key => !handledErrors.includes(key));
-                
+
                 if (unhandledErrors.length > 0) {
                     error('Please check the form for errors and try again');
                 }
@@ -277,16 +311,16 @@ export default function PetRecords({ pets, species }: Props) {
 
     const filteredPets = useMemo(() => {
         return pets.filter((pet) => {
-            const matchesSearch = 
+            const matchesSearch =
                 pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 pet.owner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 pet.id.toLowerCase().includes(searchTerm.toLowerCase());
-            
-            const matchesSpecies = 
+
+            const matchesSpecies =
                 selectedSpecies === 'all' || pet.species.toLowerCase() === selectedSpecies;
-            
-            const matchesStatus = 
+
+            const matchesStatus =
                 selectedStatus === 'all' || pet.status === selectedStatus;
 
             return matchesSearch && matchesSpecies && matchesStatus;
@@ -361,16 +395,16 @@ export default function PetRecords({ pets, species }: Props) {
     const handleExport = (e: React.FormEvent) => {
         e.preventDefault();
         if (isExporting) return;
-        
+
         if (exportFilters.exportType === 'individual' && !selectedPetForExport) {
             error('Please select a pet to export');
             return;
         }
-        
+
         setIsExporting(true);
 
         const params = new URLSearchParams();
-        
+
         if (exportFilters.exportType === 'individual') {
             params.append('type', 'individual');
             params.append('pet_id', selectedPetForExport);
@@ -411,7 +445,7 @@ export default function PetRecords({ pets, species }: Props) {
             description="Comprehensive pet health records, vaccination tracking, and medical history management."
         >
             <Head title="Pet Records" />
-            
+
             {/* Stats Cards */}
             <div className="grid gap-4 grid-cols-3">
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
@@ -491,8 +525,8 @@ export default function PetRecords({ pets, species }: Props) {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Pet Name *</label>
-                                                        <Input 
-                                                            placeholder="e.g., Buddy" 
+                                                        <Input
+                                                            placeholder="e.g., Buddy"
                                                             value={data.petName}
                                                             onChange={(e) => setData('petName', e.target.value)}
                                                             required
@@ -558,19 +592,19 @@ export default function PetRecords({ pets, species }: Props) {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Age (years)</label>
-                                                        <Input 
-                                                            type="number" 
-                                                            placeholder="e.g., 3" 
+                                                        <Input
+                                                            type="number"
+                                                            placeholder="e.g., 3"
                                                             value={data.age}
                                                             onChange={(e) => setData('age', e.target.value)}
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Weight (kg)</label>
-                                                        <Input 
-                                                            type="number" 
-                                                            step="0.1" 
-                                                            placeholder="e.g., 28.5" 
+                                                        <Input
+                                                            type="number"
+                                                            step="0.1"
+                                                            placeholder="e.g., 28.5"
                                                             value={data.weight}
                                                             onChange={(e) => setData('weight', e.target.value)}
                                                         />
@@ -592,16 +626,16 @@ export default function PetRecords({ pets, species }: Props) {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Color/Markings</label>
-                                                        <Input 
-                                                            placeholder="e.g., Golden, Black and White" 
+                                                        <Input
+                                                            placeholder="e.g., Golden, Black and White"
                                                             value={data.color}
                                                             onChange={(e) => setData('color', e.target.value)}
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Microchip ID</label>
-                                                        <Input 
-                                                            placeholder="e.g., 982000123456789" 
+                                                        <Input
+                                                            placeholder="e.g., 982000123456789"
                                                             value={data.microchipId}
                                                             onChange={(e) => setData('microchipId', e.target.value)}
                                                         />
@@ -611,7 +645,7 @@ export default function PetRecords({ pets, species }: Props) {
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Pet Photo (Optional)</label>
                                                     <div className="relative">
-                                                        <Input 
+                                                        <Input
                                                             type="file"
                                                             accept="image/*"
                                                             onChange={(e) => {
@@ -665,8 +699,8 @@ export default function PetRecords({ pets, species }: Props) {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Owner Name *</label>
-                                                        <Input 
-                                                            placeholder="e.g., John Smith" 
+                                                        <Input
+                                                            placeholder="e.g., John Smith"
                                                             value={data.ownerName}
                                                             onChange={(e) => setData('ownerName', e.target.value)}
                                                             required
@@ -675,8 +709,8 @@ export default function PetRecords({ pets, species }: Props) {
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Phone Number *</label>
-                                                        <Input 
-                                                            placeholder="+63 917 123 4567" 
+                                                        <Input
+                                                            placeholder="+63 917 123 4567"
                                                             value={data.phone}
                                                             onChange={(e) => setData('phone', e.target.value)}
                                                             required
@@ -687,9 +721,9 @@ export default function PetRecords({ pets, species }: Props) {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Email</label>
-                                                        <Input 
-                                                            type="email" 
-                                                            placeholder="owner@email.com" 
+                                                        <Input
+                                                            type="email"
+                                                            placeholder="owner@email.com"
                                                             value={data.email}
                                                             onChange={(e) => setData('email', e.target.value)}
                                                         />
@@ -773,7 +807,7 @@ export default function PetRecords({ pets, species }: Props) {
                                                     </SelectContent>
                                                 </Select>
                                                 <p className="text-xs text-neutral-500">
-                                                    {exportFilters.exportType === 'all' 
+                                                    {exportFilters.exportType === 'all'
                                                         ? 'Export a summary list of all pets'
                                                         : 'Export detailed records for a specific pet'}
                                                 </p>
@@ -1087,18 +1121,18 @@ export default function PetRecords({ pets, species }: Props) {
                             </h3>
                         </div>
                     </div>
-                    
+
                     <div className="space-y-4">
                         {paginatedPets.map((pet) => {
                             const overdueVaccinations = pet.vaccinations.filter(v => v.status === 'overdue' || v.status === 'due-soon').length;
-                            
+
                             return (
                                 <div key={pet.id} className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
                                     <div className="md:col-span-2">
                                         <div className="flex items-start gap-3">
                                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                                                <img 
-                                                    src={pet.imageUrl || '/placeholder.png'} 
+                                                <img
+                                                    src={pet.imageUrl || '/placeholder.png'}
                                                     alt={pet.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
@@ -1119,7 +1153,7 @@ export default function PetRecords({ pets, species }: Props) {
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div>
                                         <p className="font-medium text-sm text-neutral-900 dark:text-neutral-100">
                                             {pet.owner.name}
@@ -1137,7 +1171,7 @@ export default function PetRecords({ pets, species }: Props) {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="space-y-2">
                                         {overdueVaccinations > 0 && (
                                             <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
@@ -1158,22 +1192,38 @@ export default function PetRecords({ pets, species }: Props) {
                                             </Badge>
                                         )}
                                     </div>
-                                    
+
                                     <div>
                                         <p className="text-sm font-medium">
                                             {formatDate(pet.lastVisit)}
                                         </p>
                                     </div>
-                                    
+
                                     <div className="md:col-span-2 flex items-center gap-2 flex-wrap">
-                                        <Button 
-                                            variant="default" 
+                                        <Button
+                                            variant="default"
                                             size="sm"
                                             onClick={() => router.get(`/pet-records/${pet.id}/manage`)}
                                         >
                                             <FileText className="h-4 w-4 mr-1" />
                                             Manage Records
                                         </Button>
+                                        {pet.qrUrl && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setQrCardPet({
+                                                    petId: pet.id,
+                                                    name: pet.name,
+                                                    species: pet.species,
+                                                    breed: pet.breed,
+                                                    qrUrl: pet.qrUrl!,
+                                                })}
+                                            >
+                                                <QrCode className="h-4 w-4 mr-1" />
+                                                QR Code
+                                            </Button>
+                                        )}
                                         <Modal open={deletingPet?.id === pet.id} onOpenChange={(open) => !open && setDeletingPet(null)}>
                                             <ModalTrigger asChild>
                                                 <Button
@@ -1220,7 +1270,7 @@ export default function PetRecords({ pets, species }: Props) {
                                 </div>
                             );
                         })}
-                        
+
                         {filteredPets.length === 0 && (
                             <div className="text-center py-8 text-neutral-500">
                                 No pet records found matching your criteria.
@@ -1311,7 +1361,7 @@ export default function PetRecords({ pets, species }: Props) {
                                 Comprehensive health record and medical history
                             </ModalDescription>
                         </ModalHeader>
-                        
+
                         <div className="grid gap-6 py-4">
                             {/* Basic Info */}
                             <div className="grid grid-cols-2 gap-4">
@@ -1326,7 +1376,7 @@ export default function PetRecords({ pets, species }: Props) {
                                         <p><span className="font-medium">Microchip:</span> {selectedPet.microchipId}</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="space-y-4">
                                     <h4 className="font-semibold">Owner Information</h4>
                                     <div className="space-y-2 text-sm">
@@ -1343,7 +1393,7 @@ export default function PetRecords({ pets, species }: Props) {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Vaccinations */}
                             <div>
                                 <h4 className="font-semibold mb-3">Vaccination Status</h4>
@@ -1364,7 +1414,7 @@ export default function PetRecords({ pets, species }: Props) {
                                     ))}
                                 </div>
                             </div>
-                            
+
                             {/* Current Medications */}
                             {selectedPet.currentMedications.length > 0 && (
                                 <div>
@@ -1387,7 +1437,7 @@ export default function PetRecords({ pets, species }: Props) {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {/* Allergies */}
                             {selectedPet.allergies.length > 0 && (
                                 <div>
@@ -1402,7 +1452,7 @@ export default function PetRecords({ pets, species }: Props) {
                                 </div>
                             )}
                         </div>
-                        
+
                         <ModalFooter>
                             <Button variant="outline" onClick={() => setSelectedPet(null)}>
                                 Close
@@ -1411,8 +1461,86 @@ export default function PetRecords({ pets, species }: Props) {
                     </ModalContent>
                 </Modal>
             )}
-            
+
             {/* Toast Container */}
+
+            {/* QR Card Modal */}
+            {qrCardPet && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="relative w-full max-w-sm mx-4">
+                        {/* Close button */}
+                        <button
+                            onClick={() => setQrCardPet(null)}
+                            className="absolute -top-3 -right-3 z-10 rounded-full bg-white shadow-lg p-1.5 text-gray-500 hover:text-gray-800 transition"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+
+                        {/* Card */}
+                        <div id="qr-card" className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                            {/* Clinic header */}
+                            <div className="flex flex-col items-center gap-2 px-6 pt-6 pb-4 bg-slate-900">
+                                {clinicLogo ? (
+                                    <img src={clinicLogo} alt={clinicName} className="h-12 object-contain" />
+                                ) : (
+                                    <span className="text-2xl font-bold text-white tracking-wide">{clinicName}</span>
+                                )}
+                                <p className="text-slate-400 text-xs tracking-widest uppercase">Veterinary Clinic</p>
+                            </div>
+
+                            {/* QR Code */}
+                            <div className="flex justify-center py-5 bg-white">
+                                <canvas ref={qrCanvasRef} className="rounded-lg" />
+                            </div>
+
+                            {/* Pet details */}
+                            <div className="px-6 pb-6 text-center space-y-1">
+                                <p className="text-xl font-bold text-slate-900">{qrCardPet.name}</p>
+                                <p className="text-sm text-slate-500">{qrCardPet.species} · {qrCardPet.breed}</p>
+                                <p className="text-xs text-slate-400 font-mono mt-1">{qrCardPet.petId}</p>
+                                <p className="text-xs text-slate-400 mt-2">Scan to view pet profile & visit history</p>
+                            </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-3 mt-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1 bg-white"
+                                onClick={() => setQrCardPet(null)}
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                className="flex-1 gap-2"
+                                onClick={async () => {
+                                    const canvas = qrCanvasRef.current;
+                                    if (!canvas) return;
+                                    // Build a composite card image via off-screen canvas
+                                    const cardEl = document.getElementById('qr-card');
+                                    if (!cardEl) return;
+                                    const url = canvas.toDataURL('image/png');
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `${qrCardPet.petId}-qr.png`;
+                                    a.click();
+                                }}
+                            >
+                                <Download className="h-4 w-4" />
+                                Download QR
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-1 gap-2 bg-white"
+                                onClick={() => window.open(qrCardPet.qrUrl, '_blank')}
+                            >
+                                <QrCode className="h-4 w-4" />
+                                Preview
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }
