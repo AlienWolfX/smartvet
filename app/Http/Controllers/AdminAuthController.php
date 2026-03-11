@@ -38,6 +38,9 @@ class AdminAuthController extends Controller
 
             $request->session()->regenerate();
 
+            $authUser->last_login_at = now();
+            $authUser->save();
+
             return redirect()->intended('/user-management');
         }
 

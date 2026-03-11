@@ -24,7 +24,7 @@ interface OwnerLayoutProps {
     actions?: ReactNode;
 }
 
-const SIDEBAR_COLOR = '#0e4d3a';
+const SIDEBAR_COLOR = '#0e4d3a'; // fallback only
 
 export default function OwnerLayout({
     children,
@@ -32,7 +32,10 @@ export default function OwnerLayout({
     description,
     actions,
 }: OwnerLayoutProps) {
-    const { auth } = usePage<SharedData>().props;
+    const { auth, clinicSettings } = usePage<SharedData>().props;
+    const themeColor = clinicSettings?.themeColor || SIDEBAR_COLOR;
+    const clinicDisplayName = clinicSettings?.clinicName || 'SmartVet';
+    const clinicLogoUrl = clinicSettings?.clinicLogo || null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
@@ -51,15 +54,17 @@ export default function OwnerLayout({
     const SidebarContent = () => (
         <div
             className="flex h-full flex-col border-r text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
-            style={{ backgroundColor: SIDEBAR_COLOR }}
+            style={{ backgroundColor: themeColor }}
         >
             {/* Logo */}
             <div className="flex h-16 shrink-0 items-center px-6 border-b border-white/10">
                 <Link href="/owner/pets" className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                        <PawPrint className="h-4 w-4 text-white" />
+                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                        {clinicLogoUrl
+                            ? <img src={clinicLogoUrl} alt="logo" className="h-full w-full object-cover" />
+                            : <PawPrint className="h-4 w-4 text-white" />}
                     </div>
-                    <span className="text-white font-semibold text-sm">SmartVet</span>
+                    <span className="text-white font-semibold text-sm">{clinicDisplayName}</span>
                 </Link>
             </div>
 
@@ -107,7 +112,7 @@ export default function OwnerLayout({
         <>
             <Head title={title} />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,77,58,0.10),_transparent_42%),_#f1f5f9] flex flex-col">
+            <div className="h-screen overflow-hidden bg-slate-50 flex flex-col">
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     <SheetContent side="left" className="p-0 w-72">
@@ -121,7 +126,7 @@ export default function OwnerLayout({
                 </div>
 
                 {/* Main content */}
-                <div className="lg:pl-72 flex flex-col min-h-screen">
+                <div className="lg:pl-72 flex flex-col h-screen overflow-hidden">
                     {/* Top navigation */}
                     <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-white/60 bg-white/95 px-4 shadow-sm backdrop-blur sm:gap-x-6 sm:px-6 lg:px-8">
                         <Button
@@ -203,7 +208,7 @@ export default function OwnerLayout({
                     </div>
 
                     {/* Page content */}
-                    <main className="py-6 flex-1">
+                    <main className="py-6 flex-1 overflow-y-auto">
                         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                                 <div>

@@ -75,7 +75,7 @@ export default function PetScan({ pet, owner, vaccinations, consultations }: Pro
                             <img
                                 src={pet.imageUrl}
                                 alt={pet.name}
-                                className="w-full h-48 object-cover"
+                                className="w-full h-48 object-cover object-[center_30%]"
                             />
                         ) : (
                             <div className="w-full h-32 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">

@@ -30,34 +30,14 @@ class OwnerPortalController extends Controller
                     'color'       => $pet->color ?? '—',
                     'status'      => $pet->status ?? 'Healthy',
                     'lastVisit'   => $pet->last_visit?->format('M d, Y'),
-                    'imageUrl'    => $pet->image_path ? '/storage/' . $pet->image_path : null,
+                    'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
+                    'qrToken'     => $pet->qr_token,
                 ];
             });
         })->values()->all();
 
-        // If no pets yet, inject a placeholder so the UI shows how it will look
-        $dummy = null;
-        if (empty($pets)) {
-            $dummy = [
-                'id'          => 'demo',
-                'name'        => 'Buddy',
-                'species'     => 'Dog',
-                'speciesIcon' => '🐕',
-                'breed'       => 'Golden Retriever',
-                'age'         => 3,
-                'weight'      => '28.50',
-                'gender'      => 'Male',
-                'color'       => 'Golden',
-                'status'      => 'Healthy',
-                'lastVisit'   => 'Feb 15, 2026',
-                'imageUrl'    => null,
-                'isDemo'      => true,
-            ];
-        }
-
         return Inertia::render('owner/my-pets', [
-            'pets'  => $pets,
-            'dummy' => $dummy,
+            'pets' => $pets,
         ]);
     }
 
@@ -65,6 +45,31 @@ class OwnerPortalController extends Controller
     {
         return Inertia::render('owner/settings', [
             'status' => $request->session()->get('status'),
+        ]);
+    }
+
+    public function petRecord(Request $request, $petId)
+    {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+
+        $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
+        $pet = \App\Models\Pet::with(['vaccinations', 'consultations'])
+            ->whereIn('owner_id', $owners)
+            ->findOrFail($petId);
+
+        return response()->json([
+            'vaccinations' => $pet->vaccinations->map(fn ($v) => [
+                'vaccine' => $v->vaccine_name,
+                'date'    => $v->vaccination_date->toDateString(),
+                'nextDue' => $v->next_due_date->toDateString(),
+            ]),
+            'consultations' => $pet->consultations->map(fn ($c) => [
+                'type'      => $c->consultation_type,
+                'date'      => $c->consultation_date->toDateString(),
+                'complaint' => $c->chief_complaint,
+                'diagnosis' => $c->diagnosis,
+            ]),
         ]);
     }
 }

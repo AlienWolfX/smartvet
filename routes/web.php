@@ -55,6 +55,7 @@ Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
     Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
+    Route::get('pets/{pet}/record', [App\Http\Controllers\OwnerPortalController::class, 'petRecord'])->name('owner.pet.record');
 });
 
 // Public pet QR scan page (no auth required)

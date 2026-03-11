@@ -204,25 +204,26 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
             description="Revenue, patients, and service overview for SmartVet clinic."
         >
             <Head title="Dashboard" />
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="flex flex-col gap-3 h-full">
+            <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">
                 {metricCards.map((metric) => (
                     <Card
                         key={metric.title}
                         className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900"
                     >
-                        <CardHeader className="flex flex-row items-start justify-between">
+                        <CardHeader className="flex flex-row items-start justify-between pb-2 pt-3 px-4">
                             <div>
-                                <CardTitle className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                                <CardTitle className="text-xs font-semibold text-neutral-700 dark:text-neutral-200">
                                     {metric.title}
                                 </CardTitle>
-                                <CardDescription>{metric.meta}</CardDescription>
+                                <CardDescription className="text-xs">{metric.meta}</CardDescription>
                             </div>
-                            <div className={cn('rounded-2xl p-3', metric.accent)}>
-                                <metric.icon className="h-5 w-5" />
+                            <div className={cn('rounded-xl p-2', metric.accent)}>
+                                <metric.icon className="h-4 w-4" />
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-semibold leading-none tracking-tight">
+                        <CardContent className="px-4 pb-3">
+                            <div className="text-2xl font-semibold leading-none tracking-tight">
                                 {metric.value}
                             </div>
                             <div
@@ -245,25 +246,25 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
                 ))}
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-3">
-                <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 xl:col-span-2">
-                    <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex-1 min-h-0 grid gap-3 xl:grid-cols-3">
+                <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 xl:col-span-2 flex flex-col overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-4">
                         <div>
-                            <CardTitle>Recent Transactions</CardTitle>
-                            <CardDescription>Latest payment transactions from the clinic.</CardDescription>
+                            <CardTitle className="text-base">Recent Transactions</CardTitle>
+                            <CardDescription className="text-xs">Latest payment transactions from the clinic.</CardDescription>
                         </div>
                         <Badge variant="outline" className="text-xs">
                             {transactionCount} records
                         </Badge>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="flex-1 overflow-y-auto space-y-2 px-4 pb-2">
                         {paginatedTransactions.length > 0 ? (
                             paginatedTransactions.map((tx) => (
                                 <div
                                     key={tx.id}
-                                    className="flex flex-wrap items-center gap-4 rounded-3xl border border-neutral-200/70 px-4 py-4 dark:border-neutral-800/80"
+                                    className="flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-200/70 px-3 py-2.5 dark:border-neutral-800/80"
                                 >
-                                    <div className="min-w-[180px]">
+                                    <div className="min-w-[160px]">
                                         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                                             {tx.id}
                                         </p>
@@ -320,36 +321,36 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
                         </CardFooter>
                     )}
                 </Card>
-                <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
-                    <CardHeader className="flex flex-col gap-2">
+                <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 flex flex-col overflow-hidden">
+                    <CardHeader className="flex flex-col gap-1 pb-2 pt-3 px-4">
                         <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-300">
-                            <ShoppingBag className="h-4 w-4" /> Service Mix
+                            <ShoppingBag className="h-3.5 w-3.5" /> Service Mix
                         </div>
-                        <CardTitle>Services Breakdown</CardTitle>
-                        <CardDescription>Revenue distribution by service type this month.</CardDescription>
+                        <CardTitle className="text-base">Services Breakdown</CardTitle>
+                        <CardDescription className="text-xs">Revenue distribution by service type this month.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col gap-6">
+                    <CardContent className="flex-1 overflow-y-auto px-4 pb-3">
+                        <div className="flex flex-col gap-3">
                             <div className="flex flex-col items-center justify-center">
-                                <div className="relative h-48 w-48">
+                                <div className="relative h-36 w-36">
                                     <div
                                         className="h-full w-full rounded-full"
                                         style={{ background: `conic-gradient(${donutGradient})` }}
                                     />
-                                    <div className="absolute inset-6 flex flex-col items-center justify-center rounded-full bg-white text-center dark:bg-neutral-950">
-                                        <p className="text-xs uppercase tracking-wide text-neutral-500">
-                                            Total Revenue
+                                    <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white text-center dark:bg-neutral-950">
+                                        <p className="text-[10px] uppercase tracking-wide text-neutral-500">
+                                            Total
                                         </p>
-                                        <p className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+                                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
                                             {formatPeso(totalServiceRevenue)}
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                                 {serviceSegments.length > 0 ? (
                                     serviceSegments.map((segment) => (
-                                        <div key={segment.name} className="flex items-center justify-between gap-4">
+                                        <div key={segment.name} className="flex items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
                                                 <span
                                                     className="inline-flex size-3 rounded-full"
@@ -381,6 +382,7 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
                         </div>
                     </CardContent>
                 </Card>
+            </div>
             </div>
         </AdminLayout>
     );

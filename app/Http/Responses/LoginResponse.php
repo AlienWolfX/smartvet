@@ -13,6 +13,11 @@ class LoginResponse implements LoginResponseContract
         /** @var \App\Models\User|null $user */
         $user = $request->user();
 
+        if ($user) {
+            $user->last_login_at = now();
+            $user->save();
+        }
+
         if ($user && $user->isAdmin()) {
             Auth::logout();
             $request->session()->invalidate();

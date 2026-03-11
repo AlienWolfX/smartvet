@@ -38,6 +38,23 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        $clinicThemeColor = null;
+        $clinicName = null;
+        $clinicLogo = null;
+
+        if ($request->user()?->isOwner()) {
+            $owner = \App\Models\Owner::where('account_user_id', $request->user()->id)
+                ->with('user')
+                ->first();
+            if ($owner?->user) {
+                $clinicThemeColor = $owner->user->theme_color;
+                $clinicName       = $owner->user->clinic_name;
+                $clinicLogo       = $owner->user->clinic_logo
+                    ? \Illuminate\Support\Facades\Storage::url($owner->user->clinic_logo)
+                    : null;
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -46,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'clinicSettings' => [
+                'themeColor' => $clinicThemeColor,
+                'clinicName' => $clinicName,
+                'clinicLogo' => $clinicLogo,
+            ],
         ];
     }
 }

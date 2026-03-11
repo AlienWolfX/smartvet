@@ -130,7 +130,7 @@ export default function AdminLayout({
          ...item,
          current: item.href === '/dashboard' || item.href === '/'
              ? currentPath === item.href || currentPath === '/dashboard'
-             : currentPath.startsWith(item.href),
+             : currentPath === item.href,
      }));
 
     const SidebarContent = () => (
