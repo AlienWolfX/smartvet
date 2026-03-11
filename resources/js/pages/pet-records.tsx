@@ -516,6 +516,16 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         <ModalDescription>
                                             Register a new pet in the system with complete information.
                                         </ModalDescription>
+                                        <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
+                                            {clinicLogo ? (
+                                                <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-4 w-4 rounded object-cover" />
+                                            ) : (
+                                                <span className="flex h-4 w-4 items-center justify-center rounded bg-emerald-600 text-[9px] font-bold text-white">
+                                                    {clinicName.substring(0, 2).toUpperCase()}
+                                                </span>
+                                            )}
+                                            Adding to <span className="font-semibold">{clinicName}</span>
+                                        </div>
                                     </ModalHeader>
                                     <form onSubmit={handleSubmit}>
                                         <div className="grid gap-4 py-4">
@@ -1199,19 +1209,21 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         </p>
                                     </div>
 
-                                    <div className="md:col-span-2 flex items-center gap-2 flex-wrap">
+                                    <div className="md:col-span-2 flex items-center gap-2 flex-nowrap">
                                         <Button
                                             variant="default"
                                             size="sm"
+                                            className="whitespace-nowrap"
                                             onClick={() => router.get(`/pet-records/${pet.id}/manage`)}
                                         >
                                             <FileText className="h-4 w-4 mr-1" />
-                                            Manage Records
+                                            Manage
                                         </Button>
                                         {pet.qrUrl && (
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                title="QR Code"
                                                 onClick={() => setQrCardPet({
                                                     petId: pet.id,
                                                     name: pet.name,
@@ -1220,8 +1232,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                     qrUrl: pet.qrUrl!,
                                                 })}
                                             >
-                                                <QrCode className="h-4 w-4 mr-1" />
-                                                QR Code
+                                                <QrCode className="h-4 w-4" />
                                             </Button>
                                         )}
                                         <Modal open={deletingPet?.id === pet.id} onOpenChange={(open) => !open && setDeletingPet(null)}>

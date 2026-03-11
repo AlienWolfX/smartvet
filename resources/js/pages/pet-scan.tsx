@@ -63,8 +63,7 @@ export default function PetScan({ pet, owner, vaccinations, consultations }: Pro
                     {/* Header branding */}
                     <div className="text-center">
                         <div className="inline-flex items-center gap-2 text-slate-600">
-                            <Heart className="h-5 w-5 text-rose-500 fill-rose-500" />
-                            <span className="font-semibold text-lg tracking-tight">SmartVet</span>
+                            <img src="/images/logo.png" alt="SmartVet" className="h-8 w-auto" />
                         </div>
                         <p className="text-xs text-slate-400 mt-1">Pet Health Passport</p>
                     </div>

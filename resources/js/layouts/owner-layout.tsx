@@ -62,7 +62,7 @@ export default function OwnerLayout({
                     <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
                         {clinicLogoUrl
                             ? <img src={clinicLogoUrl} alt="logo" className="h-full w-full object-cover" />
-                            : <PawPrint className="h-4 w-4 text-white" />}
+                            : <img src="/images/logo.png" alt="SmartVet" className="h-5 w-auto brightness-0 invert" />}
                     </div>
                     <span className="text-white font-semibold text-sm">{clinicDisplayName}</span>
                 </Link>
@@ -229,13 +229,7 @@ export default function OwnerLayout({
                         <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                             <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
                                 <div className="flex items-center gap-2">
-                                    <div
-                                        className="w-6 h-6 rounded-lg flex items-center justify-center"
-                                        style={{ backgroundColor: SIDEBAR_COLOR }}
-                                    >
-                                        <PawPrint className="h-3 w-3 text-white" />
-                                    </div>
-                                    <span className="font-medium">SmartVet</span>
+                                    <img src="/images/logo.png" alt="SmartVet" className="h-6 w-auto" />
                                     <span className="text-muted-foreground/60">Pet Owner Portal</span>
                                 </div>
                                 <p className="text-xs">© {new Date().getFullYear()} SmartVet. All rights reserved.</p>

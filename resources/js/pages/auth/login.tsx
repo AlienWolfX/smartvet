@@ -46,13 +46,11 @@ export default function Login({ status }: LoginProps) {
                 <div className="flex h-full items-center justify-center bg-white px-8 py-12 shadow-lg shadow-slate-900/5">
                     <div className="w-full max-w-md space-y-10">
                         <div className="space-y-3 text-left">
-                            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
-                                SmartVet
-                            </p>
+                            <img src="/images/logo.png" alt="SmartVet" className="h-14 w-auto" />
                             <div>
-                                <h1 className="text-3xl font-semibold">Pet Owner login</h1>
+                                <h1 className="text-3xl font-semibold">Login</h1>
                                 <p className="mt-1 text-sm text-slate-500">
-                                    Sign in with your pet owner account.
+                                    Sign in with your account.
                                 </p>
                             </div>
                         </div>

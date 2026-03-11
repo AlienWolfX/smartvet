@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, useForm } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import { FormEvent } from 'react';
 
 interface AdminLoginProps {
@@ -26,43 +27,51 @@ export default function AdminLogin({ status }: AdminLoginProps) {
     };
 
     return (
-        <div className="relative h-screen bg-slate-50 text-slate-900">
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-4 py-12">
             <Head title="Admin Login" />
 
-            <div className="grid h-full lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-                <div className="relative hidden h-full overflow-hidden lg:block">
-                    <img
-                        src="https://images.unsplash.com/photo-1563460716037-460a3ad24ba9?auto=format&fit=crop&w=1200&q=80"
-                        alt="Veterinary professional caring for a pet"
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent" />
+            {/* Subtle grid overlay */}
+            <div
+                className="pointer-events-none absolute inset-0 opacity-[0.04]"
+                style={{
+                    backgroundImage:
+                        'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                }}
+            />
+
+            {/* Glow */}
+            <div className="pointer-events-none absolute top-1/3 left-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-500/10 blur-3xl" />
+
+            <div className="relative w-full max-w-sm">
+                {/* Restricted badge */}
+                <div className="mb-5 flex justify-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-amber-400">
+                        <ShieldCheck className="h-3 w-3" />
+                        Restricted access
+                    </span>
                 </div>
 
-                <div className="flex h-full items-center justify-center bg-white px-8 py-12 shadow-lg shadow-slate-900/5">
-                    <div className="w-full max-w-md space-y-10">
-                        <div className="space-y-3 text-left">
-                            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">
-                                SmartVet
-                            </p>
-                            <div>
-                                <h1 className="text-3xl font-semibold">Admin access</h1>
-                                <p className="mt-1 text-sm text-slate-500">
-                                    Sign in with your administrator account.
-                                </p>
-                            </div>
+                {/* Card */}
+                <div className="rounded-2xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/60">
+                    <div className="flex flex-col items-center border-b border-white/10 px-8 py-8">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 ring-1 ring-amber-500/30">
+                            <ShieldCheck className="h-7 w-7 text-amber-400" />
                         </div>
+                        <h1 className="mt-4 text-xl font-semibold text-white">Admin access</h1>
+                        <p className="mt-0.5 text-xs text-slate-400">Sign in with your administrator account</p>
+                    </div>
 
+                    <div className="space-y-5 px-8 py-7">
                         {status && (
-                            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+                            <div className="rounded-lg border border-emerald-700/50 bg-emerald-900/30 px-4 py-2.5 text-sm font-medium text-emerald-400">
                                 {status}
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="email" className="text-xs font-medium text-slate-400">Email address</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -73,15 +82,14 @@ export default function AdminLogin({ status }: AdminLoginProps) {
                                     autoComplete="email"
                                     placeholder="admin@example.com"
                                     value={data.email}
-                                    onChange={(event) =>
-                                        setData('email', event.target.value)
-                                    }
+                                    onChange={(event) => setData('email', event.target.value)}
+                                    className="h-9 border-white/10 bg-slate-800/80 text-sm text-white placeholder:text-slate-500 focus:border-amber-500/50 focus:ring-amber-500/20"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="password" className="text-xs font-medium text-slate-400">Password</Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -89,42 +97,42 @@ export default function AdminLogin({ status }: AdminLoginProps) {
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="Password"
+                                    placeholder="••••••••"
                                     value={data.password}
-                                    onChange={(event) =>
-                                        setData('password', event.target.value)
-                                    }
+                                    onChange={(event) => setData('password', event.target.value)}
+                                    className="h-9 border-white/10 bg-slate-800/80 text-sm text-white placeholder:text-slate-500 focus:border-amber-500/50 focus:ring-amber-500/20"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-2">
                                 <Checkbox
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
                                     checked={data.remember}
-                                    onCheckedChange={(checked) =>
-                                        setData('remember', checked === true)
-                                    }
+                                    onCheckedChange={(checked) => setData('remember', checked === true)}
+                                    className="border-white/20 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                                 />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <Label htmlFor="remember" className="text-xs text-slate-400">Remember me</Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
                                 tabIndex={4}
                                 disabled={processing}
+                                className="w-full bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold"
                             >
                                 {processing && <Spinner />}
                                 Log in
                             </Button>
                         </form>
-
-
                     </div>
                 </div>
+
+                <p className="mt-6 text-center text-xs text-slate-600">
+                    © {new Date().getFullYear()} SmartVet. All rights reserved.
+                </p>
             </div>
         </div>
     );

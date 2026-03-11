@@ -141,10 +141,8 @@ export default function AdminLayout({
                     {clinicLogo ? (
                         <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
                     ) : (
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                                {clinicName.substring(0, 2).toUpperCase()}
-                            </span>
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                            <img src="/images/logo.png" alt="SmartVet" className="h-6 w-auto brightness-0 invert" />
                         </div>
                     )}
                     <span className="text-white font-semibold text-sm truncate max-w-[140px]">
