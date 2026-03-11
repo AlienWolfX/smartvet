@@ -7,6 +7,24 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
+// Admin login routes
+Route::middleware('guest')->group(function () {
+    Route::get('admin', [App\Http\Controllers\AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('admin/login', [App\Http\Controllers\AdminAuthController::class, 'login'])->name('admin.login.submit');
+});
+Route::post('admin/logout', [App\Http\Controllers\AdminAuthController::class, 'logout'])
+    ->name('admin.logout')
+    ->middleware('auth');
+
+// Clinic login routes
+Route::middleware('guest')->group(function () {
+    Route::get('clinic', [App\Http\Controllers\ClinicAuthController::class, 'showLoginForm'])->name('clinic.login');
+    Route::post('clinic/login', [App\Http\Controllers\ClinicAuthController::class, 'login'])->name('clinic.login.submit');
+});
+Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 'logout'])
+    ->name('clinic.logout')
+    ->middleware('auth');
+
 Route::middleware(['auth'])->group(function () {
     // Setup route (must be before EnsureSetupComplete middleware check)
     Route::get('setup', [App\Http\Controllers\SetupController::class, 'show'])->name('setup');
