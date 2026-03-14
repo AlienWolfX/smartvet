@@ -6,18 +6,24 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Fortify;
 
 class AppearanceSettingsController extends Controller
 {
     public function adminEdit(Request $request): Response
     {
         $user = $request->user();
+        $requiresConfirmation = Fortify::confirmsTwoFactorAuthentication();
+        $hasSecret = !is_null($user?->two_factor_secret);
+        $isConfirmed = !is_null($user?->two_factor_confirmed_at);
 
         return Inertia::render('admin/settings', [
             'settings' => [
                 'theme_name' => $user->theme_name ?? 'default',
                 'theme_color' => $user->theme_color ?? '#0f172a',
             ],
+            'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
+            'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,
         ]);
     }
 

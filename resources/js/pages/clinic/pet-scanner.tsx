@@ -73,9 +73,52 @@ export default function PetScanner() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PetResult | null>(null);
     const scannerRef = useRef<Html5Qrcode | null>(null);
+    const lastInvalidPromptAtRef = useRef(0);
     const { success, error } = useToast();
 
     const SCANNER_DOM_ID = 'qr-reader';
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    const extractValidToken = (rawValue: string): string | null => {
+        const decoded = rawValue.trim();
+        if (!decoded) return null;
+
+        if (UUID_REGEX.test(decoded)) {
+            return decoded;
+        }
+
+        if (decoded.startsWith('/')) {
+            const match = decoded.match(/^\/?scan\/([0-9a-f-]{36})\/?$/i);
+            if (match && UUID_REGEX.test(match[1])) {
+                return match[1];
+            }
+
+            return null;
+        }
+
+        try {
+            const parsedUrl = new URL(decoded);
+            const pathMatch = parsedUrl.pathname.match(/^\/?scan\/([0-9a-f-]{36})\/?$/i);
+            if (pathMatch && UUID_REGEX.test(pathMatch[1])) {
+                return pathMatch[1];
+            }
+        } catch {
+            return null;
+        }
+
+        return null;
+    };
+
+    const promptInvalidQr = () => {
+        const now = Date.now();
+        if (now - lastInvalidPromptAtRef.current < 1800) {
+            return;
+        }
+
+        lastInvalidPromptAtRef.current = now;
+        error('Invalid QR code. Only SmartVet pet QR codes are supported.');
+    };
 
     const startScanner = async () => {
         setScanError(null);
@@ -86,9 +129,15 @@ export default function PetScanner() {
                 { facingMode: 'environment' },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
+                    const token = extractValidToken(decodedText);
+                    if (!token) {
+                        promptInvalidQr();
+                        return;
+                    }
+
                     scanner.stop().catch(() => {});
                     setScanning(false);
-                    handleDecodedUrl(decodedText);
+                    fetchPet(token);
                 },
                 () => {},
             );
@@ -132,45 +181,13 @@ export default function PetScanner() {
         }
     };
 
-    const handleDecodedUrl = (url: string) => {
-        const decoded = url.trim();
-        if (!decoded) {
-            error('Invalid QR code. Please scan a SmartVet pet QR code.');
-            return;
-        }
-
-        // New QR format: token-only payload.
-        if (!decoded.includes('/')) {
-            fetchPet(decoded);
-            return;
-        }
-
-        try {
-            const parts = new URL(decoded).pathname.split('/').filter(Boolean);
-            if (parts.length >= 2 && parts[0] === 'scan') {
-                fetchPet(parts[1]);
-            } else {
-                // Also allow non-URL slash formats by taking the last segment as token.
-                const fallbackToken = decoded.split('/').filter(Boolean).pop();
-                if (fallbackToken) {
-                    fetchPet(fallbackToken);
-                } else {
-                    error('QR code does not match a SmartVet pet. Try again.');
-                }
-            }
-        } catch {
-            const fallbackToken = decoded.split('/').filter(Boolean).pop();
-            if (fallbackToken) {
-                fetchPet(fallbackToken);
-            } else {
-                error('Invalid QR code. Please scan a SmartVet pet QR code.');
-            }
-        }
-    };
-
     const handleManualLookup = () => {
-        const token = manualToken.trim();
-        if (!token) return;
+        const token = extractValidToken(manualToken);
+        if (!token) {
+            error('Invalid token or QR payload. Use a valid SmartVet pet QR token.');
+            return;
+        }
+
         fetchPet(token);
     };
 

@@ -35,8 +35,6 @@ export default function OwnerLayout({
     const { auth, clinicSettings } = usePage<SharedData>().props;
     const ownerThemeColor = (auth.user as { theme_color?: string })?.theme_color;
     const themeColor = ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR;
-    const clinicDisplayName = clinicSettings?.clinicName || 'SmartVet';
-    const clinicLogoUrl = clinicSettings?.clinicLogo || null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
@@ -61,18 +59,6 @@ export default function OwnerLayout({
             className="flex h-full flex-col border-r text-white shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
             style={{ backgroundColor: themeColor }}
         >
-            {/* Logo */}
-            <div className="flex h-16 shrink-0 items-center px-6 border-b border-white/10">
-                <Link href="/owner/pets" className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
-                        {clinicLogoUrl
-                            ? <img src={clinicLogoUrl} alt="logo" className="h-full w-full object-cover" />
-                            : <img src="/images/logo.png" alt="SmartVet" className="h-5 w-auto brightness-0 invert" />}
-                    </div>
-                    <span className="text-white font-semibold text-sm">{clinicDisplayName}</span>
-                </Link>
-            </div>
-
             {/* Navigation */}
             <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                 {navigation.map((item) => {

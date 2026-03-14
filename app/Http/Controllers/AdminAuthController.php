@@ -2,16 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use App\Services\TurnstileVerifier;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Laravel\Fortify\Fortify;
 
 class AdminAuthController extends Controller
 {
+    public function __construct(private readonly TurnstileVerifier $turnstileVerifier)
+    {
+    }
+
     public function showLoginForm(Request $request)
     {
         return Inertia::render('auth/admin-login', [
             'status' => $request->session()->get('status'),
+            'captchaSiteKey' => config('services.turnstile.site_key'),
         ]);
     }
 
@@ -20,33 +30,55 @@ class AdminAuthController extends Controller
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required'],
+            'captcha_token' => ['required', 'string'],
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            /** @var \App\Models\User $authUser */
-            $authUser = Auth::user();
+        $this->turnstileVerifier->verifyOrFail($credentials['captcha_token'], $request->ip());
 
-            if (! $authUser->isAdmin()) {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+        /** @var User|null $user */
+        $user = User::where('email', $credentials['email'])->first();
 
-                return back()->withErrors([
-                    'email' => 'These credentials do not have admin access.',
-                ])->onlyInput('email');
-            }
-
-            $request->session()->regenerate();
-
-            $authUser->last_login_at = now();
-            $authUser->save();
-
-            return redirect()->intended('/user-management');
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            return back()->withErrors([
+                'email' => 'These credentials do not match our records.',
+            ])->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'email' => 'These credentials do not match our records.',
-        ])->onlyInput('email');
+        if (! $user->isAdmin()) {
+            return back()->withErrors([
+                'email' => 'These credentials do not have admin access.',
+            ])->onlyInput('email');
+        }
+
+        if ($this->requiresTwoFactorChallenge($user)) {
+            $request->session()->put([
+                'login.id' => $user->getKey(),
+                'login.remember' => $request->boolean('remember'),
+            ]);
+
+            return redirect()->route('two-factor.login');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        $user->last_login_at = Carbon::now();
+        $user->save();
+
+        return redirect()->intended('/user-management');
+    }
+
+    private function requiresTwoFactorChallenge(User $user): bool
+    {
+        if (! $user->two_factor_secret) {
+            return false;
+        }
+
+        if (Fortify::confirmsTwoFactorAuthentication()) {
+            return ! is_null($user->two_factor_confirmed_at);
+        }
+
+        return true;
     }
 
     public function logout(Request $request)

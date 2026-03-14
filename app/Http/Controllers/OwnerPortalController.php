@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Laravel\Fortify\Fortify;
 
 class OwnerPortalController extends Controller
 {
@@ -52,8 +53,15 @@ class OwnerPortalController extends Controller
 
     public function settings(Request $request)
     {
+        $user = $request->user();
+        $requiresConfirmation = Fortify::confirmsTwoFactorAuthentication();
+        $hasSecret = !is_null($user?->two_factor_secret);
+        $isConfirmed = !is_null($user?->two_factor_confirmed_at);
+
         return Inertia::render('owner/settings', [
             'status' => $request->session()->get('status'),
+            'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
+            'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,
         ]);
     }
 

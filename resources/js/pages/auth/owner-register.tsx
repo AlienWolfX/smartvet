@@ -5,15 +5,71 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { FormEvent, useEffect, useRef } from 'react';
 
-export default function OwnerRegister() {
+declare global {
+    interface Window {
+        turnstile?: {
+            render: (container: HTMLElement, options: {
+                sitekey: string;
+                callback: (token: string) => void;
+                'expired-callback'?: () => void;
+            }) => string;
+            reset: (widgetId?: string) => void;
+        };
+    }
+}
+
+interface OwnerRegisterProps {
+    captchaSiteKey: string | null;
+}
+
+export default function OwnerRegister({ captchaSiteKey }: OwnerRegisterProps) {
+    const turnstileContainerRef = useRef<HTMLDivElement | null>(null);
+    const turnstileWidgetIdRef = useRef<string | null>(null);
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
         password: '',
         password_confirmation: '',
+        captcha_token: '',
     });
+
+    useEffect(() => {
+        if (!captchaSiteKey) return;
+
+        const renderTurnstile = () => {
+            if (!window.turnstile || !turnstileContainerRef.current || turnstileWidgetIdRef.current) return;
+
+            turnstileWidgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+                sitekey: captchaSiteKey,
+                callback: (token: string) => setData('captcha_token', token),
+                'expired-callback': () => setData('captcha_token', ''),
+            });
+        };
+
+        const existingScript = document.querySelector<HTMLScriptElement>('script[data-turnstile-script="true"]');
+        if (existingScript) {
+            renderTurnstile();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.dataset.turnstileScript = 'true';
+        script.onload = renderTurnstile;
+        document.head.appendChild(script);
+
+        return () => {
+            if (turnstileWidgetIdRef.current && window.turnstile) {
+                window.turnstile.reset(turnstileWidgetIdRef.current);
+            }
+            turnstileWidgetIdRef.current = null;
+        };
+    }, [captchaSiteKey, setData]);
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -21,6 +77,10 @@ export default function OwnerRegister() {
             onFinish: () => {
                 setData('password', '');
                 setData('password_confirmation', '');
+                setData('captcha_token', '');
+                if (turnstileWidgetIdRef.current && window.turnstile) {
+                    window.turnstile.reset(turnstileWidgetIdRef.current);
+                }
             },
         });
     };
@@ -126,6 +186,16 @@ export default function OwnerRegister() {
                                 />
                                 <PasswordMatchIndicator password={data.password} confirmation={data.password_confirmation} />
                                 <InputError message={errors.password_confirmation} />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label>Captcha</Label>
+                                {captchaSiteKey ? (
+                                    <div ref={turnstileContainerRef} className="min-h-[65px]" />
+                                ) : (
+                                    <p className="text-xs text-amber-700">Captcha is not configured. Please contact support.</p>
+                                )}
+                                <InputError message={errors.captcha_token} />
                             </div>
 
                             <Button

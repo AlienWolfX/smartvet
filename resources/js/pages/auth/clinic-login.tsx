@@ -1,27 +1,39 @@
 import InputError from '@/components/input-error';
+import TurnstileCaptcha from '@/components/turnstile-captcha';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { FormEvent, useCallback, useState } from 'react';
 
 interface ClinicLoginProps {
     status?: string;
+    captchaSiteKey: string | null;
 }
 
-export default function ClinicLogin({ status }: ClinicLoginProps) {
+export default function ClinicLogin({ status, captchaSiteKey }: ClinicLoginProps) {
+    const [captchaRefreshNonce, setCaptchaRefreshNonce] = useState(0);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
         remember: false,
+        captcha_token: '',
     });
+
+    const handleCaptchaTokenChange = useCallback((token: string) => {
+        setData('captcha_token', token);
+    }, [setData]);
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         post('/clinic/login', {
-            onFinish: () => setData('password', ''),
+            onFinish: () => {
+                setData('password', '');
+                setData('captcha_token', '');
+                setCaptchaRefreshNonce((prev) => prev + 1);
+            },
         });
     };
 
@@ -97,6 +109,13 @@ export default function ClinicLogin({ status }: ClinicLoginProps) {
                                 />
                                 <Label htmlFor="remember" className="text-xs text-slate-500">Remember me</Label>
                             </div>
+
+                            <TurnstileCaptcha
+                                siteKey={captchaSiteKey}
+                                error={errors.captcha_token}
+                                refreshNonce={captchaRefreshNonce}
+                                onTokenChange={handleCaptchaTokenChange}
+                            />
 
                             <Button
                                 type="submit"

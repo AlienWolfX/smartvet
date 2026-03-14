@@ -141,6 +141,11 @@ return [
     |
     */
 
-    'features' => [],
+    'features' => [
+        Laravel\Fortify\Features::twoFactorAuthentication([
+            'confirm' => true,
+            'confirmPassword' => false,
+        ]),
+    ],
 
 ];
