@@ -128,62 +128,62 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     return (
         <AdminLayout title="Billing & Payments" description="Manage invoices, process payments, and track financial transactions." breadcrumbs={breadcrumbs}>
             <Head title="Billing & Payments" />
-            <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                <div className="grid auto-rows-min gap-4 md:grid-cols-3">
+            <div className="flex flex-1 flex-col gap-5 p-5 pt-0 lg:p-6 lg:pt-0">
+                <div className="grid auto-rows-min gap-5 md:grid-cols-3">
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                            <CardTitle className="text-base font-semibold">
                                 Pending Payments
                             </CardTitle>
-                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <Clock className="h-5 w-5 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{pendingPayments.length}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-3xl font-bold">{pendingPayments.length}</div>
+                            <p className="text-sm text-muted-foreground">
                                 Awaiting payment
                             </p>
                         </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                            <CardTitle className="text-base font-semibold">
                                 Total Revenue (Today)
                             </CardTitle>
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            <DollarSign className="h-5 w-5 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">₱0.00</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-3xl font-bold">₱0.00</div>
+                            <p className="text-sm text-muted-foreground">
                                 +0% from yesterday
                             </p>
                         </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
+                            <CardTitle className="text-base font-semibold">
                                 Recent Transactions
                             </CardTitle>
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                            <CreditCard className="h-5 w-5 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{paymentHistory.length}</div>
-                            <p className="text-xs text-muted-foreground">
+                            <div className="text-3xl font-bold">{paymentHistory.length}</div>
+                            <p className="text-sm text-muted-foreground">
                                 In the last 30 days
                             </p>
                         </CardContent>
                     </Card>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Pending Payments</CardTitle>
+                            <CardTitle className="text-xl">Pending Payments</CardTitle>
                             <CardDescription>
                                 Consultations and services awaiting payment.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-auto max-h-52">
+                            <div className="overflow-auto max-h-64">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
@@ -261,13 +261,13 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Payment History</CardTitle>
+                            <CardTitle className="text-xl">Payment History</CardTitle>
                             <CardDescription>
                                 Recent transactions and payment records.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-auto max-h-52">
+                            <div className="overflow-auto max-h-64">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
@@ -346,24 +346,24 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
 
             {/* Payment Processing Modal */}
             <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Process Payment</DialogTitle>
+                        <DialogTitle className="text-xl">Process Payment</DialogTitle>
                         <DialogDescription>
                             Complete the payment for {selectedPayment?.petName} - {selectedPayment?.service}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-5 py-4">
                         <div className="grid gap-2">
                             <Label>Amount Due</Label>
-                            <div className="text-2xl font-bold text-primary">
+                            <div className="text-3xl font-bold text-primary">
                                 ₱{selectedPayment?.amount}
                             </div>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="payment-method">Payment Method *</Label>
                             <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                <SelectTrigger id="payment-method">
+                                <SelectTrigger id="payment-method" className="h-11">
                                     <SelectValue placeholder="Select payment method" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -384,6 +384,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     placeholder="Transaction or receipt number"
                                     value={referenceNumber}
                                     onChange={(e) => setReferenceNumber(e.target.value)}
+                                    className="h-11"
                                 />
                             </div>
                         )}
@@ -395,6 +396,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 rows={3}
+                                className="min-h-24"
                             />
                         </div>
                     </div>

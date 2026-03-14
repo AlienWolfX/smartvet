@@ -128,6 +128,37 @@ const formatDate = (dateString: string) => {
     });
 };
 
+const extractQrToken = (value: string | null | undefined): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    // If this is already a token, use it as-is.
+    if (!trimmed.includes('/')) {
+        return trimmed;
+    }
+
+    try {
+        const pathParts = new URL(trimmed).pathname.split('/').filter(Boolean);
+        return pathParts[pathParts.length - 1] ?? null;
+    } catch {
+        const parts = trimmed.split('/').filter(Boolean);
+        return parts[parts.length - 1] ?? null;
+    }
+};
+
+const resolveQrPreviewUrl = (value: string): string | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    if (/^https?:\/\//i.test(trimmed)) {
+        return trimmed;
+    }
+
+    const token = extractQrToken(trimmed);
+    return token ? `${window.location.origin}/scan/${token}` : null;
+};
+
 const getVaccinationStatusColor = (status: string) => {
     switch (status) {
         case 'current':
@@ -181,8 +212,9 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
     const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
-        if (qrCardPet?.qrUrl && qrCanvasRef.current) {
-            QRCode.toCanvas(qrCanvasRef.current, qrCardPet.qrUrl, {
+        const qrToken = extractQrToken(qrCardPet?.qrUrl);
+        if (qrToken && qrCanvasRef.current) {
+            QRCode.toCanvas(qrCanvasRef.current, qrToken, {
                 width: 180,
                 margin: 1,
                 color: { dark: '#0f172a', light: '#ffffff' },
@@ -609,7 +641,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                             </Button>
                             <Modal open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
                                 <ModalTrigger asChild>
-                                    <Button size="sm">
+                                    <Button size="sm" className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Pet
                                     </Button>
@@ -878,7 +910,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                             <Button type="button" variant="outline" onClick={() => {setIsAddModalOpen(false); reset();}}>
                                                 Cancel
                                             </Button>
-                                            <Button type="submit" disabled={processing}>
+                                            <Button type="submit" disabled={processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                                 {processing ? 'Adding...' : 'Add Pet'}
                                             </Button>
                                         </ModalFooter>
@@ -1317,7 +1349,8 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         <Button
                                             variant="default"
                                             size="sm"
-                                            className="whitespace-nowrap"
+                                            className="whitespace-nowrap text-white"
+                                            style={{ backgroundColor: themeColor, borderColor: themeColor }}
                                             onClick={() => router.get(`/pet-records/${pet.id}/manage`)}
                                         >
                                             <FileText className="h-4 w-4 mr-1" />
@@ -1637,7 +1670,10 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                             <Button
                                 variant="outline"
                                 className="flex-1 gap-2 bg-white"
-                                onClick={() => window.open(qrCardPet.qrUrl, '_blank')}
+                                onClick={() => {
+                                    const previewUrl = resolveQrPreviewUrl(qrCardPet.qrUrl);
+                                    if (previewUrl) window.open(previewUrl, '_blank');
+                                }}
                             >
                                 <QrCode className="h-4 w-4" />
                                 Preview

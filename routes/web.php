@@ -55,6 +55,8 @@ Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 
 Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
     Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
     Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
+    Route::get('settings/appearance', [App\Http\Controllers\AppearanceSettingsController::class, 'ownerEdit'])->name('owner.settings.appearance');
+    Route::post('settings/appearance', [App\Http\Controllers\AppearanceSettingsController::class, 'ownerUpdate'])->name('owner.settings.appearance.update');
     Route::get('pets/{pet}/record', [App\Http\Controllers\OwnerPortalController::class, 'petRecord'])->name('owner.pet.record');
     Route::put('pets/{pet}', [App\Http\Controllers\OwnerPortalController::class, 'updatePet'])->name('owner.pet.update');
 });
@@ -98,13 +100,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reports/export/financial', [App\Http\Controllers\ReportsController::class, 'exportFinancial'])->name('reports.export.financial');
         Route::get('reports/export/service', [App\Http\Controllers\ReportsController::class, 'exportService'])->name('reports.export.service');
 
+        Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
+        Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
+
         Route::get('billing', [App\Http\Controllers\BillingController::class, 'index'])->name('billing');
         Route::post('billing/process/{payment}', [App\Http\Controllers\BillingController::class, 'processPayment'])->name('billing.process');
     });
-
-    // Clinic Settings (all authenticated users)
-    Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
-    Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
 
     // Admin-only routes
     Route::middleware(['role:admin'])->group(function () {
@@ -120,6 +121,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'update'])->name('owner-management.update');
         Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('owner-management.toggle-status');
         Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('owner-management.destroy');
+
+        Route::get('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminEdit'])->name('admin.settings');
+        Route::post('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminUpdate'])->name('admin.settings.update');
     });
 });
 

@@ -116,7 +116,7 @@ export default function AdminLayout({
         },
         {
             name: 'System Settings',
-            href: '/clinic-settings',
+            href: isAdmin ? '/admin/settings' : '/clinic-settings',
             icon: Settings,
             adminOnly: false,
             clinicOnly: false

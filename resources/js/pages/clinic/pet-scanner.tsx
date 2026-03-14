@@ -54,6 +54,15 @@ interface PetResult {
 const fmt = (d: string) =>
     new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
 
+const getDateTimestamp = (date: string): number => {
+    const parsed = Date.parse(date);
+    return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+};
+
+function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
+    return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
+}
+
 export default function PetScanner() {
     const { auth } = usePage<SharedData>().props;
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
@@ -124,15 +133,38 @@ export default function PetScanner() {
     };
 
     const handleDecodedUrl = (url: string) => {
+        const decoded = url.trim();
+        if (!decoded) {
+            error('Invalid QR code. Please scan a SmartVet pet QR code.');
+            return;
+        }
+
+        // New QR format: token-only payload.
+        if (!decoded.includes('/')) {
+            fetchPet(decoded);
+            return;
+        }
+
         try {
-            const parts = new URL(url).pathname.split('/').filter(Boolean);
+            const parts = new URL(decoded).pathname.split('/').filter(Boolean);
             if (parts.length >= 2 && parts[0] === 'scan') {
                 fetchPet(parts[1]);
             } else {
-                error('QR code does not match a SmartVet pet. Try again.');
+                // Also allow non-URL slash formats by taking the last segment as token.
+                const fallbackToken = decoded.split('/').filter(Boolean).pop();
+                if (fallbackToken) {
+                    fetchPet(fallbackToken);
+                } else {
+                    error('QR code does not match a SmartVet pet. Try again.');
+                }
             }
         } catch {
-            error('Invalid QR code. Please scan a SmartVet pet QR code.');
+            const fallbackToken = decoded.split('/').filter(Boolean).pop();
+            if (fallbackToken) {
+                fetchPet(fallbackToken);
+            } else {
+                error('Invalid QR code. Please scan a SmartVet pet QR code.');
+            }
         }
     };
 
@@ -141,6 +173,9 @@ export default function PetScanner() {
         if (!token) return;
         fetchPet(token);
     };
+
+    const sortedVaccinations = result ? sortRecordsLatestFirst(result.vaccinations) : [];
+    const sortedConsultations = result ? sortRecordsLatestFirst(result.consultations).slice(0, 5) : [];
 
     return (
         <AdminLayout
@@ -155,8 +190,7 @@ export default function PetScanner() {
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
                     <QrCode className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
                     <div className="text-sm text-blue-700">
-                        <p className="font-medium mb-0.5">How to use</p>
-                        <p>Click <strong>Start Camera</strong> and point it at a pet's QR code. The pet's profile will appear here as a modal.</p>
+                        <p>Click <strong>Start Camera</strong> and point it at a pet's QR code.</p>
                     </div>
                 </div>
 
@@ -190,7 +224,7 @@ export default function PetScanner() {
 
                     <div className="px-5 py-4">
                         {!scanning ? (
-                            <Button className="w-full gap-2" onClick={startScanner} disabled={loading}>
+                            <Button className="w-full gap-2 text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }} onClick={startScanner} disabled={loading}>
                                 <Camera className="h-4 w-4" />
                                 Start Camera
                             </Button>
@@ -228,7 +262,7 @@ export default function PetScanner() {
                             onKeyDown={(e) => e.key === 'Enter' && handleManualLookup()}
                             className="font-mono text-sm"
                         />
-                        <Button onClick={handleManualLookup} disabled={!manualToken.trim() || loading} className="shrink-0 gap-2">
+                        <Button onClick={handleManualLookup} disabled={!manualToken.trim() || loading} className="shrink-0 gap-2 text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                             Look up
                         </Button>
@@ -325,18 +359,30 @@ export default function PetScanner() {
                                         {result.vaccinations.length === 0 ? (
                                             <p className="text-xs text-slate-400 italic">No vaccinations recorded.</p>
                                         ) : (
-                                            <div className="space-y-2">
-                                                {result.vaccinations.map((v, i) => {
+                                            <div className="space-y-3">
+                                                {sortedVaccinations.map((v, i) => {
                                                     const overdue = new Date(v.nextDue) < new Date();
                                                     return (
-                                                        <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                                            <div>
-                                                                <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
-                                                                <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                                        <div key={i} className="relative pl-7">
+                                                            <span
+                                                                className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                                                aria-hidden="true"
+                                                            />
+                                                            {i !== sortedVaccinations.length - 1 && (
+                                                                <span
+                                                                    className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            )}
+                                                            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
+                                                                    <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                                                </div>
+                                                                <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                                                                    Due {fmt(v.nextDue)}
+                                                                </Badge>
                                                             </div>
-                                                            <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                                                                Due {fmt(v.nextDue)}
-                                                            </Badge>
                                                         </div>
                                                     );
                                                 })}
@@ -352,14 +398,26 @@ export default function PetScanner() {
                                         {result.consultations.length === 0 ? (
                                             <p className="text-xs text-slate-400 italic">No visits on record.</p>
                                         ) : (
-                                            <div className="space-y-2">
-                                                {result.consultations.slice(0, 5).map((c, i) => (
-                                                    <div key={i} className="rounded-lg bg-slate-50 px-3 py-2">
-                                                        <div className="flex items-center justify-between">
-                                                            <p className="text-sm font-medium capitalize text-slate-800">{c.type}</p>
-                                                            <p className="text-xs text-slate-400">{fmt(c.date)}</p>
+                                            <div className="space-y-3">
+                                                {sortedConsultations.map((c, i) => (
+                                                    <div key={i} className="relative pl-7">
+                                                        <span
+                                                            className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                                            aria-hidden="true"
+                                                        />
+                                                        {i !== sortedConsultations.length - 1 && (
+                                                            <span
+                                                                className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
+                                                                aria-hidden="true"
+                                                            />
+                                                        )}
+                                                        <div className="rounded-lg bg-slate-50 px-3 py-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-sm font-medium capitalize text-slate-800">{c.type}</p>
+                                                                <p className="text-xs text-slate-400">{fmt(c.date)}</p>
+                                                            </div>
+                                                            {c.diagnosis && <p className="text-xs text-slate-500 mt-0.5">Dx: {c.diagnosis}</p>}
                                                         </div>
-                                                        {c.diagnosis && <p className="text-xs text-slate-500 mt-0.5">Dx: {c.diagnosis}</p>}
                                                     </div>
                                                 ))}
                                             </div>

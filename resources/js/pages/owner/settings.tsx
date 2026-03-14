@@ -20,6 +20,7 @@ interface OwnerSettingsProps {
 export default function OwnerSettings({ status }: OwnerSettingsProps) {
     const { auth } = usePage<SharedData>().props;
     const { success } = useToast();
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0e4d3a';
 
     // Profile form
     const profileForm = useForm({
@@ -68,8 +69,8 @@ export default function OwnerSettings({ status }: OwnerSettingsProps) {
             {/* Profile */}
             <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0e4d3a]/10">
-                        <UserCircle className="h-4 w-4 text-[#0e4d3a]" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${themeColor}1A` }}>
+                        <UserCircle className="h-4 w-4" style={{ color: themeColor }} />
                     </div>
                     <div>
                         <CardTitle className="text-sm">Profile information</CardTitle>
@@ -104,7 +105,7 @@ export default function OwnerSettings({ status }: OwnerSettingsProps) {
                             <InputError message={profileForm.errors.email} />
                         </div>
 
-                        <Button type="submit" size="sm" disabled={profileForm.processing}>
+                        <Button type="submit" size="sm" disabled={profileForm.processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                             {profileForm.processing && <Spinner />}
                             Save changes
                         </Button>
@@ -115,8 +116,8 @@ export default function OwnerSettings({ status }: OwnerSettingsProps) {
             {/* Password */}
             <Card>
                 <CardHeader className="flex flex-row items-center gap-3 pb-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0e4d3a]/10">
-                        <KeyRound className="h-4 w-4 text-[#0e4d3a]" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${themeColor}1A` }}>
+                        <KeyRound className="h-4 w-4" style={{ color: themeColor }} />
                     </div>
                     <div>
                         <CardTitle className="text-sm">Change password</CardTitle>
@@ -167,7 +168,7 @@ export default function OwnerSettings({ status }: OwnerSettingsProps) {
                             <InputError message={passwordForm.errors.password_confirmation} />
                         </div>
 
-                        <Button type="submit" size="sm" disabled={passwordForm.processing}>
+                        <Button type="submit" size="sm" disabled={passwordForm.processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                             {passwordForm.processing && <Spinner />}
                             Update password
                         </Button>

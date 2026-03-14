@@ -33,7 +33,8 @@ export default function OwnerLayout({
     actions,
 }: OwnerLayoutProps) {
     const { auth, clinicSettings } = usePage<SharedData>().props;
-    const themeColor = clinicSettings?.themeColor || SIDEBAR_COLOR;
+    const ownerThemeColor = (auth.user as { theme_color?: string })?.theme_color;
+    const themeColor = ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR;
     const clinicDisplayName = clinicSettings?.clinicName || 'SmartVet';
     const clinicLogoUrl = clinicSettings?.clinicLogo || null;
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,9 +43,13 @@ export default function OwnerLayout({
     const navigation = [
         { name: 'My Pets', href: '/owner/pets', icon: PawPrint },
         { name: 'Settings', href: '/owner/settings', icon: Settings },
+        { name: 'Appearance', href: '/owner/settings/appearance', icon: Settings },
     ].map((item) => ({
         ...item,
-        current: currentPath.startsWith(item.href),
+        current:
+            item.href === '/owner/settings'
+                ? currentPath === '/owner/settings'
+                : currentPath.startsWith(item.href),
     }));
 
     const handleLogout = () => {
@@ -186,6 +191,12 @@ export default function OwnerLayout({
                                             <Link href="/owner/settings" className="cursor-pointer">
                                                 <Settings className="mr-2 h-4 w-4" />
                                                 Settings
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href="/owner/settings/appearance" className="cursor-pointer">
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                Appearance
                                             </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />

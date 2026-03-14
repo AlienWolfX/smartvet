@@ -28,8 +28,8 @@ import {
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useToast } from '@/hooks/use-toast';
 import {
     AlertTriangle,
@@ -124,6 +124,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function InventoryManagement({ categories, items }: InventoryPageProps) {
+    const { auth } = usePage<SharedData>().props;
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const { success } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -501,7 +503,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                 }}
                             >
                                 <ModalTrigger asChild>
-                                    <Button size="sm">
+                                    <Button size="sm" className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Item
                                     </Button>
@@ -681,7 +683,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             >
                                                 Cancel
                                             </Button>
-                                            <Button type="submit" disabled={processing || categories.length === 0}>
+                                            <Button type="submit" disabled={processing || categories.length === 0} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                                 {processing ? 'Saving...' : 'Add Item'}
                                             </Button>
                                         </ModalFooter>
@@ -862,7 +864,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             >
                                                 Cancel
                                             </Button>
-                                            <Button type="submit" disabled={editProcessing || !editingItem}>
+                                            <Button type="submit" disabled={editProcessing || !editingItem} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                                 {editProcessing ? 'Saving...' : 'Save Changes'}
                                             </Button>
                                         </ModalFooter>
@@ -932,7 +934,7 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                             >
                                                 Cancel
                                             </Button>
-                                            <Button type="submit" disabled={restockProcessing || !restockItem}>
+                                            <Button type="submit" disabled={restockProcessing || !restockItem} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                                 {restockProcessing ? 'Restocking...' : 'Add Stock'}
                                             </Button>
                                         </ModalFooter>

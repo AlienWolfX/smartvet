@@ -58,6 +58,15 @@ interface Consultation {
     diagnosis: string;
 }
 
+const getDateTimestamp = (date: string): number => {
+    const parsed = Date.parse(date);
+    return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+};
+
+function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
+    return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
+}
+
 interface MyPetsProps {
     pets: Pet[];
     speciesList: Species[];
@@ -168,8 +177,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     useEffect(() => {
         if (qrPet?.qrToken && canvasRef.current) {
-            const url = `${window.location.origin}/scan/${qrPet.qrToken}`;
-            QRCodeLib.toCanvas(canvasRef.current, url, { width: 220, margin: 2 });
+            QRCodeLib.toCanvas(canvasRef.current, qrPet.qrToken, { width: 220, margin: 2 });
         }
     }, [qrPet]);
 
@@ -178,6 +186,8 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
     const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
     const [consultations, setConsultations] = useState<Consultation[]>([]);
     const [recordLoading, setRecordLoading] = useState(false);
+    const sortedVaccinations = sortRecordsLatestFirst(vaccinations);
+    const sortedConsultations = sortRecordsLatestFirst(consultations);
 
     const handleShowRecord = async (pet: Pet) => {
         setRecordPet(pet);
@@ -316,13 +326,29 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                             <h3 className="text-sm font-semibold text-neutral-800">Vaccinations</h3>
                                         </div>
                                         {vaccinations.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {vaccinations.map((v, i) => (
-                                                    <div key={i} className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
-                                                        <p className="text-sm font-medium text-neutral-800">{v.vaccine}</p>
-                                                        <p className="text-xs text-neutral-500 mt-0.5">Given: {v.date} · Next due: {v.nextDue}</p>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-3">
+                                                {sortedVaccinations.map((v, i) => {
+                                                    const isLatest = i === 0;
+
+                                                    return (
+                                                        <div key={i} className="relative pl-6">
+                                                            <span
+                                                                className={`absolute left-0 top-2 h-2.5 w-2.5 rounded-full ${isLatest ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+                                                                aria-hidden="true"
+                                                            />
+                                                            {i !== sortedVaccinations.length - 1 && (
+                                                                <span
+                                                                    className="absolute left-[4px] top-5 bottom-[-8px] w-px bg-neutral-200"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            )}
+                                                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+                                                                <p className="text-sm font-medium text-neutral-800">{v.vaccine}</p>
+                                                                <p className="text-xs text-neutral-500 mt-0.5">Given: {v.date} · Next due: {v.nextDue}</p>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <p className="text-sm text-neutral-400">No vaccination records.</p>
@@ -336,17 +362,33 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                             <h3 className="text-sm font-semibold text-neutral-800">Visit History</h3>
                                         </div>
                                         {consultations.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {consultations.map((c, i) => (
-                                                    <div key={i} className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
-                                                        <div className="flex items-center justify-between">
-                                                            <Badge variant="outline" className="text-xs">{c.type}</Badge>
-                                                            <span className="text-xs text-neutral-400">{c.date}</span>
+                                            <div className="space-y-3">
+                                                {sortedConsultations.map((c, i) => {
+                                                    const isLatest = i === 0;
+
+                                                    return (
+                                                        <div key={i} className="relative pl-6">
+                                                            <span
+                                                                className={`absolute left-0 top-2 h-2.5 w-2.5 rounded-full ${isLatest ? 'bg-emerald-500' : 'bg-neutral-300'}`}
+                                                                aria-hidden="true"
+                                                            />
+                                                            {i !== sortedConsultations.length - 1 && (
+                                                                <span
+                                                                    className="absolute left-[4px] top-5 bottom-[-8px] w-px bg-neutral-200"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            )}
+                                                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
+                                                                <div className="flex items-center justify-between">
+                                                                    <Badge variant="outline" className="text-xs">{c.type}</Badge>
+                                                                    <span className="text-xs text-neutral-400">{c.date}</span>
+                                                                </div>
+                                                                {c.complaint && <p className="text-xs text-neutral-600 mt-1"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
+                                                                {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
+                                                            </div>
                                                         </div>
-                                                        {c.complaint && <p className="text-xs text-neutral-600 mt-1"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
-                                                        {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <p className="text-sm text-neutral-400">No visit history.</p>
