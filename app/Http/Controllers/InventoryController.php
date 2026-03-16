@@ -18,10 +18,22 @@ use Inertia\Response;
 class InventoryController extends Controller
 {
     use ScopesToTenant;
+
+    private const HIDDEN_CATEGORY_SLUGS = ['vaccination'];
+
     public function index(): Response
     {
-        $categories = InventoryCategory::orderBy('name')->get();
-        $items = $this->scopeToUser(InventoryItem::with('category'))->orderByDesc('created_at')->get();
+        $categories = InventoryCategory::whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS)
+            ->orderBy('name')
+            ->get();
+        $items = $this->scopeToUser(
+            InventoryItem::with('category')
+                ->whereHas('category', function ($query) {
+                    $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
+                })
+        )
+            ->orderByDesc('created_at')
+            ->get();
 
         return Inertia::render('inventory-management', [
             'categories' => $categories->map(fn ($category) => [
@@ -58,7 +70,12 @@ class InventoryController extends Controller
             'name' => 'required|string|max:255',
             'brand' => 'nullable|string|max:255',
             'batch_number' => 'nullable|string|max:255',
-            'inventory_category_id' => 'required|exists:inventory_categories,id',
+            'inventory_category_id' => [
+                'required',
+                Rule::exists('inventory_categories', 'id')->where(function ($query) {
+                    $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
+                }),
+            ],
             'current_stock' => 'required|integer|min:0',
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0',
@@ -107,11 +124,20 @@ class InventoryController extends Controller
             abort(403);
         }
 
+        if (in_array($item->category?->slug, self::HIDDEN_CATEGORY_SLUGS, true)) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'brand' => 'nullable|string|max:255',
             'batch_number' => 'nullable|string|max:255',
-            'inventory_category_id' => ['required', Rule::exists('inventory_categories', 'id')],
+            'inventory_category_id' => [
+                'required',
+                Rule::exists('inventory_categories', 'id')->where(function ($query) {
+                    $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
+                }),
+            ],
             'current_stock' => 'required|integer|min:0',
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0',
@@ -152,6 +178,10 @@ class InventoryController extends Controller
             abort(403);
         }
 
+        if (in_array($item->category?->slug, self::HIDDEN_CATEGORY_SLUGS, true)) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'nullable|numeric|min:0',
@@ -184,6 +214,10 @@ class InventoryController extends Controller
             abort(403);
         }
 
+        if (in_array($item->category?->slug, self::HIDDEN_CATEGORY_SLUGS, true)) {
+            abort(404);
+        }
+
         $item->delete();
 
         return redirect()->back()->with('success', 'Inventory item deleted successfully!');
@@ -198,7 +232,13 @@ class InventoryController extends Controller
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
 
-        $itemsQuery = $this->scopeToUser(InventoryItem::with('category'))->orderBy('name');
+        $itemsQuery = $this->scopeToUser(
+            InventoryItem::with('category')
+                ->whereHas('category', function ($query) {
+                    $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
+                })
+        )
+            ->orderBy('name');
 
         $category = $request->string('category')->toString();
         if ($category && $category !== 'all') {

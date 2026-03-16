@@ -173,25 +173,6 @@ export default function AdminLayout({
                 })}
             </nav>
 
-            {/* User section */}
-            <div className="p-4 border-t border-white/10">
-                <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={(auth.user as { avatar?: string })?.avatar ?? ''} />
-                        <AvatarFallback className="text-xs">
-                            {auth.user.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-white">
-                            {auth.user.name}
-                        </p>
-                        <p className="text-xs text-white/60 capitalize">
-                            {(auth.user as { role?: string })?.role || 'Clinic'}
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 
@@ -233,9 +214,6 @@ export default function AdminLayout({
                         <div className="flex flex-1">
                             <div className="flex items-center">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">
-                                        Admin Console
-                                    </p>
                                     <p className="text-sm font-semibold text-neutral-800">
                                         {title}
                                     </p>
@@ -291,20 +269,6 @@ export default function AdminLayout({
                             </div>
                         </div>
                     </main>
-
-                    {/* Footer */}
-                    <footer className="border-t mt-auto">
-                        <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                            <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: themeColor }}>
-                                        <span className="text-white font-bold text-xs">{clinicName.substring(0, 2).toUpperCase()}</span>
-                                    </div>
-                                    <span className="font-medium">{clinicName}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </footer>
                 </div>
             </div>
         </>
