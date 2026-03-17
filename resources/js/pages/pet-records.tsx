@@ -351,6 +351,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [breedSelection, setBreedSelection] = useState('');
     const [customBreed, setCustomBreed] = useState('');
+    const docInputRef = useRef<HTMLInputElement>(null);
 
     const handleDeletePet = useCallback((pet: Pet) => {
         setIsDeleting(true);
@@ -367,7 +368,8 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         });
     }, [router, success, error]);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+
+    const { data, setData, reset } = useForm({
         petName: '',
         species: '',
         breed: '',
@@ -387,61 +389,70 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         zipCode: '',
     });
 
+    const [petDocs, setPetDocs] = useState<File[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setIsSubmitting(true);
+        setFormErrors({});
 
-        post('/pet-records', {
-            forceFormData: true,
+        const fd = new FormData();
+        fd.append('petName', data.petName);
+        fd.append('species', data.species);
+        fd.append('breed', data.breed);
+        fd.append('age', data.age);
+        fd.append('weight', data.weight);
+        fd.append('gender', data.gender);
+        fd.append('color', data.color);
+        fd.append('microchipId', data.microchipId);
+        fd.append('ownerName', data.ownerName);
+        fd.append('phone', data.phone);
+        fd.append('email', data.email);
+        fd.append('province', data.province);
+        fd.append('city', data.city);
+        fd.append('barangay', data.barangay);
+        fd.append('street', data.street);
+        fd.append('zipCode', data.zipCode);
+        if (data.petImage) fd.append('petImage', data.petImage);
+        petDocs.forEach(f => fd.append('petDocuments[]', f));
+
+        router.post('/pet-records', fd, {
             onSuccess: () => {
                 reset();
+                setPetDocs([]);
+                setFormErrors({});
                 setBreedSelection('');
                 setCustomBreed('');
                 setIsAddModalOpen(false);
+                setIsSubmitting(false);
                 success('Pet registered successfully!');
+                setTimeout(() => router.reload(), 250);
             },
-            onError: (errors: Record<string, string>) => {
-                console.log('Validation errors:', errors);
+            onError: (errs: Record<string, string>) => {
+                setIsSubmitting(false);
+                setFormErrors(errs);
 
-                // Handle specific validation errors (excluding petImage since it's optional)
-                if (errors.petName) {
-                    error('Pet name is required');
-                }
-                if (errors.species) {
-                    error('Please select a species');
-                }
-                if (errors.gender) {
-                    error('Please select a gender');
-                }
-                if (errors.ownerName) {
-                    error('Owner name is required');
-                }
-                if (errors.phone) {
-                    error('Phone number is required');
-                }
-                if (errors.province || errors.city || errors.barangay) {
-                    error('Please complete the address fields');
-                }
-                if (errors.microchipId) {
-                    error('This microchip ID is already registered');
-                }
-                if (errors.email) {
-                    error('Please enter a valid email address');
-                }
+                if (errs.petName) error('Pet name is required');
+                if (errs.species) error('Please select a species');
+                if (errs.gender) error('Please select a gender');
+                if (errs.ownerName) error('Owner name is required');
+                if (errs.phone) error('Phone number is required');
+                if (errs.province || errs.city || errs.barangay) error('Please complete the address fields');
+                if (errs.microchipId) error('This microchip ID is already registered');
+                if (errs.email) error('Please enter a valid email address');
+                if (errs.petImage && data.petImage) error('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
 
-                // Only show image error if a file was actually selected but invalid
-                if (errors.petImage && data.petImage) {
-                    error('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
-                }
+                const errKeys = Object.keys(errs);
+                const docErrs = errKeys.filter(k => k === 'petDocuments' || k.startsWith('petDocuments.'));
+                if (docErrs.length > 0) error('One or more documents are invalid. Max 3 files, 10MB each.');
 
-                // Generic error for any other validation issues (excluding known optional fields)
-                const errorKeys = Object.keys(errors);
-                const handledErrors = ['petName', 'species', 'gender', 'ownerName', 'phone', 'province', 'city', 'barangay', 'street', 'zipCode', 'microchipId', 'email', 'petImage'];
-                const unhandledErrors = errorKeys.filter(key => !handledErrors.includes(key));
-
-                if (unhandledErrors.length > 0) {
-                    error('Please check the form for errors and try again');
-                }
-            }
+                const handled = ['petName', 'species', 'gender', 'ownerName', 'phone', 'province', 'city', 'barangay', 'street', 'zipCode', 'microchipId', 'email', 'petImage'];
+                const unhandled = errKeys.filter(k => !handled.includes(k) && k !== 'petDocuments' && !k.startsWith('petDocuments.'));
+                if (unhandled.length > 0) error('Please check the form for errors and try again');
+            },
+            onFinish: () => setIsSubmitting(false),
         });
     };
 
@@ -677,7 +688,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             onChange={(e) => setData('petName', e.target.value)}
                                                             required
                                                         />
-                                                        {errors.petName && <div className="text-red-500 text-xs">{errors.petName}</div>}
+                                                        {formErrors.petName && <div className="text-red-500 text-xs">{formErrors.petName}</div>}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Species *</label>
@@ -690,7 +701,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                                 <SelectItem value="Cat">Cat</SelectItem>
                                                             </SelectContent>
                                                         </Select>
-                                                        {errors.species && <div className="text-red-500 text-xs">{errors.species}</div>}
+                                                        {formErrors.species && <div className="text-red-500 text-xs">{formErrors.species}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-3 gap-4">
@@ -768,7 +779,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                                 <SelectItem value="female">Female</SelectItem>
                                                             </SelectContent>
                                                         </Select>
-                                                        {errors.gender && <div className="text-red-500 text-xs">{errors.gender}</div>}
+                                                        {formErrors.gender && <div className="text-red-500 text-xs">{formErrors.gender}</div>}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Color/Markings</label>
@@ -785,7 +796,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             value={data.microchipId}
                                                             onChange={(e) => setData('microchipId', e.target.value)}
                                                         />
-                                                        {errors.microchipId && <div className="text-red-500 text-xs">{errors.microchipId}</div>}
+                                                        {formErrors.microchipId && <div className="text-red-500 text-xs">{formErrors.microchipId}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
@@ -837,6 +848,62 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                         </label>
                                                     </div>
                                                 </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Medical Documents (Optional)</label>
+                                                    <input
+                                                        ref={docInputRef}
+                                                        type="file"
+                                                        id="petDocInput"
+                                                        multiple
+                                                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx"
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            const picked = Array.from(e.target.files ?? []);
+                                                            const merged = [...petDocs];
+                                                            for (const file of picked) {
+                                                                if (merged.length >= 3) break;
+                                                                if (!merged.some(f => f.name === file.name && f.size === file.size)) {
+                                                                    merged.push(file);
+                                                                }
+                                                            }
+                                                            setPetDocs(merged);
+                                                            if (docInputRef.current) docInputRef.current.value = '';
+                                                        }}
+                                                    />
+                                                    <label
+                                                        htmlFor="petDocInput"
+                                                        className={`flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm transition-colors ${
+                                                            petDocs.length >= 3
+                                                                ? 'cursor-not-allowed border-neutral-200 text-neutral-400'
+                                                                : 'cursor-pointer border-neutral-300 text-neutral-600 hover:border-neutral-400 hover:bg-neutral-50'
+                                                        }`}
+                                                        onClick={(e) => { if (petDocs.length >= 3) e.preventDefault(); }}
+                                                    >
+                                                        <svg className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                                                        {petDocs.length >= 3 ? 'Maximum 3 files reached' : `Add file${petDocs.length > 0 ? ` (${petDocs.length}/3)` : 's'}`}
+                                                    </label>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Up to 3 files — X-rays, lab results, photos, or documents (max 10MB each).
+                                                    </p>
+                                                    {formErrors.petDocuments && <div className="text-red-500 text-xs">{formErrors.petDocuments}</div>}
+                                                    {petDocs.length > 0 && (
+                                                        <div className="space-y-1 rounded-md border border-neutral-200 p-2 text-xs text-neutral-600">
+                                                            {petDocs.map((file, index) => (
+                                                                <div key={`${file.name}-${index}`} className="flex items-center gap-2">
+                                                                    <span className="flex-1 truncate">{file.name}</span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPetDocs(petDocs.filter((_, i) => i !== index))}
+                                                                        className="shrink-0 text-neutral-400 hover:text-red-500"
+                                                                    >
+                                                                        <X className="h-3.5 w-3.5" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {/* Owner Information */}
@@ -851,17 +918,23 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             onChange={(e) => setData('ownerName', e.target.value)}
                                                             required
                                                         />
-                                                        {errors.ownerName && <div className="text-red-500 text-xs">{errors.ownerName}</div>}
+                                                        {formErrors.ownerName && <div className="text-red-500 text-xs">{formErrors.ownerName}</div>}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Phone Number *</label>
                                                         <Input
-                                                            placeholder="+63 917 123 4567"
+                                                            placeholder="e.g., 09171234567"
+                                                            inputMode="numeric"
+                                                            pattern="[0-9]*"
                                                             value={data.phone}
-                                                            onChange={(e) => setData('phone', e.target.value)}
+                                                            onChange={(e) => {
+                                                                // Only allow digits
+                                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                                setData('phone', val);
+                                                            }}
                                                             required
                                                         />
-                                                        {errors.phone && <div className="text-red-500 text-xs">{errors.phone}</div>}
+                                                        {formErrors.phone && <div className="text-red-500 text-xs">{formErrors.phone}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -873,7 +946,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             value={data.email}
                                                             onChange={(e) => setData('email', e.target.value)}
                                                         />
-                                                        {errors.email && <div className="text-red-500 text-xs">{errors.email}</div>}
+                                                        {formErrors.email && <div className="text-red-500 text-xs">{formErrors.email}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
@@ -898,20 +971,20 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             }));
                                                         }}
                                                         errors={{
-                                                            province: errors.province,
-                                                            city: errors.city,
-                                                            barangay: errors.barangay,
+                                                            province: formErrors.province,
+                                                            city: formErrors.city,
+                                                            barangay: formErrors.barangay,
                                                         }}
                                                     />
                                                 </div>
                                             </div>
                                         </div>
                                         <ModalFooter>
-                                            <Button type="button" variant="outline" onClick={() => {setIsAddModalOpen(false); reset();}}>
+                                            <Button type="button" variant="outline" onClick={() => { setIsAddModalOpen(false); reset(); setPetDocs([]); setFormErrors({}); }}>
                                                 Cancel
                                             </Button>
-                                            <Button type="submit" disabled={processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
-                                                {processing ? 'Adding...' : 'Add Pet'}
+                                            <Button type="submit" disabled={isSubmitting} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
+                                                {isSubmitting ? 'Adding...' : 'Add Pet'}
                                             </Button>
                                         </ModalFooter>
                                     </form>
@@ -1572,7 +1645,10 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                             <div key={index} className="p-3 border rounded">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <p className="font-medium">{med.name}</p>
+                                                        <p className="font-medium flex items-center gap-2">
+                                                            <Pill className="h-4 w-4 text-blue-500" />
+                                                            {med.name}
+                                                        </p>
                                                         <p className="text-sm text-neutral-600">{med.dosage}</p>
                                                         <p className="text-sm text-neutral-500">{med.purpose}</p>
                                                     </div>

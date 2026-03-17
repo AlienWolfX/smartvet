@@ -180,7 +180,16 @@ export default function AdminLayout({
         <>
             <Head title={title} />
 
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_42%),_#f1f5f9] flex flex-col">
+            <div
+                className="min-h-screen flex flex-col"
+                style={{
+                    backgroundColor: '#f1f5f9',
+                    backgroundImage: 'var(--paw-pattern), radial-gradient(circle at top, rgba(16,185,129,0.12), transparent 42%)',
+                    backgroundSize: '160px 160px, 100%',
+                    backgroundRepeat: 'repeat, no-repeat',
+                    backgroundAttachment: 'fixed, scroll',
+                }}
+            >
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     <SheetContent side="left" className="p-0 w-72">

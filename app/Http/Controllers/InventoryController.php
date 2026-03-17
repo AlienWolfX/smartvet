@@ -109,7 +109,7 @@ class InventoryController extends Controller
                 'supplier' => $validated['supplier'] ?? null,
                 'location' => $validated['location'] ?? null,
                 'description' => $validated['description'] ?? null,
-                'last_restocked_at' => now(),
+                'last_restocked_at' => now()->toDateString(),
             ]);
         });
 
@@ -119,8 +119,8 @@ class InventoryController extends Controller
     public function update(Request $request, InventoryItem $item): RedirectResponse
     {
         // Verify ownership
-        $user = auth()->user();
-        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+        $user = $request->user();
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
             abort(403);
         }
 
@@ -173,8 +173,8 @@ class InventoryController extends Controller
     public function restock(Request $request, InventoryItem $item): RedirectResponse
     {
         // Verify ownership
-        $user = auth()->user();
-        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+        $user = $request->user();
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
             abort(403);
         }
 
@@ -190,17 +190,19 @@ class InventoryController extends Controller
 
         DB::transaction(function () use ($validated, $item) {
             $item->increment('current_stock', $validated['quantity']);
-            $item->last_restocked_at = now();
+            $updates = [
+                'last_restocked_at' => now(),
+            ];
 
             if (array_key_exists('unit_price', $validated) && $validated['unit_price'] !== null) {
-                $item->unit_price = $validated['unit_price'];
+                $updates['unit_price'] = $validated['unit_price'];
             }
 
             if (!empty($validated['expiry_date'])) {
-                $item->expiry_date = $validated['expiry_date'];
+                $updates['expiry_date'] = $validated['expiry_date'];
             }
 
-            $item->save();
+            $item->update($updates);
         });
 
         return redirect()->back()->with('success', 'Inventory updated with new stock!');
@@ -209,8 +211,8 @@ class InventoryController extends Controller
     public function destroy(InventoryItem $item): RedirectResponse
     {
         // Verify ownership
-        $user = auth()->user();
-        if (!$user->isAdmin() && $item->user_id !== $user->id) {
+        $user = request()->user();
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
             abort(403);
         }
 

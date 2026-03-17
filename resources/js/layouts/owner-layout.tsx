@@ -80,22 +80,6 @@ export default function OwnerLayout({
                     );
                 })}
             </nav>
-
-            {/* User section */}
-            <div className="p-4 border-t border-white/10">
-                <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={(auth.user as { avatar?: string })?.avatar ?? ''} />
-                        <AvatarFallback className="text-xs bg-white/10 text-white">
-                            {auth.user.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-white">{auth.user.name}</p>
-                        <p className="text-xs text-white/60">Pet Owner</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 
@@ -103,7 +87,15 @@ export default function OwnerLayout({
         <>
             <Head title={title} />
 
-            <div className="h-screen overflow-hidden bg-slate-50 flex flex-col">
+            <div
+                className="h-screen overflow-hidden bg-slate-50 flex flex-col"
+                style={{
+                    backgroundImage: 'var(--paw-pattern)',
+                    backgroundSize: '160px 160px',
+                    backgroundRepeat: 'repeat',
+                    backgroundAttachment: 'fixed',
+                }}
+            >
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     <SheetContent side="left" className="p-0 w-72">
@@ -222,13 +214,9 @@ export default function OwnerLayout({
                     </main>
 
                     {/* Footer */}
-                    <footer className="border-t mt-auto">
+                    <footer className="border-t border-white mt-auto bg-white">
                         <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                             <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
-                                <div className="flex items-center gap-2">
-                                    <img src="/images/logo.png" alt="SmartVet" className="h-6 w-auto" />
-                                    <span className="text-muted-foreground/60">Pet Owner Portal</span>
-                                </div>
                                 <p className="text-xs">© {new Date().getFullYear()} SmartVet. All rights reserved.</p>
                             </div>
                         </div>

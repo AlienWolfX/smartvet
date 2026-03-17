@@ -49,12 +49,8 @@ class FortifyServiceProvider extends ServiceProvider
             $request->validate([
                 'email' => ['required', 'email'],
                 'password' => ['required', 'string'],
-                'captcha_token' => ['required', 'string'],
             ]);
-
-            /** @var TurnstileVerifier $turnstileVerifier */
-            $turnstileVerifier = app(TurnstileVerifier::class);
-            $turnstileVerifier->verifyOrFail($request->string('captcha_token')->toString(), $request->ip());
+            // Captcha temporarily disabled for pet owner/general login
 
             $user = User::where('email', $request->string('email')->toString())->first();
 

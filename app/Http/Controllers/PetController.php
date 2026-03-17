@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Pet;
 use App\Models\Owner;
 use App\Models\PetSpecies;
+use App\Models\Consultation;
+use App\Models\ConsultationFile;
 use App\Models\InventoryItem;
 use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PetController extends Controller
@@ -77,6 +80,8 @@ class PetController extends Controller
 
     public function store(Request $request)
     {
+        $actorName = $request->user()?->name ?? 'Clinic Staff';
+
         $request->validate([
             'petName' => 'required|string|max:255',
             'species' => 'required|string',
@@ -87,8 +92,10 @@ class PetController extends Controller
             'color' => 'nullable|string|max:255',
             'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id',
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'petDocuments' => 'sometimes|nullable|array|max:3',
+            'petDocuments.*' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240',
             'ownerName' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|digits_between:7,15',
             'email' => 'nullable|email|max:255',
             'province' => 'required|string',
             'city' => 'required|string',
@@ -97,7 +104,7 @@ class PetController extends Controller
             'zipCode' => 'nullable|string|max:10',
         ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($request, $actorName) {
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('petImage')) {
@@ -157,6 +164,41 @@ class PetController extends Controller
                 'status' => 'active',
                 'last_visit' => now(),
             ]);
+
+            if ($request->hasFile('petDocuments')) {
+                $consultation = Consultation::create([
+                    'pet_id' => $pet->id,
+                    'consultation_type' => 'routine-checkup',
+                    'chief_complaint' => 'Initial uploaded documents from pet registration.',
+                    'diagnosis' => null,
+                    'treatment' => null,
+                    'notes' => 'Uploaded files (e.g., X-rays, lab results) during initial pet registration.',
+                    'consultation_fee' => 0,
+                    'consultation_date' => now()->toDateString(),
+                    'consultation_time' => now()->format('H:i:s'),
+                    'veterinarian' => $actorName,
+                    'status' => 'completed',
+                    'payment_status' => 'pending',
+                ]);
+
+                Storage::disk('public')->makeDirectory('docs');
+
+                foreach ($request->file('petDocuments') as $file) {
+                    $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                    $filePath = $file->storeAs('docs', $filename, 'public');
+
+                    ConsultationFile::create([
+                        'consultation_id' => $consultation->id,
+                        'file_name' => $filename,
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $this->determineFileType($file->getMimeType() ?? ''),
+                        'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
+                        'file_size' => $file->getSize(),
+                        'uploaded_by' => $actorName,
+                    ]);
+                }
+            }
 
             session([
                 'newPetQr' => [
@@ -354,6 +396,15 @@ class PetController extends Controller
         } else {
             return 'current';
         }
+    }
+
+    private function determineFileType(string $mimeType): string
+    {
+        if (str_starts_with($mimeType, 'image/')) {
+            return 'image';
+        }
+
+        return 'document';
     }
 
     public function export(Request $request)
