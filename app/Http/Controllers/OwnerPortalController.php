@@ -71,21 +71,73 @@ class OwnerPortalController extends Controller
         $user = $request->user();
 
         $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
-        $pet = \App\Models\Pet::with(['vaccinations', 'consultations'])
+        $pet = \App\Models\Pet::with(['owner', 'vaccinations', 'consultations.files', 'consultations.inventoryUsages.inventoryItem'])
             ->whereIn('owner_id', $owners)
             ->findOrFail($petId);
 
+        $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
+            'id'            => $f->id,
+            'name'          => $f->original_name ?? $f->file_name,
+            'url'           => $f->file_url,
+            'mimeType'      => $f->mime_type,
+            'size'          => $f->file_size,
+            'sizeFormatted' => $f->file_size_formatted,
+            'isImage'       => $f->isImage(),
+        ]);
+
         return response()->json([
+            'pet' => [
+                'id'          => $pet->id,
+                'name'        => $pet->name,
+                'species'     => $pet->species?->name ?? 'Unknown',
+                'breed'       => $pet->breed ?? '—',
+                'age'         => $pet->age,
+                'weight'      => $pet->weight,
+                'gender'      => $pet->gender ?: '—',
+                'color'       => $pet->color ?: '—',
+                'microchipId' => $pet->microchip_id,
+                'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
+                'status'      => $pet->status ?? 'Healthy',
+            ],
+            'owner' => [
+                'name'             => $pet->owner?->name,
+                'phone'            => $pet->owner?->phone,
+                'email'            => $pet->owner?->email,
+                'address'          => $pet->owner?->address,
+                'street'           => $pet->owner?->street,
+                'barangay'         => $pet->owner?->barangay,
+                'city'             => $pet->owner?->city,
+                'province'         => $pet->owner?->province,
+                'zipCode'          => $pet->owner?->zip_code,
+                'emergencyContact' => $pet->owner?->emergency_contact,
+            ],
+            'documents' => $documents,
             'vaccinations' => $pet->vaccinations->map(fn ($v) => [
                 'vaccine' => $v->vaccine_name,
                 'date'    => $v->vaccination_date->toDateString(),
                 'nextDue' => $v->next_due_date->toDateString(),
             ]),
             'consultations' => $pet->consultations->map(fn ($c) => [
-                'type'      => $c->consultation_type,
-                'date'      => $c->consultation_date->toDateString(),
-                'complaint' => $c->chief_complaint,
-                'diagnosis' => $c->diagnosis,
+                'type'           => $c->consultation_type,
+                'date'           => $c->consultation_date->toDateString(),
+                'complaint'      => $c->chief_complaint,
+                'diagnosis'      => $c->diagnosis,
+                'treatment'      => $c->treatment,
+                'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
+                    'id'        => $u->id,
+                    'name'      => $u->inventoryItem?->name ?? 'Item',
+                    'quantity'  => $u->quantity,
+                    'unitPrice' => $u->unit_price,
+                ]),
+                'files'          => $c->files->map(fn ($f) => [
+                    'id'            => $f->id,
+                    'name'          => $f->original_name ?? $f->file_name,
+                    'url'           => $f->file_url,
+                    'mimeType'      => $f->mime_type,
+                    'size'          => $f->file_size,
+                    'sizeFormatted' => $f->file_size_formatted,
+                    'isImage'       => $f->isImage(),
+                ]),
             ]),
         ]);
     }

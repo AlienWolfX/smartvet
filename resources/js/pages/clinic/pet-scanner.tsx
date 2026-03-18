@@ -17,6 +17,7 @@ import {
     CheckCircle2,
     X,
     User,
+    Info,
     Syringe,
     FileText,
     PawPrint,
@@ -32,6 +33,23 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Scan Pet QR', href: '/pet-records/scan' },
 ];
 
+interface ConsultationFile {
+    id: number;
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    sizeFormatted: string;
+    isImage: boolean;
+}
+
+interface ConsultationInventoryItem {
+    id: number;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+}
+
 interface PetResult {
     pet: {
         name: string;
@@ -46,9 +64,29 @@ interface PetResult {
         publicUrl: string;
         manageUrl: string;
     };
-    owner: { name: string; phone: string; email: string | null };
+    owner: {
+        name: string;
+        phone: string;
+        email: string | null;
+        address?: string;
+        street?: string;
+        barangay?: string;
+        city?: string;
+        province?: string;
+        zipCode?: string;
+        emergencyContact?: string;
+    };
+    documents: ConsultationFile[];
     vaccinations: { vaccine: string; date: string; nextDue: string }[];
-    consultations: { type: string; date: string; complaint: string | null; diagnosis: string | null }[];
+    consultations: {
+        type: string;
+        date: string;
+        complaint: string | null;
+        diagnosis: string | null;
+        treatment?: string | null;
+        inventoryItems?: ConsultationInventoryItem[];
+        files?: ConsultationFile[];
+    }[];
 }
 
 const fmt = (d: string) =>
@@ -75,6 +113,14 @@ export default function PetScanner() {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const lastInvalidPromptAtRef = useRef(0);
     const { success, error } = useToast();
+
+    useEffect(() => {
+        const shouldHide = loading || Boolean(result);
+        document.body.style.overflow = shouldHide ? 'hidden' : '';
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [loading, result]);
 
     const SCANNER_DOM_ID = 'qr-reader';
 
@@ -193,6 +239,7 @@ export default function PetScanner() {
 
     const sortedVaccinations = result ? sortRecordsLatestFirst(result.vaccinations) : [];
     const sortedConsultations = result ? sortRecordsLatestFirst(result.consultations).slice(0, 5) : [];
+    const documents = result ? result.documents : [];
 
     return (
         <AdminLayout
@@ -290,7 +337,7 @@ export default function PetScanner() {
             {/* ── Pet Result Modal ── */}
             {(loading || result) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+                    <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl">
 
                         {/* Loading state */}
                         {loading && (
@@ -350,62 +397,122 @@ export default function PetScanner() {
                                         <p className="text-xs text-slate-400 text-center">Microchip: <span className="font-mono text-slate-600">{result.pet.microchipId}</span></p>
                                     )}
 
-                                    {/* Owner */}
-                                    <div className="rounded-xl border border-slate-100 p-4 space-y-2">
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
-                                            <User className="h-3 w-3" /> Owner
-                                        </p>
-                                        <p className="font-semibold text-slate-800">{result.owner.name}</p>
-                                        {result.owner.phone && (
-                                            <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                <Phone className="h-3 w-3" /> {result.owner.phone}
-                                            </p>
-                                        )}
-                                        {result.owner.email && (
-                                            <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                                                <Mail className="h-3 w-3" /> {result.owner.email}
-                                            </p>
-                                        )}
-                                    </div>
+            {/* Pet + Owner Details */}
+            <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-xl border border-slate-100 p-4 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                        <Info className="h-3 w-3" /> Pet
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-neutral-600">
+                        <div className="rounded-lg bg-white px-2 py-1">
+                            <p className="font-medium">Age</p>
+                            <p className="truncate">{result.pet.age != null ? `${result.pet.age} yr` : '—'}</p>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1">
+                            <p className="font-medium">Gender</p>
+                            <p className="truncate capitalize">{result.pet.gender || '—'}</p>
+                        </div>
+                        <div className="rounded-lg bg-white px-2 py-1">
+                            <p className="font-medium">Color</p>
+                            <p className="truncate capitalize">{result.pet.color || '—'}</p>
+                        </div>
+                        {result.pet.microchipId && (
+                            <div className="rounded-lg bg-white px-2 py-1">
+                                <p className="font-medium">Microchip</p>
+                                <p className="truncate">{result.pet.microchipId}</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                                    {/* Vaccinations */}
-                                    <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
-                                            <Syringe className="h-3 w-3" /> Vaccinations ({result.vaccinations.length})
-                                        </p>
-                                        {result.vaccinations.length === 0 ? (
-                                            <p className="text-xs text-slate-400 italic">No vaccinations recorded.</p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {sortedVaccinations.map((v, i) => {
-                                                    const overdue = new Date(v.nextDue) < new Date();
-                                                    return (
-                                                        <div key={i} className="relative pl-7">
-                                                            <span
-                                                                className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                                                                aria-hidden="true"
-                                                            />
-                                                            {i !== sortedVaccinations.length - 1 && (
-                                                                <span
-                                                                    className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
-                                                                    aria-hidden="true"
-                                                                />
-                                                            )}
-                                                            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                                                <div>
-                                                                    <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
-                                                                    <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
-                                                                </div>
-                                                                <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                                                                    Due {fmt(v.nextDue)}
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+                <div className="rounded-xl border border-slate-100 p-4 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                        <User className="h-3 w-3" /> Owner
+                    </p>
+                    <p className="font-semibold text-slate-800">{result.owner.name}</p>
+                    {result.owner.phone && (
+                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Phone className="h-3 w-3" /> {result.owner.phone}
+                        </p>
+                    )}
+                    {result.owner.email && (
+                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                            <Mail className="h-3 w-3" /> {result.owner.email}
+                        </p>
+                    )}
+                    {(result.owner.street || result.owner.barangay || result.owner.city || result.owner.province || result.owner.zipCode) && (
+                        <p className="text-xs text-slate-500">
+                            {[result.owner.street, result.owner.barangay, result.owner.city, result.owner.province, result.owner.zipCode].filter(Boolean).join(', ')}
+                        </p>
+                    )}
+                    {result.owner.emergencyContact && (
+                        <p className="text-xs text-slate-500">
+                            <span className="font-semibold">Emergency:</span> {result.owner.emergencyContact}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {documents.length > 0 && (
+                <div className="rounded-xl border border-slate-100 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
+                        <FileText className="h-3 w-3" /> Documents
+                    </p>
+                    <div className="space-y-2">
+                        {documents.map((doc) => (
+                            <a
+                                key={doc.id}
+                                href={doc.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                            >
+                                <span className="truncate">{doc.name}</span>
+                                <span className="text-xs text-neutral-400">{doc.sizeFormatted}</span>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Vaccinations */}
+            <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
+                    <Syringe className="h-3 w-3" /> Vaccinations ({result.vaccinations.length})
+                </p>
+                {result.vaccinations.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic">No vaccinations recorded.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {sortedVaccinations.map((v, i) => {
+                            const overdue = new Date(v.nextDue) < new Date();
+                            return (
+                                <div key={i} className="relative pl-7">
+                                    <span
+                                        className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                        aria-hidden="true"
+                                    />
+                                    {i !== sortedVaccinations.length - 1 && (
+                                        <span
+                                            className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
+                                            aria-hidden="true"
+                                        />
+                                    )}
+                                    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
+                                            <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                        </div>
+                                        <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                                            Due {fmt(v.nextDue)}
+                                        </Badge>
                                     </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
                                     {/* Consultations */}
                                     <div>
@@ -433,7 +540,23 @@ export default function PetScanner() {
                                                                 <p className="text-sm font-medium capitalize text-slate-800">{c.type}</p>
                                                                 <p className="text-xs text-slate-400">{fmt(c.date)}</p>
                                                             </div>
-                                                            {c.diagnosis && <p className="text-xs text-slate-500 mt-0.5">Dx: {c.diagnosis}</p>}
+                                                            {c.complaint && <p className="text-xs text-slate-500 mt-0.5"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
+                                                            {c.diagnosis && <p className="text-xs text-slate-500"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
+                                                            {c.treatment && <p className="text-xs text-slate-500"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
+
+                                                            {c.inventoryItems && c.inventoryItems.length > 0 && (
+                                                                <div className="mt-2">
+                                                                    <p className="text-xs font-semibold text-neutral-500">Items used</p>
+                                                                    <ul className="mt-1 space-y-1 text-xs text-neutral-600">
+                                                                        {c.inventoryItems.map((item) => (
+                                                                            <li key={item.id} className="flex justify-between gap-2">
+                                                                                <span className="truncate">{item.name}</span>
+                                                                                <span className="text-neutral-400">{item.quantity}</span>
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}

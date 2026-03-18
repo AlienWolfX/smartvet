@@ -18,6 +18,10 @@ import {
     Syringe,
     Stethoscope,
     Pencil,
+    User,
+    Phone,
+    Mail,
+    FileText,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import QRCodeLib from 'qrcode';
@@ -37,6 +41,7 @@ interface Pet {
     lastVisit: string | null;
     imageUrl: string | null;
     qrToken: string | null;
+    microchipId?: string;
 }
 
 interface Species {
@@ -51,11 +56,54 @@ interface Vaccination {
     nextDue: string;
 }
 
+interface ConsultationFile {
+    id: number;
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    sizeFormatted: string;
+    isImage: boolean;
+}
+
+interface ConsultationInventoryItem {
+    id: number;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+}
+
 interface Consultation {
     type: string;
     date: string;
     complaint: string;
     diagnosis: string;
+    treatment?: string;
+    inventoryItems?: ConsultationInventoryItem[];
+    files?: ConsultationFile[];
+}
+
+interface OwnerInfo {
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    street?: string;
+    barangay?: string;
+    city?: string;
+    province?: string;
+    zipCode?: string;
+    emergencyContact?: string;
+}
+
+interface DocumentFile {
+    id: number;
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    sizeFormatted: string;
+    isImage: boolean;
 }
 
 const getDateTimestamp = (date: string): number => {
@@ -183,14 +231,28 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
 
     // Records modal
     const [recordPet, setRecordPet] = useState<Pet | null>(null);
+    const [recordPetDetails, setRecordPetDetails] = useState<Partial<Pet> | null>(null);
+    const [recordOwner, setRecordOwner] = useState<OwnerInfo | null>(null);
+    const [recordDocuments, setRecordDocuments] = useState<DocumentFile[]>([]);
     const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
     const [consultations, setConsultations] = useState<Consultation[]>([]);
     const [recordLoading, setRecordLoading] = useState(false);
     const sortedVaccinations = sortRecordsLatestFirst(vaccinations);
     const sortedConsultations = sortRecordsLatestFirst(consultations);
 
+    const closeRecordModal = () => {
+        setRecordPet(null);
+        setRecordPetDetails(null);
+        setRecordOwner(null);
+        setRecordDocuments([]);
+        setVaccinations([]);
+        setConsultations([]);
+    };
+
     const handleShowRecord = async (pet: Pet) => {
         setRecordPet(pet);
+        setRecordOwner(null);
+        setRecordDocuments([]);
         setVaccinations([]);
         setConsultations([]);
         setRecordLoading(true);
@@ -199,6 +261,9 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
             const data = await res.json();
+            setRecordPetDetails(data.pet ?? null);
+            setRecordOwner(data.owner ?? null);
+            setRecordDocuments(data.documents ?? []);
             setVaccinations(data.vaccinations ?? []);
             setConsultations(data.consultations ?? []);
         } finally {
@@ -230,7 +295,8 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
             breed: pet.breed === '—' ? '' : pet.breed,
             age: pet.age ? String(pet.age) : '',
             weight: pet.weight ? String(pet.weight) : '',
-            gender: pet.gender === '—' ? '' : pet.gender,
+            // Ensure we use the same lowercase enum values used by the select options
+            gender: pet.gender === '—' ? '' : pet.gender.toLowerCase(),
             color: pet.color === '—' ? '' : pet.color,
             petImage: null,
             _method: 'PUT',
@@ -303,14 +369,14 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
 
             {/* Pet Record Modal */}
             {recordPet && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setRecordPet(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeRecordModal}>
                     <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between border-b px-5 py-4">
                             <div>
                                 <p className="text-lg font-semibold text-neutral-900">{recordPet.name}'s Record</p>
                                 <p className="text-sm text-neutral-500">{recordPet.species} · {recordPet.breed}</p>
                             </div>
-                            <button onClick={() => setRecordPet(null)} className="rounded-full p-1 text-neutral-400 hover:text-neutral-700">
+                            <button onClick={closeRecordModal} className="rounded-full p-1 text-neutral-400 hover:text-neutral-700">
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
@@ -319,6 +385,97 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                 <div className="py-10 text-center text-neutral-400">Loading...</div>
                             ) : (
                                 <>
+                                    {/* Pet & Owner */}
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 flex items-center gap-1.5 mb-2">
+                                                <Info className="h-3.5 w-3.5" />
+                                                Pet
+                                            </p>
+                                            <p className="font-semibold text-neutral-800">{recordPet?.name ?? '-'}</p>
+                                            <p className="text-xs text-neutral-500">{recordPet?.species} · {recordPet?.breed}</p>
+                                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-600">
+                                                {recordPetDetails?.microchipId && (
+                                                    <div className="rounded-lg bg-white px-2 py-1">
+                                                        <p className="font-medium">Microchip</p>
+                                                        <p className="truncate">{recordPetDetails.microchipId}</p>
+                                                    </div>
+                                                )}
+                                                {recordPet?.age != null && (
+                                                    <div className="rounded-lg bg-white px-2 py-1">
+                                                        <p className="font-medium">Age</p>
+                                                        <p className="truncate">{recordPet.age} yr</p>
+                                                    </div>
+                                                )}
+                                                {recordPet?.gender && (
+                                                    <div className="rounded-lg bg-white px-2 py-1">
+                                                        <p className="font-medium">Gender</p>
+                                                        <p className="truncate capitalize">{recordPet.gender}</p>
+                                                    </div>
+                                                )}
+                                                {recordPet?.color && (
+                                                    <div className="rounded-lg bg-white px-2 py-1">
+                                                        <p className="font-medium">Color</p>
+                                                        <p className="truncate capitalize">{recordPet.color}</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 flex items-center gap-1.5 mb-2">
+                                                <User className="h-3.5 w-3.5" />
+                                                Owner
+                                            </p>
+                                            <p className="font-semibold text-neutral-800">{recordOwner?.name ?? '-'}</p>
+                                            {recordOwner?.phone && (
+                                                <p className="flex items-center gap-1.5 text-xs text-neutral-500 mt-1">
+                                                    <Phone className="h-3.5 w-3.5" />
+                                                    {recordOwner.phone}
+                                                </p>
+                                            )}
+                                            {recordOwner?.email && (
+                                                <p className="flex items-center gap-1.5 text-xs text-neutral-500">
+                                                    <Mail className="h-3.5 w-3.5" />
+                                                    {recordOwner.email}
+                                                </p>
+                                            )}
+                                            {(recordOwner?.street || recordOwner?.barangay || recordOwner?.city || recordOwner?.province || recordOwner?.zipCode) && (
+                                                <p className="text-xs text-neutral-500 mt-1">
+                                                    {[recordOwner.street, recordOwner.barangay, recordOwner.city, recordOwner.province, recordOwner.zipCode].filter(Boolean).join(', ')}
+                                                </p>
+                                            )}
+                                            {recordOwner?.emergencyContact && (
+                                                <p className="text-xs text-neutral-500 mt-1">
+                                                    <span className="font-semibold">Emergency:</span> {recordOwner.emergencyContact}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {recordDocuments.length > 0 && (
+                                        <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 flex items-center gap-1.5 mb-2">
+                                                <FileText className="h-3.5 w-3.5" />
+                                                Documents
+                                            </p>
+                                            <div className="space-y-2">
+                                                {recordDocuments.map((doc) => (
+                                                    <a
+                                                        key={doc.id}
+                                                        href={doc.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                                                    >
+                                                        <span className="truncate">{doc.name}</span>
+                                                        <span className="text-xs text-neutral-400">{doc.sizeFormatted}</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Vaccinations */}
                                     <section>
                                         <div className="flex items-center gap-2 mb-3">
@@ -385,6 +542,22 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                                                 </div>
                                                                 {c.complaint && <p className="text-xs text-neutral-600 mt-1"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
                                                                 {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
+
+                                                                {c.treatment && <p className="text-xs text-neutral-600"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
+
+                                                                {c.inventoryItems && c.inventoryItems.length > 0 && (
+                                                                    <div className="mt-2">
+                                                                        <p className="text-xs font-semibold text-neutral-500">Items used</p>
+                                                                        <ul className="mt-1 space-y-1 text-xs text-neutral-600">
+                                                                            {c.inventoryItems.map((item) => (
+                                                                                <li key={item.id} className="flex justify-between gap-2">
+                                                                                    <span className="truncate">{item.name}</span>
+                                                                                    <span className="text-neutral-400">{item.quantity}</span>
+                                                                                </li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -493,8 +666,8 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                             <SelectValue placeholder="Select gender" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Male">Male</SelectItem>
-                                            <SelectItem value="Female">Female</SelectItem>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
