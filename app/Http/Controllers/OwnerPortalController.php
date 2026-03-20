@@ -67,8 +67,17 @@ class OwnerPortalController extends Controller
 
     public function petRecord(Request $request, $petId)
     {
-        /** @var \App\Models\User $user */
+        /** @var \App\Models\User|null $user */
         $user = $request->user();
+
+        if (! $user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        $owner = \App\Models\Owner::where('account_user_id', $user->id)->first();
+        $ownerClinicName = $owner?->user?->clinic_name;
+
+        $clinicName = $user->clinic_name ?? $ownerClinicName ?? 'SmartVet';
 
         $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
         $pet = \App\Models\Pet::with(['owner', 'vaccinations', 'consultations.files', 'consultations.inventoryUsages.inventoryItem'])
@@ -86,6 +95,7 @@ class OwnerPortalController extends Controller
         ]);
 
         return response()->json([
+            'clinicName' => $user->clinic_name ?? $pet->owner?->clinic_name ?? 'SmartVet',
             'pet' => [
                 'id'          => $pet->id,
                 'name'        => $pet->name,
@@ -116,6 +126,7 @@ class OwnerPortalController extends Controller
                 'vaccine' => $v->vaccine_name,
                 'date'    => $v->vaccination_date->toDateString(),
                 'nextDue' => $v->next_due_date->toDateString(),
+                'clinicName' => $v->clinic_location ?? $clinicName,
             ]),
             'consultations' => $pet->consultations->map(fn ($c) => [
                 'type'           => $c->consultation_type,
@@ -123,6 +134,7 @@ class OwnerPortalController extends Controller
                 'complaint'      => $c->chief_complaint,
                 'diagnosis'      => $c->diagnosis,
                 'treatment'      => $c->treatment,
+                'clinicName' => $c->clinic_location ?? $clinicName,
                 'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
                     'id'        => $u->id,
                     'name'      => $u->inventoryItem?->name ?? 'Item',

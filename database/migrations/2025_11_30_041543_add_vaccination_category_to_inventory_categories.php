@@ -13,9 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         DB::table('inventory_categories')->insert([
-            'name' => 'Vaccination',
-            'slug' => 'vaccination',
-            'icon' => 'Syringe',
+            'name' => 'Vaccines',
+            'slug' => 'vaccines',
+            'icon' => '💉',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::table('inventory_categories')->where('slug', 'vaccination')->delete();
+        DB::table('inventory_categories')->where('slug', 'vaccines')->delete();
     }
 };

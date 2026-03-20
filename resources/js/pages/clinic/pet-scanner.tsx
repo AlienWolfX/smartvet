@@ -77,8 +77,10 @@ interface PetResult {
         emergencyContact?: string;
     };
     documents: ConsultationFile[];
-    vaccinations: { vaccine: string; date: string; nextDue: string }[];
+    clinicName?: string;
+    vaccinations: { vaccine: string; date: string; nextDue: string; clinicName?: string }[];
     consultations: {
+        clinicName: string | undefined;
         type: string;
         date: string;
         complaint: string | null;
@@ -338,9 +340,10 @@ export default function PetScanner() {
             {(loading || result) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="relative w-full max-w-lg max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl">
+                        <div className="h-full max-h-[90vh] overflow-y-auto">
 
-                        {/* Loading state */}
-                        {loading && (
+                            {/* Loading state */}
+                            {loading && (
                             <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400">
                                 <Loader2 className="h-8 w-8 animate-spin" style={{ color: themeColor }} />
                                 <p className="text-sm">Loading pet profile…</p>
@@ -361,6 +364,7 @@ export default function PetScanner() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                     <div className="absolute bottom-4 left-4 text-white">
                                         <h2 className="text-2xl font-bold">{result.pet.name}</h2>
+                                        <p className="text-xs uppercase tracking-wide text-white/70">{result.clinicName ?? 'SmartVet'}</p>
                                         <p className="text-sm text-white/80">{result.pet.species} · {result.pet.breed}</p>
                                     </div>
                                     <Badge
@@ -502,6 +506,7 @@ export default function PetScanner() {
                                                                 <div>
                                                                     <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
                                                                     <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                                                    <p className="text-xs text-slate-500">Clinic: {v.clinicName ?? result.clinicName ?? 'SmartVet'}</p>
                                                                 </div>
                                                                 <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
                                                                     Due {fmt(v.nextDue)}
@@ -540,6 +545,7 @@ export default function PetScanner() {
                                                                 <p className="text-sm font-medium capitalize text-slate-800">{c.type}</p>
                                                                 <p className="text-xs text-slate-400">{fmt(c.date)}</p>
                                                             </div>
+                                                            <p className="text-xs text-slate-500 mt-0.5"><span className="font-medium">Clinic:</span> {c.clinicName ?? result.clinicName ?? 'SmartVet'}</p>
                                                             {c.complaint && <p className="text-xs text-slate-500 mt-0.5"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
                                                             {c.diagnosis && <p className="text-xs text-slate-500"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
                                                             {c.treatment && <p className="text-xs text-slate-500"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
@@ -574,6 +580,7 @@ export default function PetScanner() {
                                 </div>
                             </>
                         )}
+                        </div>
                     </div>
                 </div>
             )}

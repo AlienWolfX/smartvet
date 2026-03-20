@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Consultation;
+use App\Models\InventoryItem;
 use App\Models\Pet;
 use App\Models\PetPayment;
+use App\Models\PetPaymentItem;
 use App\Models\Vaccination;
 use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
@@ -71,7 +73,7 @@ class VaccinationController extends Controller
             ]));
 
             // Always create a payment record for the vaccination
-            PetPayment::create([
+            $payment = PetPayment::create([
                 'pet_id' => $numericId,
                 'vaccination_id' => $vaccination->id,
                 'total_amount' => $vaccinationFee,
@@ -80,8 +82,33 @@ class VaccinationController extends Controller
                 'notes' => "Vaccination: {$validated['vaccine_name']}",
             ]);
 
+            // Add vaccination item to payment items
+            PetPaymentItem::create([
+                'pet_payment_id' => $payment->id,
+                'service_type' => 'vaccination',
+                'service_id' => $vaccination->id,
+                'description' => 'Vaccine: ' . $validated['vaccine_name'],
+                'amount' => $vaccinationFee,
+            ]);
+
             if (! empty($inventoryItems)) {
+                // Add extra inventory usage for vaccination materials
                 app(InventoryUsageService::class)->attach($vaccination, $inventoryItems);
+
+                foreach ($inventoryItems as $item) {
+                    $inventoryModel = InventoryItem::find($item['inventory_item_id']);
+                    if (! $inventoryModel) {
+                        continue;
+                    }
+
+                    PetPaymentItem::create([
+                        'pet_payment_id' => $payment->id,
+                        'service_type' => 'inventory_item',
+                        'service_id' => $inventoryModel->id,
+                        'description' => $inventoryModel->name . ' x' . $item['quantity'],
+                        'amount' => $inventoryModel->unit_price * $item['quantity'],
+                    ]);
+                }
             }
         });
 

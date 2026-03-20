@@ -74,6 +74,7 @@ interface ConsultationInventoryItem {
 }
 
 interface Consultation {
+    clinicName: any;
     type: string;
     date: string;
     complaint: string;
@@ -370,7 +371,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
             {/* Pet Record Modal */}
             {recordPet && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeRecordModal}>
-                    <div className="relative w-full max-w-lg rounded-2xl bg-white shadow-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                    <div className="relative w-full max-w-lg max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between border-b px-5 py-4">
                             <div>
                                 <p className="text-lg font-semibold text-neutral-900">{recordPet.name}'s Record</p>
@@ -380,7 +381,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+                        <div className="max-h-[80vh] overflow-y-auto flex-1 px-5 py-4 space-y-5">
                             {recordLoading ? (
                                 <div className="py-10 text-center text-neutral-400">Loading...</div>
                             ) : (
@@ -540,6 +541,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                                                                     <Badge variant="outline" className="text-xs">{c.type}</Badge>
                                                                     <span className="text-xs text-neutral-400">{c.date}</span>
                                                                 </div>
+                                                                {c.clinicName && <p className="text-xs text-neutral-500"><span className="font-medium">Clinic:</span> {c.clinicName}</p>}
                                                                 {c.complaint && <p className="text-xs text-neutral-600 mt-1"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
                                                                 {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
 

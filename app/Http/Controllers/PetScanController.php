@@ -22,6 +22,9 @@ class PetScanController extends Controller
      */
     public function clinicScan(string $token): JsonResponse
     {
+        $user = auth()->user();
+        $clinicName = $user?->clinic_name ?? 'SmartVet';
+
         $pet = Pet::with([
             'owner',
             'species',
@@ -41,6 +44,7 @@ class PetScanController extends Controller
         ]);
 
         return response()->json([
+            'clinicName' => $clinicName,
             'pet' => [
                 'name'        => $pet->name,
                 'species'     => $pet->species->name,
@@ -68,16 +72,18 @@ class PetScanController extends Controller
             ],
             'documents'      => $documents,
             'vaccinations'   => $pet->vaccinations->map(fn ($v) => [
-                'vaccine' => $v->vaccine_name,
-                'date'    => $v->vaccination_date->toDateString(),
-                'nextDue' => $v->next_due_date->toDateString(),
+                'vaccine'    => $v->vaccine_name,
+                'date'       => $v->vaccination_date->toDateString(),
+                'nextDue'    => $v->next_due_date->toDateString(),
+                'clinicName' => $v->clinic_location ?? $clinicName,
             ]),
             'consultations' => $pet->consultations->map(fn ($c) => [
-                'type'           => $c->consultation_type,
-                'date'           => $c->consultation_date->toDateString(),
-                'complaint'      => $c->chief_complaint,
-                'diagnosis'      => $c->diagnosis,
-                'treatment'      => $c->treatment,
+                'type'       => $c->consultation_type,
+                'date'       => $c->consultation_date->toDateString(),
+                'complaint'  => $c->chief_complaint,
+                'diagnosis'  => $c->diagnosis,
+                'treatment'  => $c->treatment,
+                'clinicName' => $c->clinic_location ?? $clinicName,
                 'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
                     'id'        => $u->id,
                     'name'      => $u->inventoryItem?->name ?? 'Item',

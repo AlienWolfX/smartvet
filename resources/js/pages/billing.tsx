@@ -1,6 +1,7 @@
 import AdminLayout from '@/layouts/admin-layout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { type SharedData } from '@/types';
 import {
     Card,
     CardContent,
@@ -36,7 +37,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CreditCard, DollarSign, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CreditCard, CheckCircle, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+
+interface PaymentItem {
+    service_type: string;
+    description: string;
+    amount: number;
+}
 
 interface PendingPayment {
     id: number;
@@ -45,8 +52,9 @@ interface PendingPayment {
     petName: string;
     ownerName: string;
     service: string;
-    amount: string;
+    amount: number;
     status: string;
+    items: PaymentItem[];
 }
 
 interface PaymentHistoryItem {
@@ -54,11 +62,12 @@ interface PaymentHistoryItem {
     date: string;
     petName: string;
     ownerName: string;
-    amount: string;
+    amount: number;
     method: string;
     reference: string | null;
     status: string;
     recordedBy: string;
+    items: PaymentItem[];
 }
 
 interface Props {
@@ -73,6 +82,12 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     const [referenceNumber, setReferenceNumber] = useState('');
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
+
+    const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+    const [selectedHistoryPayment, setSelectedHistoryPayment] = useState<PaymentHistoryItem | null>(null);
+
+    const { auth } = usePage<SharedData>().props;
+    const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
 
     // Pagination states
     const [pendingPage, setPendingPage] = useState(1);
@@ -92,6 +107,11 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
         setReferenceNumber('');
         setNotes('');
         setPaymentModalOpen(true);
+    };
+
+    const openReceiptModal = (payment: PaymentHistoryItem) => {
+        setSelectedHistoryPayment(payment);
+        setReceiptModalOpen(true);
     };
 
     const handleProcessPayment = () => {
@@ -128,8 +148,8 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     return (
         <AdminLayout title="Billing & Payments" description="Manage invoices, process payments, and track financial transactions." breadcrumbs={breadcrumbs}>
             <Head title="Billing & Payments" />
-            <div className="flex flex-1 flex-col gap-5 p-5 pt-0 lg:p-6 lg:pt-0">
-                <div className="grid auto-rows-min gap-5 md:grid-cols-3">
+            <div className="flex flex-1 flex-col gap-5 p-5 pt-0 lg:p-6 lg:pt-0 overflow-y-auto h-[calc(100vh-160px)]">
+                <div className="grid auto-rows-min gap-5 md:grid-cols-2">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
                             <CardTitle className="text-base font-semibold">
@@ -138,23 +158,9 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             <Clock className="h-5 w-5 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold">{pendingPayments.length}</div>
+                            <div className="text-2xl font-semibold">{pendingPayments.length}</div>
                             <p className="text-sm text-muted-foreground">
                                 Awaiting payment
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2.5">
-                            <CardTitle className="text-base font-semibold">
-                                Total Revenue (Today)
-                            </CardTitle>
-                            <DollarSign className="h-5 w-5 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">₱0.00</div>
-                            <p className="text-sm text-muted-foreground">
-                                +0% from yesterday
                             </p>
                         </CardContent>
                     </Card>
@@ -166,7 +172,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             <CreditCard className="h-5 w-5 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold">{paymentHistory.length}</div>
+                            <div className="text-2xl font-semibold">{paymentHistory.length}</div>
                             <p className="text-sm text-muted-foreground">
                                 In the last 30 days
                             </p>
@@ -174,16 +180,16 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                     </Card>
                 </div>
 
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="flex flex-col gap-5">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-xl">Pending Payments</CardTitle>
+                            <CardTitle className="text-2xl">Pending Payments</CardTitle>
                             <CardDescription>
                                 Consultations and services awaiting payment.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-auto max-h-64">
+                            <div className="overflow-auto max-h-[60vh] text-base">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
@@ -261,13 +267,13 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-xl">Payment History</CardTitle>
+                            <CardTitle className="text-2xl">Payment History</CardTitle>
                             <CardDescription>
                                 Recent transactions and payment records.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="overflow-auto max-h-64">
+                            <div className="overflow-auto max-h-[60vh] text-base">
                             <Table>
                                 <TableHeader className="sticky top-0 bg-background z-10">
                                     <TableRow>
@@ -278,6 +284,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                         <TableHead>Reference</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Recorded By</TableHead>
+                                        <TableHead className="text-right">Receipt</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -307,6 +314,11 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>{payment.recordedBy}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button size="sm" variant="outline" onClick={() => openReceiptModal(payment)}>
+                                                        View Receipt
+                                                    </Button>
+                                                </TableCell>
                                             </TableRow>
                                         ))
                                     )}
@@ -354,6 +366,24 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-5 py-4">
+                        {selectedPayment?.items?.length > 0 && (
+                            <div className="border p-3 rounded-lg bg-muted/30">
+                                <div className="mb-2 text-sm font-semibold">Payment Items</div>
+                                <div className="space-y-1">
+                                    {selectedPayment.items.map((item) => {
+                                        const itemAmount = Number(item.amount);
+                                        const displayAmount = Number.isNaN(itemAmount) ? '0.00' : itemAmount.toFixed(2);
+
+                                        return (
+                                            <div key={`${item.service_type}-${item.description}`} className="flex justify-between text-sm">
+                                                <span>{item.description}</span>
+                                                <span>₱{displayAmount}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                         <div className="grid gap-2">
                             <Label>Amount Due</Label>
                             <div className="text-3xl font-bold text-primary">
@@ -415,6 +445,52 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             {processing ? 'Processing...' : 'Confirm Payment'}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Payment Receipt Modal */}
+            <Dialog open={receiptModalOpen} onOpenChange={setReceiptModalOpen}>
+                <DialogContent className="sm:max-w-lg">
+                    <div className="receipt-paper max-w-[95vw]">
+                        <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-center">{clinicName}</DialogTitle>
+                        <DialogDescription>
+                            Receipt for {selectedHistoryPayment?.petName} - {selectedHistoryPayment?.date}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-3 py-4">
+                        <div className="text-sm">
+                            <p><strong>Pet:</strong> {selectedHistoryPayment?.petName}</p>
+                            <p><strong>Owner:</strong> {selectedHistoryPayment?.ownerName}</p>
+                            <p><strong>Paid At:</strong> {selectedHistoryPayment?.date}</p>
+                            <p><strong>Method:</strong> {selectedHistoryPayment?.method || '-'} {selectedHistoryPayment?.reference ? ` (ref: ${selectedHistoryPayment.reference})` : ''}</p>
+                        </div>
+
+                        <div className="border rounded-md p-3">
+                            <div className="text-sm font-semibold mb-2">Items / Services</div>
+                            <div className="space-y-1">
+                                {selectedHistoryPayment?.items?.map((item) => {
+                                    const itemAmount = Number(item.amount);
+                                    const displayAmount = Number.isNaN(itemAmount) ? '0.00' : itemAmount.toFixed(2);
+                                    return (
+                                        <div key={`${item.service_type}-${item.description}`} className="flex justify-between text-sm">
+                                            <span>{item.description}</span>
+                                            <span>₱{displayAmount}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                            <div className="text-lg font-bold text-right">
+                            Total: ₱{selectedHistoryPayment ? Number(selectedHistoryPayment.amount).toFixed(2) : '0.00'}
+                        </div>
+                    </div>
+                    <DialogFooter className="receipt-footer flex gap-2">
+                        <Button variant="outline" onClick={() => window.print()}>Print Receipt</Button>
+                        <Button onClick={() => setReceiptModalOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </div>
                 </DialogContent>
             </Dialog>
         </AdminLayout>
