@@ -181,11 +181,11 @@ export default function PetScanner() {
                         return;
                     }
 
-                    scanner.stop().catch(() => {});
+                    scanner.stop().catch(() => { });
                     setScanning(false);
                     fetchPet(token);
                 },
-                () => {},
+                () => { },
             );
             setScanning(true);
         } catch {
@@ -196,14 +196,14 @@ export default function PetScanner() {
 
     const stopScanner = async () => {
         if (scannerRef.current) {
-            await scannerRef.current.stop().catch(() => {});
+            await scannerRef.current.stop().catch(() => { });
             scannerRef.current = null;
         }
         setScanning(false);
     };
 
     useEffect(() => {
-        return () => { scannerRef.current?.stop().catch(() => {}); };
+        return () => { scannerRef.current?.stop().catch(() => { }); };
     }, []);
 
     const fetchPet = async (token: string) => {
@@ -397,122 +397,122 @@ export default function PetScanner() {
                                         <p className="text-xs text-slate-400 text-center">Microchip: <span className="font-mono text-slate-600">{result.pet.microchipId}</span></p>
                                     )}
 
-            {/* Pet + Owner Details */}
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-100 p-4 space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
-                        <Info className="h-3 w-3" /> Pet
-                    </p>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-neutral-600">
-                        <div className="rounded-lg bg-white px-2 py-1">
-                            <p className="font-medium">Age</p>
-                            <p className="truncate">{result.pet.age != null ? `${result.pet.age} yr` : '—'}</p>
-                        </div>
-                        <div className="rounded-lg bg-white px-2 py-1">
-                            <p className="font-medium">Gender</p>
-                            <p className="truncate capitalize">{result.pet.gender || '—'}</p>
-                        </div>
-                        <div className="rounded-lg bg-white px-2 py-1">
-                            <p className="font-medium">Color</p>
-                            <p className="truncate capitalize">{result.pet.color || '—'}</p>
-                        </div>
-                        {result.pet.microchipId && (
-                            <div className="rounded-lg bg-white px-2 py-1">
-                                <p className="font-medium">Microchip</p>
-                                <p className="truncate">{result.pet.microchipId}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="rounded-xl border border-slate-100 p-4 space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
-                        <User className="h-3 w-3" /> Owner
-                    </p>
-                    <p className="font-semibold text-slate-800">{result.owner.name}</p>
-                    {result.owner.phone && (
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <Phone className="h-3 w-3" /> {result.owner.phone}
-                        </p>
-                    )}
-                    {result.owner.email && (
-                        <p className="flex items-center gap-1.5 text-xs text-slate-500">
-                            <Mail className="h-3 w-3" /> {result.owner.email}
-                        </p>
-                    )}
-                    {(result.owner.street || result.owner.barangay || result.owner.city || result.owner.province || result.owner.zipCode) && (
-                        <p className="text-xs text-slate-500">
-                            {[result.owner.street, result.owner.barangay, result.owner.city, result.owner.province, result.owner.zipCode].filter(Boolean).join(', ')}
-                        </p>
-                    )}
-                    {result.owner.emergencyContact && (
-                        <p className="text-xs text-slate-500">
-                            <span className="font-semibold">Emergency:</span> {result.owner.emergencyContact}
-                        </p>
-                    )}
-                </div>
-            </div>
-
-            {documents.length > 0 && (
-                <div className="rounded-xl border border-slate-100 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
-                        <FileText className="h-3 w-3" /> Documents
-                    </p>
-                    <div className="space-y-2">
-                        {documents.map((doc) => (
-                            <a
-                                key={doc.id}
-                                href={doc.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-                            >
-                                <span className="truncate">{doc.name}</span>
-                                <span className="text-xs text-neutral-400">{doc.sizeFormatted}</span>
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Vaccinations */}
-            <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
-                    <Syringe className="h-3 w-3" /> Vaccinations ({result.vaccinations.length})
-                </p>
-                {result.vaccinations.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">No vaccinations recorded.</p>
-                ) : (
-                    <div className="space-y-3">
-                        {sortedVaccinations.map((v, i) => {
-                            const overdue = new Date(v.nextDue) < new Date();
-                            return (
-                                <div key={i} className="relative pl-7">
-                                    <span
-                                        className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                                        aria-hidden="true"
-                                    />
-                                    {i !== sortedVaccinations.length - 1 && (
-                                        <span
-                                            className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
-                                            aria-hidden="true"
-                                        />
-                                    )}
-                                    <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
-                                            <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                    {/* Pet + Owner Details */}
+                                    <div className="grid gap-4 md:grid-cols-2">
+                                        <div className="rounded-xl border border-slate-100 p-4 space-y-2">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                                                <Info className="h-3 w-3" /> Pet
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-2 text-xs text-neutral-600">
+                                                <div className="rounded-lg bg-white px-2 py-1">
+                                                    <p className="font-medium">Age</p>
+                                                    <p className="truncate">{result.pet.age != null ? `${result.pet.age} yr` : '—'}</p>
+                                                </div>
+                                                <div className="rounded-lg bg-white px-2 py-1">
+                                                    <p className="font-medium">Gender</p>
+                                                    <p className="truncate capitalize">{result.pet.gender || '—'}</p>
+                                                </div>
+                                                <div className="rounded-lg bg-white px-2 py-1">
+                                                    <p className="font-medium">Color</p>
+                                                    <p className="truncate capitalize">{result.pet.color || '—'}</p>
+                                                </div>
+                                                {result.pet.microchipId && (
+                                                    <div className="rounded-lg bg-white px-2 py-1">
+                                                        <p className="font-medium">Microchip</p>
+                                                        <p className="truncate">{result.pet.microchipId}</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
-                                            Due {fmt(v.nextDue)}
-                                        </Badge>
+
+                                        <div className="rounded-xl border border-slate-100 p-4 space-y-2">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                                                <User className="h-3 w-3" /> Owner
+                                            </p>
+                                            <p className="font-semibold text-slate-800">{result.owner.name}</p>
+                                            {result.owner.phone && (
+                                                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                    <Phone className="h-3 w-3" /> {result.owner.phone}
+                                                </p>
+                                            )}
+                                            {result.owner.email && (
+                                                <p className="flex items-center gap-1.5 text-xs text-slate-500">
+                                                    <Mail className="h-3 w-3" /> {result.owner.email}
+                                                </p>
+                                            )}
+                                            {(result.owner.street || result.owner.barangay || result.owner.city || result.owner.province || result.owner.zipCode) && (
+                                                <p className="text-xs text-slate-500">
+                                                    {[result.owner.street, result.owner.barangay, result.owner.city, result.owner.province, result.owner.zipCode].filter(Boolean).join(', ')}
+                                                </p>
+                                            )}
+                                            {result.owner.emergencyContact && (
+                                                <p className="text-xs text-slate-500">
+                                                    <span className="font-semibold">Emergency:</span> {result.owner.emergencyContact}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+
+                                    {documents.length > 0 && (
+                                        <div className="rounded-xl border border-slate-100 p-4">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
+                                                <FileText className="h-3 w-3" /> Documents
+                                            </p>
+                                            <div className="space-y-2">
+                                                {documents.map((doc) => (
+                                                    <a
+                                                        key={doc.id}
+                                                        href={doc.url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+                                                    >
+                                                        <span className="truncate">{doc.name}</span>
+                                                        <span className="text-xs text-neutral-400">{doc.sizeFormatted}</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Vaccinations */}
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
+                                            <Syringe className="h-3 w-3" /> Vaccinations ({result.vaccinations.length})
+                                        </p>
+                                        {result.vaccinations.length === 0 ? (
+                                            <p className="text-xs text-slate-400 italic">No vaccinations recorded.</p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {sortedVaccinations.map((v, i) => {
+                                                    const overdue = new Date(v.nextDue) < new Date();
+                                                    return (
+                                                        <div key={i} className="relative pl-7">
+                                                            <span
+                                                                className={`absolute left-0 top-2 h-3 w-3 rounded-full border-2 border-white shadow ${i === 0 ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                                                aria-hidden="true"
+                                                            />
+                                                            {i !== sortedVaccinations.length - 1 && (
+                                                                <span
+                                                                    className="absolute left-[5px] top-6 bottom-[-8px] w-px bg-slate-300"
+                                                                    aria-hidden="true"
+                                                                />
+                                                            )}
+                                                            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                                                                <div>
+                                                                    <p className="text-sm font-medium text-slate-800">{v.vaccine}</p>
+                                                                    <p className="text-xs text-slate-400">Given: {fmt(v.date)}</p>
+                                                                </div>
+                                                                <Badge variant="outline" className={`text-xs ${overdue ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                                                                    Due {fmt(v.nextDue)}
+                                                                </Badge>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
 
                                     {/* Consultations */}
                                     <div>
@@ -546,7 +546,7 @@ export default function PetScanner() {
 
                                                             {c.inventoryItems && c.inventoryItems.length > 0 && (
                                                                 <div className="mt-2">
-                                                                    <p className="text-xs font-semibold text-neutral-500">Items used</p>
+                                                                    <p className="text-xs font-semibold text-neutral-500">Medication Used</p>
                                                                     <ul className="mt-1 space-y-1 text-xs text-neutral-600">
                                                                         {c.inventoryItems.map((item) => (
                                                                             <li key={item.id} className="flex justify-between gap-2">

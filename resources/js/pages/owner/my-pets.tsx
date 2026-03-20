@@ -547,7 +547,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
 
                                                                 {c.inventoryItems && c.inventoryItems.length > 0 && (
                                                                     <div className="mt-2">
-                                                                        <p className="text-xs font-semibold text-neutral-500">Items used</p>
+                                                                        <p className="text-xs font-semibold text-neutral-500">Medication Used</p>
                                                                         <ul className="mt-1 space-y-1 text-xs text-neutral-600">
                                                                             {c.inventoryItems.map((item) => (
                                                                                 <li key={item.id} className="flex justify-between gap-2">

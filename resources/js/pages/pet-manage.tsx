@@ -310,7 +310,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2 flex-1">Inventory Items Used</h4>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2 flex-1">Medication Used</h4>
                 </div>
                 <p className="text-xs text-neutral-500">{helperText}</p>
 
