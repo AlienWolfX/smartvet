@@ -78,7 +78,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
     const [isFinancialModalOpen, setIsFinancialModalOpen] = useState(false);
     const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
     const [isExporting, setIsExporting] = useState<string | null>(null);
-    
+
     // Filter states - now using date from/to only
     const [financialFilters, setFinancialFilters] = useState({
         dateFrom: '',
@@ -95,7 +95,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
             const params = new URLSearchParams();
             if (financialFilters.dateFrom) params.append('date_from', financialFilters.dateFrom);
             if (financialFilters.dateTo) params.append('date_to', financialFilters.dateTo);
-            
+
             window.location.href = `/reports/export/financial?${params.toString()}`;
             setIsFinancialModalOpen(false);
         } finally {
@@ -109,7 +109,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
             const params = new URLSearchParams();
             if (serviceFilters.dateFrom) params.append('date_from', serviceFilters.dateFrom);
             if (serviceFilters.dateTo) params.append('date_to', serviceFilters.dateTo);
-            
+
             window.location.href = `/reports/export/service?${params.toString()}`;
             setIsServiceModalOpen(false);
         } finally {
@@ -121,12 +121,12 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
         `₱${value.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
 
     // Find best month from revenue data
-    const bestMonth = revenueData.length > 0 
+    const bestMonth = revenueData.length > 0
         ? revenueData.reduce((max, item) => item.revenue > max.revenue ? item : max, revenueData[0])
         : null;
 
-    const avgRevenue = revenueData.length > 0 
-        ? revenueData.reduce((sum, item) => sum + item.revenue, 0) / revenueData.length 
+    const avgRevenue = revenueData.length > 0
+        ? revenueData.reduce((sum, item) => sum + item.revenue, 0) / revenueData.length
         : 0;
 
     return (
@@ -136,53 +136,50 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
             description="Comprehensive business insights, financial reports, and operational analytics for your veterinary clinic."
         >
             <Head title="Reports & Analytics" />
-            
-            {/* Report Actions - Moved to top */}
-            <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-gray-600" />
-                        Report Actions
-                    </CardTitle>
-                    <CardDescription>
-                        Generate detailed reports and export data
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid gap-3 md:grid-cols-2">
-                        <Button 
-                            variant="outline" 
-                            className="h-auto p-4 flex flex-col items-start gap-2 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
-                            onClick={() => setIsFinancialModalOpen(true)}
-                        >
-                            <div className="flex items-center gap-2">
-                                <DollarSign className="h-4 w-4 text-emerald-600" />
-                                <span className="font-medium">Financial Report</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground text-left">
-                                Detailed revenue, expenses, and profit analysis
-                            </span>
-                        </Button>
-                        
-                        <Button 
-                            variant="outline" 
-                            className="h-auto p-4 flex flex-col items-start gap-2 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-colors"
-                            onClick={() => setIsServiceModalOpen(true)}
-                        >
-                            <div className="flex items-center gap-2">
-                                <Activity className="h-4 w-4 text-purple-600" />
-                                <span className="font-medium">Service Report</span>
-                            </div>
-                            <span className="text-xs text-muted-foreground text-left">
-                                Service performance and client statistics
-                            </span>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
 
-            {/* Key Metrics - 3 columns full width */}
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            {/* Row 1: Actions + Key Metrics */}
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-5">
+                {/* Report Actions */}
+                <Card className="md:col-span-2 border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                            <FileText className="h-4 w-4 text-gray-600" />
+                            Report Actions
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-2 md:grid-cols-2">
+                            <Button
+                                variant="outline"
+                                className="h-auto p-3 flex flex-col items-start gap-1 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
+                                onClick={() => setIsFinancialModalOpen(true)}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-emerald-600" />
+                                    <span className="font-medium text-sm">Financial Report</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground text-left">
+                                    Revenue, expenses &amp; profit
+                                </span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-auto p-3 flex flex-col items-start gap-1 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-colors"
+                                onClick={() => setIsServiceModalOpen(true)}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Activity className="h-4 w-4 text-purple-600" />
+                                    <span className="font-medium text-sm">Service Report</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground text-left">
+                                    Service performance stats
+                                </span>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Key Metrics */}
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -224,33 +221,33 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
                 </Card>
             </div>
 
-            {/* Revenue & Service Performance in a row */}
-            <div className="grid gap-6 lg:grid-cols-2">
+            {/* Row 2: Charts */}
+            <div className="grid gap-3 lg:grid-cols-2">
                 {/* Revenue Trends */}
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <BarChart3 className="h-5 w-5 text-blue-600" />
-                            Revenue & Profit Analysis
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                            <BarChart3 className="h-4 w-4 text-blue-600" />
+                            Revenue &amp; Profit Analysis
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-xs">
                             Monthly revenue vs profit comparison
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <RevenueChart data={revenueData} />
-                        <div className="mt-6 grid grid-cols-3 gap-4 pt-4 border-t">
+                        <RevenueChart data={revenueData} height={200} />
+                        <div className="mt-3 grid grid-cols-3 gap-2 pt-3 border-t">
                             <div className="text-center">
-                                <p className="text-xs text-muted-foreground">Avg Monthly Revenue</p>
-                                <p className="font-semibold">{formatPeso(avgRevenue)}</p>
+                                <p className="text-xs text-muted-foreground">Avg Monthly</p>
+                                <p className="font-semibold text-sm">{formatPeso(avgRevenue)}</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Profit Margin</p>
-                                <p className="font-semibold text-emerald-600">{totals.profitMargin.toFixed(1)}%</p>
+                                <p className="font-semibold text-sm text-emerald-600">{totals.profitMargin.toFixed(1)}%</p>
                             </div>
                             <div className="text-center">
                                 <p className="text-xs text-muted-foreground">Best Month</p>
-                                <p className="font-semibold">{bestMonth?.period || 'N/A'}</p>
+                                <p className="font-semibold text-sm">{bestMonth?.period || 'N/A'}</p>
                             </div>
                         </div>
                     </CardContent>
@@ -258,12 +255,12 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
 
                 {/* Service Performance */}
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <PieChart className="h-5 w-5 text-purple-600" />
+                    <CardHeader className="pb-2">
+                        <CardTitle className="flex items-center gap-2 text-sm">
+                            <PieChart className="h-4 w-4 text-purple-600" />
                             Service Performance
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-xs">
                             Revenue distribution and growth by service type
                         </CardDescription>
                     </CardHeader>
@@ -288,7 +285,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="financial-date-from">Date From</Label>
-                            <Input 
+                            <Input
                                 id="financial-date-from"
                                 type="date"
                                 value={financialFilters.dateFrom}
@@ -297,7 +294,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="financial-date-to">Date To</Label>
-                            <Input 
+                            <Input
                                 id="financial-date-to"
                                 type="date"
                                 value={financialFilters.dateTo}
@@ -341,7 +338,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="service-date-from">Date From</Label>
-                            <Input 
+                            <Input
                                 id="service-date-from"
                                 type="date"
                                 value={serviceFilters.dateFrom}
@@ -350,7 +347,7 @@ export default function Reports({ revenueData, serviceData, totals }: Props) {
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="service-date-to">Date To</Label>
-                            <Input 
+                            <Input
                                 id="service-date-to"
                                 type="date"
                                 value={serviceFilters.dateTo}

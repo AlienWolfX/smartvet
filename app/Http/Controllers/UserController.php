@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -15,7 +16,8 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::orderBy('created_at', 'desc')
+        $users = User::whereNotIn('role', [User::ROLE_OWNER])
+            ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($user) {
                 return [
@@ -31,8 +33,8 @@ class UserController extends Controller
             });
 
         $stats = [
-            'totalUsers' => User::count(),
-            'activeUsers' => User::where('status', 'active')->count(),
+            'totalUsers' => User::whereNotIn('role', [User::ROLE_OWNER])->count(),
+            'activeUsers' => User::whereNotIn('role', [User::ROLE_OWNER])->where('status', 'active')->count(),
             'staffUsers' => User::where('role', 'clinic')->count(),
             'adminUsers' => User::where('role', 'admin')->count(),
         ];
@@ -87,7 +89,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === Auth::id()) {
             return redirect()->back()->withErrors(['general' => 'You cannot delete your own account.']);
         }
 

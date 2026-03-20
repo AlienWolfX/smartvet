@@ -71,7 +71,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/portal-home',
 
     /*
     |--------------------------------------------------------------------------
@@ -141,6 +141,11 @@ return [
     |
     */
 
-    'features' => [],
+    'features' => [
+        Laravel\Fortify\Features::twoFactorAuthentication([
+            'confirm' => true,
+            'confirmPassword' => false,
+        ]),
+    ],
 
 ];

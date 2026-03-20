@@ -1,3 +1,5 @@
+import InputError from '@/components/input-error';
+import { PasswordMatchIndicator, PasswordStrengthIndicator } from '@/components/password-strength-indicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -169,7 +171,7 @@ export default function UserManagement({ users, stats }: Props) {
         const date = new Date(dateString);
         const now = new Date();
         const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-        
+
         if (diffHours < 24) {
             return `${diffHours}h ago`;
         } else if (diffHours < 168) {
@@ -286,7 +288,7 @@ export default function UserManagement({ users, stats }: Props) {
             description="Manage system users, roles, permissions, and access control for your veterinary clinic."
         >
             <Head title="User Management" />
-            
+
             {/* User Statistics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)] dark:border-white/5 dark:bg-neutral-900">
@@ -375,8 +377,8 @@ export default function UserManagement({ users, stats }: Props) {
                                     <div className="grid gap-4 py-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Full Name *</label>
-                                            <Input 
-                                                placeholder="e.g., Dr. John Smith" 
+                                            <Input
+                                                placeholder="e.g., Dr. John Smith"
                                                 value={data.name}
                                                 onChange={(e) => setData('name', e.target.value)}
                                                 required
@@ -384,9 +386,9 @@ export default function UserManagement({ users, stats }: Props) {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Email *</label>
-                                            <Input 
-                                                type="email" 
-                                                placeholder="john.smith@smartvet.com" 
+                                            <Input
+                                                type="email"
+                                                placeholder="john.smith@smartvet.com"
                                                 value={data.email}
                                                 onChange={(e) => setData('email', e.target.value)}
                                                 required
@@ -397,9 +399,9 @@ export default function UserManagement({ users, stats }: Props) {
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Password *</label>
                                                 <div className="relative">
-                                                    <Input 
+                                                    <Input
                                                         type={showPassword ? 'text' : 'password'}
-                                                        placeholder="••••••••" 
+                                                        placeholder="••••••••"
                                                         value={data.password}
                                                         onChange={(e) => setData('password', e.target.value)}
                                                         required
@@ -413,14 +415,15 @@ export default function UserManagement({ users, stats }: Props) {
                                                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                     </button>
                                                 </div>
-                                                {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                                                <PasswordStrengthIndicator password={data.password} />
+                                                <InputError message={errors.password} />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Confirm Password *</label>
                                                 <div className="relative">
-                                                    <Input 
+                                                    <Input
                                                         type={showConfirmPassword ? 'text' : 'password'}
-                                                        placeholder="••••••••" 
+                                                        placeholder="••••••••"
                                                         value={data.password_confirmation}
                                                         onChange={(e) => setData('password_confirmation', e.target.value)}
                                                         required
@@ -434,6 +437,8 @@ export default function UserManagement({ users, stats }: Props) {
                                                         {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                                     </button>
                                                 </div>
+                                                <PasswordMatchIndicator password={data.password} confirmation={data.password_confirmation} />
+                                                <InputError message={errors.password_confirmation} />
                                             </div>
                                         </div>
                                         <div className="space-y-2">
@@ -659,17 +664,17 @@ export default function UserManagement({ users, stats }: Props) {
                                         <TableCell>{formatDate(user.createdAt)}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-1">
-                                                <Button 
-                                                    variant="ghost" 
+                                                <Button
+                                                    variant="ghost"
                                                     size="sm"
                                                     onClick={() => openEditModal(user)}
                                                 >
                                                     <Edit className="h-4 w-4 mr-1" />
                                                     Edit
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="sm" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
                                                     className={user.status === 'active' ? 'text-red-600 hover:text-red-700' : 'text-emerald-600 hover:text-emerald-700'}
                                                     onClick={() => handleToggleStatus(user)}
                                                 >
@@ -735,8 +740,8 @@ export default function UserManagement({ users, stats }: Props) {
                         <div className="grid gap-4 py-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Full Name *</label>
-                                <Input 
-                                    placeholder="e.g., Dr. John Smith" 
+                                <Input
+                                    placeholder="e.g., Dr. John Smith"
                                     value={data.name}
                                     onChange={(e) => setData('name', e.target.value)}
                                     required
@@ -744,9 +749,9 @@ export default function UserManagement({ users, stats }: Props) {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium">Email *</label>
-                                <Input 
-                                    type="email" 
-                                    placeholder="john.smith@smartvet.com" 
+                                <Input
+                                    type="email"
+                                    placeholder="john.smith@smartvet.com"
                                     value={data.email}
                                     onChange={(e) => setData('email', e.target.value)}
                                     required

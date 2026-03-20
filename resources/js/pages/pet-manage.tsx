@@ -41,8 +41,8 @@ import {
 } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Head, useForm, router } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import { useToast } from '@/hooks/use-toast';
 import {
     ArrowLeft,
@@ -166,6 +166,8 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function PetManage({ pet, inventoryItems, vaccinationItems }: Props) {
+    const { auth } = usePage<SharedData>().props;
+    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isAddConsultationOpen, setIsAddConsultationOpen] = useState(false);
     const [isAddVaccinationOpen, setIsAddVaccinationOpen] = useState(false);
@@ -308,10 +310,10 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2 flex-1">Inventory Items Used</h4>
+                    <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2 flex-1">Medication Used</h4>
                 </div>
                 <p className="text-xs text-neutral-500">{helperText}</p>
-                
+
                 <div className="grid gap-3 items-end md:grid-cols-[minmax(0,1fr)_auto]">
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium">Inventory Item</label>
@@ -355,9 +357,9 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                         </div>
                         <div className="flex flex-col gap-2">
                             <label className="text-sm font-medium invisible">Add</label>
-                            <Button 
-                                type="button" 
-                                onClick={() => handleAddInventoryLine(type)} 
+                            <Button
+                                type="button"
+                                onClick={() => handleAddInventoryLine(type)}
                                 disabled={!canAdd || inventoryItems.length === 0}
                             >
                                 Add
@@ -401,7 +403,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
 
     const handleAddConsultation = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation
         if (!data.consultationType) {
             error('Please select a consultation type');
@@ -415,7 +417,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             error('Please select a consultation date');
             return;
         }
-        
+
         // Use FormData for file uploads
         const formData = new FormData();
         formData.append('consultation_type', data.consultationType);
@@ -425,7 +427,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
         formData.append('notes', data.notes || '');
         formData.append('consultation_date', data.consultationDate);
         formData.append('consultation_fee', data.consultationFee || '0');
-        
+
         // Append files
         data.consultationFiles.forEach((file, index) => {
             formData.append(`consultation_files[${index}]`, file);
@@ -435,14 +437,14 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             formData.append(`inventory_items[${index}][inventory_item_id]`, item.inventory_item_id.toString());
             formData.append(`inventory_items[${index}][quantity]`, item.quantity.toString());
         });
-        
+
         console.log('Submitting consultation with data:', {
             consultation_type: data.consultationType,
             chief_complaint: data.chiefComplaint,
             consultation_date: data.consultationDate,
             files_count: data.consultationFiles.length
         });
-        
+
         router.post(`/pet-records/${pet.id}/consultations`, formData, {
             onStart: () => {
                 console.log('Starting consultation submission...');
@@ -456,7 +458,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             },
             onError: (errors: Record<string, string>) => {
                 console.log('Consultation submission errors:', errors);
-                
+
                 if (errors.consultation_type) {
                     error('Consultation Type: ' + errors.consultation_type);
                 }
@@ -469,7 +471,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                 if (errors.general) {
                     error(errors.general);
                 }
-                
+
                 // Handle file validation errors
                 Object.keys(errors).forEach(key => {
                     if (key.startsWith('consultation_files.')) {
@@ -477,7 +479,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                         error(`File ${parseInt(fileIndex) + 1}: ${errors[key]}`);
                     }
                 });
-                
+
                 // Show generic error if no specific errors found
                 if (Object.keys(errors).length === 0) {
                     error('Failed to add consultation. Please try again.');
@@ -643,9 +645,10 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             description="Comprehensive pet health management and medical records."
         >
             <Head title={`${pet.name} - Pet Management`} />
-            
+            <div className="h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+
             {/* Back Button */}
-            <div className="mb-6">
+            <div className="mb-4 shrink-0">
                 <Button variant="outline" onClick={() => window.history.back()}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Pet Records
@@ -653,12 +656,12 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             </div>
 
             {/* Pet Header Card */}
-            <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 mb-6">
+            <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 mb-4 shrink-0">
                 <CardContent className="p-6">
                     <div className="flex items-start gap-6">
                         <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                            <img 
-                                src={pet.imageUrl || '/placeholder.png'} 
+                            <img
+                                src={pet.imageUrl || '/placeholder.png'}
                                 alt={pet.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
@@ -715,8 +718,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             </Card>
 
             {/* Management Tabs */}
-            <Tabs defaultValue="profile" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="profile" className="space-y-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+                <TabsList className="grid w-full grid-cols-3 shrink-0">
                     <TabsTrigger value="profile" className="flex items-center gap-2">
                         <User className="h-4 w-4" />
                         Pet Profile
@@ -732,8 +735,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                 </TabsList>
 
                 {/* Pet Profile Tab */}
-                <TabsContent value="profile">
-                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
+                <TabsContent value="profile" className="flex-1 min-h-0 mt-0">
+                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 h-full min-h-0 flex flex-col">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -760,15 +763,15 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                 </Button>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex-1 overflow-y-auto pr-2">
                             <form onSubmit={handleUpdateProfile}>
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <h4 className="font-semibold">Basic Information</h4>
                                         <div className="grid gap-4">
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Pet Name</label>
-                                                <Input 
+                                                <Input
                                                     value={data.name}
                                                     onChange={(e) => setData('name', e.target.value)}
                                                     disabled={!isEditingProfile}
@@ -776,7 +779,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Breed</label>
-                                                <Input 
+                                                <Input
                                                     value={data.breed}
                                                     onChange={(e) => setData('breed', e.target.value)}
                                                     disabled={!isEditingProfile}
@@ -785,7 +788,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Age (years)</label>
-                                                    <Input 
+                                                    <Input
                                                         type="number"
                                                         value={data.age}
                                                         onChange={(e) => setData('age', e.target.value)}
@@ -794,7 +797,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                 </div>
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium">Weight (kg)</label>
-                                                    <Input 
+                                                    <Input
                                                         type="number"
                                                         step="0.1"
                                                         value={data.weight}
@@ -805,7 +808,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Color/Markings</label>
-                                                <Input 
+                                                <Input
                                                     value={data.color}
                                                     onChange={(e) => setData('color', e.target.value)}
                                                     disabled={!isEditingProfile}
@@ -859,8 +862,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                 </TabsContent>
 
                 {/* Consultations Tab */}
-                <TabsContent value="consultations">
-                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
+                <TabsContent value="consultations" className="flex-1 min-h-0 mt-0">
+                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 h-full min-h-0 flex flex-col">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -871,7 +874,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                 </div>
                                 <Modal open={isAddConsultationOpen} onOpenChange={setIsAddConsultationOpen}>
                                     <ModalTrigger asChild>
-                                        <Button>
+                                        <Button className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                             <Plus className="h-4 w-4 mr-2" />
                                             Add Consultation
                                         </Button>
@@ -907,8 +910,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Date *</label>
-                                                                <Input 
-                                                                    type="date" 
+                                                                <Input
+                                                                    type="date"
                                                                     value={data.consultationDate}
                                                                     onChange={(e) => setData('consultationDate', e.target.value)}
                                                                     required
@@ -916,14 +919,14 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             </div>
                                                         </div>
                                                     </div>
-                                            
+
                                             {/* Medical Information */}
                                             <div className="space-y-4">
                                                 <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2">Medical Information</h4>
                                                 <div className="space-y-4">
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Chief Complaint *</label>
-                                                                <Textarea 
+                                                                <Textarea
                                                                     placeholder="Main reason for visit..."
                                                                     value={data.chiefComplaint}
                                                                     onChange={(e) => setData('chiefComplaint', e.target.value)}
@@ -932,11 +935,11 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                                     className="resize-none"
                                                                 />
                                                             </div>
-                                                            
+
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                 <div className="space-y-2">
                                                                     <label className="text-sm font-medium">Diagnosis</label>
-                                                                    <Textarea 
+                                                                    <Textarea
                                                                         placeholder="Clinical findings and diagnosis..."
                                                                         value={data.diagnosis}
                                                                         onChange={(e) => setData('diagnosis', e.target.value)}
@@ -946,7 +949,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                                 </div>
                                                                 <div className="space-y-2">
                                                                     <label className="text-sm font-medium">Treatment</label>
-                                                                    <Textarea 
+                                                                    <Textarea
                                                                         placeholder="Treatment plan and medications prescribed..."
                                                                         value={data.treatment}
                                                                         onChange={(e) => setData('treatment', e.target.value)}
@@ -955,10 +958,10 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Additional Notes</label>
-                                                                <Textarea 
+                                                                <Textarea
                                                                     placeholder="Any additional observations or notes..."
                                                                     value={data.notes}
                                                                     onChange={(e) => setData('notes', e.target.value)}
@@ -969,7 +972,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                         </div>
                                                     </div>
                                                     {renderInventorySection('consultation', 'Include vaccines, medications, or consumables used during this consultation to keep stock levels accurate.')}
-                                                    
+
                                                     <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-800">
                                                         <div className="flex justify-between items-center">
                                                             <span className="font-semibold text-sm">Total Estimated Cost</span>
@@ -992,7 +995,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                         Upload X-rays, lab results, photos, or documents (Max 10MB per file)
                                                     </div>
                                                     <div className="relative">
-                                                        <Input 
+                                                        <Input
                                                             type="file"
                                                             accept="image/*,application/pdf,.doc,.docx,.webp"
                                                             multiple
@@ -1030,7 +1033,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             </div>
                                                         </label>
                                                     </div>
-                                                    
+
                                                     {/* File Preview */}
                                                     {data.consultationFiles.length > 0 && (
                                                         <div className="mt-3 space-y-2">
@@ -1053,7 +1056,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                                         const updatedFiles = data.consultationFiles.filter((_, i) => i !== index);
                                                                         setData('consultationFiles', updatedFiles);
                                                                     };
-                                                                    
+
                                                                     return (
                                                                         <div key={index} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded group">
                                                                             <div className="flex items-center gap-2 truncate flex-1">
@@ -1092,16 +1095,18 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                 </div>
                                                 <ModalFooter className="flex-shrink-0 border-t p-4">
                                                     <div className="flex justify-end gap-2">
-                                                        <Button 
-                                                            type="button" 
-                                                            variant="outline" 
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
                                                             onClick={() => {setIsAddConsultationOpen(false); reset();}}
                                                         >
                                                             Cancel
                                                         </Button>
-                                                        <Button 
-                                                            type="submit" 
+                                                        <Button
+                                                            type="submit"
                                                             disabled={processing}
+                                                            className="text-white"
+                                                            style={{ backgroundColor: themeColor, borderColor: themeColor }}
                                                         >
                                                             {processing ? 'Saving...' : 'Save Consultation'}
                                                         </Button>
@@ -1113,7 +1118,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                 </Modal>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex-1 overflow-hidden">
+                            <div className="h-full overflow-auto rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -1161,6 +1167,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                     )}
                                 </TableBody>
                             </Table>
+                            </div>
 
                             {/* Consultation Details Modal */}
                             <Modal open={!!selectedConsultation} onOpenChange={(open) => !open && setSelectedConsultation(null)}>
@@ -1200,7 +1207,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                         {selectedConsultation.complaint}
                                                     </p>
                                                 </div>
-                                                
+
                                                 {selectedConsultation.diagnosis && (
                                                     <div>
                                                         <h4 className="font-medium text-sm mb-1">Diagnosis</h4>
@@ -1244,7 +1251,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             </ul>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {selectedConsultation.linkedMedications?.length > 0 && (
                                                         <div>
                                                             <h4 className="font-medium text-sm mb-2">Medications</h4>
@@ -1292,8 +1299,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                 </TabsContent>
 
                 {/* Vaccinations Tab */}
-                <TabsContent value="vaccinations">
-                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
+                <TabsContent value="vaccinations" className="flex-1 min-h-0 mt-0">
+                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 h-full min-h-0 flex flex-col">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <div>
@@ -1304,7 +1311,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                 </div>
                                 <Modal open={isAddVaccinationOpen} onOpenChange={setIsAddVaccinationOpen}>
                                     <ModalTrigger asChild>
-                                        <Button>
+                                        <Button className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                             <Plus className="h-4 w-4 mr-2" />
                                             Add Vaccination
                                         </Button>
@@ -1371,7 +1378,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Vaccination Date *</label>
-                                                        <Input 
+                                                        <Input
                                                             type="date"
                                                             value={data.vaccinationDate}
                                                             onChange={(e) => setData('vaccinationDate', e.target.value)}
@@ -1380,7 +1387,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Next Due Date *</label>
-                                                        <Input 
+                                                        <Input
                                                             type="date"
                                                             value={data.nextDueDate}
                                                             onChange={(e) => setData('nextDueDate', e.target.value)}
@@ -1420,7 +1427,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                 <Button type="button" variant="outline" onClick={() => setIsAddVaccinationOpen(false)}>
                                                     Cancel
                                                 </Button>
-                                                <Button type="submit" disabled={processing}>
+                                                <Button type="submit" disabled={processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                                     {processing ? 'Saving...' : 'Save Vaccination'}
                                                 </Button>
                                             </ModalFooter>
@@ -1429,7 +1436,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                 </Modal>
                             </div>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="flex-1 overflow-hidden">
+                            <div className="h-full overflow-auto rounded-md border">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -1470,7 +1478,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                     {vaccination.administeredBy || <span className="text-muted-foreground">-</span>}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={vaccination.paymentStatus === 'paid' 
+                                                    <Badge variant="outline" className={vaccination.paymentStatus === 'paid'
                                                         ? 'border-transparent bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200'
                                                         : 'border-transparent bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200'
                                                     }>
@@ -1479,8 +1487,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button 
-                                                        variant="ghost" 
+                                                    <Button
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => openEditVaccination(vaccination)}
                                                     >
@@ -1493,6 +1501,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                     )}
                                 </TableBody>
                             </Table>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -1530,7 +1539,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Vaccination Date *</label>
-                                            <Input 
+                                            <Input
                                                 type="date"
                                                 value={data.vaccinationDate}
                                                 onChange={(e) => setData('vaccinationDate', e.target.value)}
@@ -1539,7 +1548,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Next Due Date *</label>
-                                            <Input 
+                                            <Input
                                                 type="date"
                                                 value={data.nextDueDate}
                                                 onChange={(e) => setData('nextDueDate', e.target.value)}
@@ -1549,7 +1558,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium">Administered By</label>
-                                        <Input 
+                                        <Input
                                             placeholder="Veterinarian name"
                                             value={data.administeredBy}
                                             onChange={(e) => setData('administeredBy', e.target.value)}
@@ -1581,7 +1590,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                     }}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit" disabled={processing}>
+                                    <Button type="submit" disabled={processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
                                         {processing ? 'Saving...' : 'Update Vaccination'}
                                     </Button>
                                 </ModalFooter>
@@ -1590,7 +1599,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                     </Modal>
                 </TabsContent>
             </Tabs>
-            
+            </div>
+
             {/* Toast Container */}
         </AdminLayout>
     );

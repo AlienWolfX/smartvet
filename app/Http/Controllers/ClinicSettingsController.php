@@ -3,14 +3,20 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Laravel\Fortify\Fortify;
 
 class ClinicSettingsController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        $requiresConfirmation = Fortify::confirmsTwoFactorAuthentication();
+        $hasSecret = !is_null($user?->two_factor_secret);
+        $isConfirmed = !is_null($user?->two_factor_confirmed_at);
 
         return Inertia::render('clinic-settings', [
             'settings' => [
@@ -19,6 +25,8 @@ class ClinicSettingsController extends Controller
                 'theme_name' => $user->theme_name ?? 'default',
                 'theme_color' => $user->theme_color ?? '#0f172a',
             ],
+            'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
+            'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,
         ]);
     }
 
@@ -32,7 +40,8 @@ class ClinicSettingsController extends Controller
             'theme_color' => 'required|string|max:7',
         ]);
 
-        $user = auth()->user();
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
         $updateData = [
             'clinic_name' => $validated['clinic_name'],

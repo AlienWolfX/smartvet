@@ -1,11 +1,68 @@
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->isOwner())  return redirect()->route('owner.pets');
+        if ($user->isClinic()) return redirect()->route('dashboard');
+        if ($user->isAdmin())  return redirect()->route('user-management');
+    }
     return redirect()->route('login');
 })->name('home');
+
+// Smart portal home (used as Fortify's home redirect)
+Route::get('portal-home', function () {
+    if (Auth::check()) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+        if ($user->isOwner())  return redirect()->route('owner.pets');
+        if ($user->isClinic()) return redirect()->route('dashboard');
+        if ($user->isAdmin())  return redirect()->route('user-management');
+    }
+    return redirect()->route('login');
+})->name('portal.home');
+
+// Owner self-registration
+Route::middleware('guest')->group(function () {
+    Route::get('register', [App\Http\Controllers\OwnerRegisterController::class, 'showForm'])->name('owner.register');
+    Route::post('register', [App\Http\Controllers\OwnerRegisterController::class, 'register'])->name('owner.register.submit');
+});
+
+// Admin login routes
+Route::middleware('guest')->group(function () {
+    Route::get('admin', [App\Http\Controllers\AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+    Route::post('admin/login', [App\Http\Controllers\AdminAuthController::class, 'login'])->name('admin.login.submit');
+});
+Route::post('admin/logout', [App\Http\Controllers\AdminAuthController::class, 'logout'])
+    ->name('admin.logout')
+    ->middleware('auth');
+
+// Clinic login routes
+Route::middleware('guest')->group(function () {
+    Route::get('clinic', [App\Http\Controllers\ClinicAuthController::class, 'showLoginForm'])->name('clinic.login');
+    Route::post('clinic/login', [App\Http\Controllers\ClinicAuthController::class, 'login'])->name('clinic.login.submit');
+});
+Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 'logout'])
+    ->name('clinic.logout')
+    ->middleware('auth');
+
+// Owner portal routes
+Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
+    Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
+    Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
+    Route::get('settings/appearance', [App\Http\Controllers\AppearanceSettingsController::class, 'ownerEdit'])->name('owner.settings.appearance');
+    Route::post('settings/appearance', [App\Http\Controllers\AppearanceSettingsController::class, 'ownerUpdate'])->name('owner.settings.appearance.update');
+    Route::get('pets/{pet}/record', [App\Http\Controllers\OwnerPortalController::class, 'petRecord'])->name('owner.pet.record');
+    Route::put('pets/{pet}', [App\Http\Controllers\OwnerPortalController::class, 'updatePet'])->name('owner.pet.update');
+});
+
+// Public pet QR scan page (no auth required)
+Route::get('scan/{token}', [App\Http\Controllers\PetScanController::class, 'scan'])->name('pet.scan');
 
 Route::middleware(['auth'])->group(function () {
     // Setup route (must be before EnsureSetupComplete middleware check)
@@ -24,6 +81,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('pet-records', [App\Http\Controllers\PetController::class, 'index'])->name('pet-records');
         Route::get('pet-records/export', [App\Http\Controllers\PetController::class, 'export'])->name('pet-records.export');
+        Route::get('pet-records/scan', [App\Http\Controllers\PetController::class, 'scannerPage'])->name('pet-records.scan');
+        Route::get('pet-records/scan-lookup/{token}', [App\Http\Controllers\PetScanController::class, 'clinicScan'])->name('pet-records.scan-lookup');
         Route::post('pet-records', [App\Http\Controllers\PetController::class, 'store'])->name('pet-records.store');
         Route::get('pet-records/{pet}/manage', [App\Http\Controllers\PetController::class, 'manage'])->name('pet-records.manage');
         Route::delete('pet-records/{pet}', [App\Http\Controllers\PetController::class, 'destroy'])->name('pet-records.destroy');
@@ -41,13 +100,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('reports/export/financial', [App\Http\Controllers\ReportsController::class, 'exportFinancial'])->name('reports.export.financial');
         Route::get('reports/export/service', [App\Http\Controllers\ReportsController::class, 'exportService'])->name('reports.export.service');
 
+        Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
+        Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
+
         Route::get('billing', [App\Http\Controllers\BillingController::class, 'index'])->name('billing');
         Route::post('billing/process/{payment}', [App\Http\Controllers\BillingController::class, 'processPayment'])->name('billing.process');
     });
-
-    // Clinic Settings (all authenticated users)
-    Route::get('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'index'])->name('clinic-settings');
-    Route::post('clinic-settings', [App\Http\Controllers\ClinicSettingsController::class, 'update'])->name('clinic-settings.update');
 
     // Admin-only routes
     Route::middleware(['role:admin'])->group(function () {
@@ -57,6 +115,15 @@ Route::middleware(['auth'])->group(function () {
         Route::put('user-management/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('user-management.update');
         Route::patch('user-management/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('user-management.toggle-status');
         Route::delete('user-management/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('user-management.destroy');
+
+        // Owner account management
+        Route::get('owner-management', [App\Http\Controllers\OwnerManagementController::class, 'index'])->name('owner-management');
+        Route::put('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'update'])->name('owner-management.update');
+        Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('owner-management.toggle-status');
+        Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('owner-management.destroy');
+
+        Route::get('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminEdit'])->name('admin.settings');
+        Route::post('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminUpdate'])->name('admin.settings.update');
     });
 });
 

@@ -22,6 +22,7 @@ class Pet extends Model
         'gender',
         'color',
         'microchip_id',
+        'qr_token',
         'image_path',
         'status',
         'last_visit',

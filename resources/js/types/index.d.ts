@@ -27,6 +27,11 @@ export interface SharedData {
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    clinicSettings: {
+        themeColor: string | null;
+        clinicName: string | null;
+        clinicLogo: string | null;
+    };
     [key: string]: unknown;
 }
 

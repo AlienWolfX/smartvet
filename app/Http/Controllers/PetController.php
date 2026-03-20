@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Pet;
 use App\Models\Owner;
 use App\Models\PetSpecies;
+use App\Models\Consultation;
+use App\Models\ConsultationFile;
 use App\Models\InventoryItem;
 use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PetController extends Controller
@@ -33,6 +36,7 @@ class PetController extends Controller
                     'color' => $pet->color ?? 'Unknown',
                     'microchipId' => $pet->microchip_id ?? 'Not assigned',
                     'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
+                    'qrUrl' => $pet->qr_token ? url('/scan/' . $pet->qr_token) : null,
                     'status' => $pet->status,
                     'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
                     'registrationDate' => $pet->created_at->toISOString(),
@@ -70,11 +74,14 @@ class PetController extends Controller
         return Inertia::render('pet-records', [
             'pets' => $pets,
             'species' => $species,
+            'newPetQr' => session()->pull('newPetQr'),
         ]);
     }
 
     public function store(Request $request)
     {
+        $actorName = $request->user()?->name ?? 'Clinic Staff';
+
         $request->validate([
             'petName' => 'required|string|max:255',
             'species' => 'required|string',
@@ -85,8 +92,10 @@ class PetController extends Controller
             'color' => 'nullable|string|max:255',
             'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id',
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'petDocuments' => 'sometimes|nullable|array|max:3',
+            'petDocuments.*' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240',
             'ownerName' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
+            'phone' => 'required|digits_between:7,15',
             'email' => 'nullable|email|max:255',
             'province' => 'required|string',
             'city' => 'required|string',
@@ -95,7 +104,7 @@ class PetController extends Controller
             'zipCode' => 'nullable|string|max:10',
         ]);
 
-        DB::transaction(function () use ($request) {
+        DB::transaction(function () use ($request, $actorName) {
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('petImage')) {
@@ -112,17 +121,24 @@ class PetController extends Controller
             }
 
             // Create or find owner
+            $accountUser = $request->email
+                ? \App\Models\User::where('email', $request->email)
+                    ->where('role', \App\Models\User::ROLE_OWNER)
+                    ->first()
+                : null;
+
             $owner = Owner::create([
-                'user_id' => $this->tenantUserId(),
-                'name' => $request->ownerName,
-                'phone' => $request->phone,
-                'email' => $request->email,
-                'street' => $request->street,
-                'barangay' => $request->barangay,
-                'city' => $request->city,
-                'province' => $request->province,
-                'zip_code' => $request->zipCode,
-                'address' => implode(', ', array_filter([
+                'user_id'         => $this->tenantUserId(),
+                'account_user_id' => $accountUser?->id,
+                'name'            => $request->ownerName,
+                'phone'           => $request->phone,
+                'email'           => $request->email,
+                'street'          => $request->street,
+                'barangay'        => $request->barangay,
+                'city'            => $request->city,
+                'province'        => $request->province,
+                'zip_code'        => $request->zipCode,
+                'address'         => implode(', ', array_filter([
                     $request->street,
                     $request->barangay,
                     $request->city,
@@ -133,7 +149,7 @@ class PetController extends Controller
             ]);
 
             // Create pet
-            Pet::create([
+            $pet = Pet::create([
                 'name' => $request->petName,
                 'owner_id' => $owner->id,
                 'species_id' => $species->id,
@@ -143,20 +159,71 @@ class PetController extends Controller
                 'gender' => $request->gender,
                 'color' => $request->color,
                 'microchip_id' => $request->microchipId,
+                'qr_token' => Str::uuid(),
                 'image_path' => $imagePath,
                 'status' => 'active',
                 'last_visit' => now(),
+            ]);
+
+            if ($request->hasFile('petDocuments')) {
+                $consultation = Consultation::create([
+                    'pet_id' => $pet->id,
+                    'consultation_type' => 'routine-checkup',
+                    'chief_complaint' => 'Initial uploaded documents from pet registration.',
+                    'diagnosis' => null,
+                    'treatment' => null,
+                    'notes' => 'Uploaded files (e.g., X-rays, lab results) during initial pet registration.',
+                    'consultation_fee' => 0,
+                    'consultation_date' => now()->toDateString(),
+                    'consultation_time' => now()->format('H:i:s'),
+                    'veterinarian' => $actorName,
+                    'status' => 'completed',
+                    'payment_status' => 'pending',
+                ]);
+
+                Storage::disk('public')->makeDirectory('docs');
+
+                foreach ($request->file('petDocuments') as $file) {
+                    $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+                    $filePath = $file->storeAs('docs', $filename, 'public');
+
+                    ConsultationFile::create([
+                        'consultation_id' => $consultation->id,
+                        'file_name' => $filename,
+                        'original_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $this->determineFileType($file->getMimeType() ?? ''),
+                        'mime_type' => $file->getMimeType() ?? 'application/octet-stream',
+                        'file_size' => $file->getSize(),
+                        'uploaded_by' => $actorName,
+                    ]);
+                }
+            }
+
+            session([
+                'newPetQr' => [
+                    'petId'   => 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT),
+                    'name'    => $pet->name,
+                    'species' => $species->name,
+                    'breed'   => $pet->breed ?? 'Mixed',
+                    'qrUrl'   => url('/scan/' . $pet->qr_token),
+                ],
             ]);
         });
 
         return redirect()->back()->with('success', 'Pet registered successfully!');
     }
 
+    public function scannerPage()
+    {
+        return Inertia::render('clinic/pet-scanner');
+    }
+
     public function manage($petId)
     {
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
-        
+
         $pet = $this->scopePetToUser(Pet::with([
                 'owner',
                 'species',
@@ -321,7 +388,7 @@ class PetController extends Controller
     {
         $today = now();
         $dueDate = $nextDueDate;
-        
+
         if ($dueDate < $today) {
             return 'overdue';
         } elseif ($dueDate <= $today->addDays(30)) {
@@ -329,6 +396,15 @@ class PetController extends Controller
         } else {
             return 'current';
         }
+    }
+
+    private function determineFileType(string $mimeType): string
+    {
+        if (str_starts_with($mimeType, 'image/')) {
+            return 'image';
+        }
+
+        return 'document';
     }
 
     public function export(Request $request)
@@ -349,7 +425,7 @@ class PetController extends Controller
         $petIdRaw = $request->input('pet_id');
         // Extract numeric ID from PET-001 format or plain number
         $petId = $petIdRaw ? (int) preg_replace('/[^0-9]/', '', $petIdRaw) : null;
-        
+
         // Check if parameters exist in the request
         $includeConsultations = $request->has('include_consultations') || $request->input('include_consultations') === '1';
         $includeVaccinations = $request->has('include_vaccinations') || $request->input('include_vaccinations') === '1';
@@ -360,7 +436,7 @@ class PetController extends Controller
         if ($exportType === 'individual') {
             // Load relationships for detailed export
             $petsQuery->with(['consultations', 'vaccinations']);
-            
+
             // Filter by specific pet ID for individual export
             if ($petId) {
                 $petsQuery->where('id', $petId);
@@ -392,7 +468,7 @@ class PetController extends Controller
         $pets = $petsQuery->get();
 
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        
+
         if ($exportType === 'individual') {
             $this->createDetailedExport($spreadsheet, $pets, $includeConsultations, $includeVaccinations, $includeOwnerInfo);
         } else {
@@ -469,9 +545,9 @@ class PetController extends Controller
         // Pets sheet
         $petsSheet = $spreadsheet->getActiveSheet();
         $petsSheet->setTitle('Pets');
-        
+
         $headers = ['Pet ID', 'Pet Name', 'Species', 'Breed', 'Age', 'Weight (kg)', 'Gender', 'Color', 'Microchip ID', 'Status', 'Registration Date'];
-        
+
         if ($includeOwnerInfo) {
             $headers = array_merge($headers, ['Owner Name', 'Owner Phone', 'Owner Email', 'Owner Address']);
         }
@@ -495,7 +571,7 @@ class PetController extends Controller
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->microchip_id ?? 'Not assigned');
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, ucfirst($pet->status));
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->created_at->toDateString());
-            
+
             if ($includeOwnerInfo) {
                 $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->owner?->name ?? '');
                 $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->owner?->phone ?? '');
@@ -514,7 +590,7 @@ class PetController extends Controller
         if ($includeConsultations) {
             $consultSheet = $spreadsheet->createSheet();
             $consultSheet->setTitle('Consultations');
-            
+
             $consultHeaders = ['Pet ID', 'Pet Name', 'Consultation Date', 'Type', 'Chief Complaint', 'Diagnosis', 'Treatment', 'Fee', 'Veterinarian', 'Status', 'Notes'];
             foreach ($consultHeaders as $index => $header) {
                 $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
@@ -548,7 +624,7 @@ class PetController extends Controller
         if ($includeVaccinations) {
             $vaccSheet = $spreadsheet->createSheet();
             $vaccSheet->setTitle('Vaccinations');
-            
+
             $vaccHeaders = ['Pet ID', 'Pet Name', 'Vaccine Name', 'Vaccination Date', 'Next Due Date', 'Administered By', 'Cost', 'Notes'];
             foreach ($vaccHeaders as $index => $header) {
                 $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);

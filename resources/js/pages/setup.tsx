@@ -131,12 +131,12 @@ export default function Setup({ user }: SetupProps) {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+        <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-slate-100">
             <Head title="Setup Your Clinic" />
 
-            <div className="flex min-h-screen flex-col items-center justify-center p-4">
+            <div className="flex h-full flex-col items-center justify-center px-4 py-3 md:px-6 md:py-4">
                 {/* Progress indicator */}
-                <div className="mb-8 flex items-center gap-2">
+                <div className="mb-5 flex items-center gap-2">
                     {[1, 2, 3].map((s) => (
                         <div key={s} className="flex items-center">
                             <div
@@ -164,7 +164,7 @@ export default function Setup({ user }: SetupProps) {
                     ))}
                 </div>
 
-                <form onSubmit={handleSubmit} className="w-full max-w-2xl">
+                <form onSubmit={handleSubmit} className={cn('w-full', step === 3 ? 'max-w-5xl' : 'max-w-2xl')}>
                     {/* Step 1: Clinic Info */}
                     {step === 1 && (
                         <Card className="border-0 shadow-2xl shadow-slate-200/60">
@@ -306,142 +306,141 @@ export default function Setup({ user }: SetupProps) {
                     {/* Step 3: Theme Selection */}
                     {step === 3 && (
                         <Card className="border-0 shadow-2xl shadow-slate-200/60">
-                            <CardContent className="p-8 md:p-12">
-                                <div className="mb-8 text-center">
+                            <CardContent className="p-6 md:p-8">
+                                <div className="mb-5 text-center">
                                     <div
-                                        className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-white transition-colors"
+                                        className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl text-white transition-colors"
                                         style={{ backgroundColor: getActiveColor() }}
                                     >
-                                        <Palette className="h-8 w-8" />
+                                        <Palette className="h-7 w-7" />
                                     </div>
-                                    <h1 className="text-2xl font-bold text-slate-900">
+                                    <h1 className="text-xl font-bold text-slate-900 md:text-2xl">
                                         Choose Your Theme
                                     </h1>
-                                    <p className="mt-2 text-slate-500">
+                                    <p className="mt-1 text-sm text-slate-500">
                                         Select a color theme for your clinic's dashboard.
                                     </p>
                                 </div>
 
-                                {/* Theme Presets */}
-                                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                                    {themePresets.map((theme) => (
-                                        <button
-                                            type="button"
-                                            key={theme.name}
-                                            onClick={() => handleThemeSelect(theme)}
-                                            className={cn(
-                                                'group relative flex flex-col items-center rounded-xl border-2 p-4 transition-all hover:shadow-md',
-                                                selectedTheme === theme.name
-                                                    ? 'border-slate-900 shadow-md'
-                                                    : 'border-slate-200 hover:border-slate-300',
-                                            )}
-                                        >
-                                            {/* Mini sidebar preview */}
-                                            <div className="mb-3 flex w-full overflow-hidden rounded-lg shadow-sm">
-                                                <div
-                                                    className="h-20 w-8 flex-shrink-0"
-                                                    style={{ backgroundColor: theme.color }}
-                                                />
-                                                <div className="flex-1 bg-slate-100 p-1.5">
-                                                    <div className="mb-1 h-1.5 w-3/4 rounded bg-slate-300" />
-                                                    <div className="mb-1 h-1 w-1/2 rounded bg-slate-200" />
-                                                    <div className="h-1 w-2/3 rounded bg-slate-200" />
-                                                </div>
-                                            </div>
-                                            <span className="text-sm font-semibold text-slate-700">
-                                                {theme.label}
-                                            </span>
-                                            <span className="text-xs text-slate-400">
-                                                {theme.description}
-                                            </span>
-                                            {selectedTheme === theme.name && (
-                                                <div
-                                                    className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-white"
-                                                    style={{ backgroundColor: theme.color }}
+                                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(280px,0.85fr)] lg:items-start">
+                                    <div>
+                                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                            {themePresets.map((theme) => (
+                                                <button
+                                                    type="button"
+                                                    key={theme.name}
+                                                    onClick={() => handleThemeSelect(theme)}
+                                                    className={cn(
+                                                        'group relative flex flex-col items-center rounded-xl border-2 p-3 transition-all hover:shadow-md',
+                                                        selectedTheme === theme.name
+                                                            ? 'border-slate-900 shadow-md'
+                                                            : 'border-slate-200 hover:border-slate-300',
+                                                    )}
                                                 >
-                                                    <Check className="h-3.5 w-3.5" />
+                                                    <div className="mb-2 flex w-full overflow-hidden rounded-lg shadow-sm">
+                                                        <div
+                                                            className="h-14 w-7 flex-shrink-0"
+                                                            style={{ backgroundColor: theme.color }}
+                                                        />
+                                                        <div className="flex-1 bg-slate-100 p-1.5">
+                                                            <div className="mb-1 h-1.5 w-3/4 rounded bg-slate-300" />
+                                                            <div className="mb-1 h-1 w-1/2 rounded bg-slate-200" />
+                                                            <div className="h-1 w-2/3 rounded bg-slate-200" />
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-slate-700">
+                                                        {theme.label}
+                                                    </span>
+                                                    <span className="text-center text-[11px] leading-4 text-slate-400">
+                                                        {theme.description}
+                                                    </span>
+                                                    {selectedTheme === theme.name && (
+                                                        <div
+                                                            className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full text-white"
+                                                            style={{ backgroundColor: theme.color }}
+                                                        >
+                                                            <Check className="h-3.5 w-3.5" />
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="rounded-xl border border-slate-200 p-4">
+                                            <div className="flex items-center gap-3">
+                                                <Sparkles className="h-5 w-5 text-slate-400" />
+                                                <span className="text-sm font-semibold text-slate-700">Custom Color</span>
+                                            </div>
+                                            <div className="mt-3 flex items-center gap-3">
+                                                <div className="relative">
+                                                    <input
+                                                        type="color"
+                                                        value={customColor}
+                                                        onChange={(e) => handleCustomColor(e.target.value)}
+                                                        className="h-11 w-11 cursor-pointer rounded-lg border-2 border-slate-200 p-0.5"
+                                                    />
                                                 </div>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* Custom Color Picker */}
-                                <div className="mt-6 rounded-xl border border-slate-200 p-4">
-                                    <div className="flex items-center gap-3">
-                                        <Sparkles className="h-5 w-5 text-slate-400" />
-                                        <span className="text-sm font-semibold text-slate-700">Custom Color</span>
-                                    </div>
-                                    <div className="mt-3 flex items-center gap-4">
-                                        <div className="relative">
-                                            <input
-                                                type="color"
-                                                value={customColor}
-                                                onChange={(e) => handleCustomColor(e.target.value)}
-                                                className="h-12 w-12 cursor-pointer rounded-lg border-2 border-slate-200 p-0.5"
-                                            />
-                                        </div>
-                                        <div className="flex-1">
-                                            <Input
-                                                value={customColor}
-                                                onChange={(e) => handleCustomColor(e.target.value)}
-                                                placeholder="#000000"
-                                                className="h-10 font-mono text-sm uppercase"
-                                                maxLength={7}
-                                            />
-                                        </div>
-                                        {/* Preview strip */}
-                                        <div
-                                            className={cn(
-                                                'h-10 w-24 rounded-lg transition-colors',
-                                                selectedTheme === 'custom' && 'ring-2 ring-slate-900 ring-offset-2',
-                                            )}
-                                            style={{ backgroundColor: customColor }}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Live Preview */}
-                                <div className="mt-6">
-                                    <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                        Preview
-                                    </p>
-                                    <div className="flex overflow-hidden rounded-xl border border-slate-200 shadow-sm">
-                                        {/* Mini sidebar */}
-                                        <div
-                                            className="flex w-16 flex-col items-center py-4 text-white transition-colors"
-                                            style={{ backgroundColor: getActiveColor() }}
-                                        >
-                                            {logoPreview ? (
-                                                <img
-                                                    src={logoPreview}
-                                                    alt="Logo"
-                                                    className="h-8 w-8 rounded-lg object-cover"
+                                                <div className="flex-1">
+                                                    <Input
+                                                        value={customColor}
+                                                        onChange={(e) => handleCustomColor(e.target.value)}
+                                                        placeholder="#000000"
+                                                        className="h-10 font-mono text-sm uppercase"
+                                                        maxLength={7}
+                                                    />
+                                                </div>
+                                                <div
+                                                    className={cn(
+                                                        'h-10 w-16 rounded-lg transition-colors',
+                                                        selectedTheme === 'custom' && 'ring-2 ring-slate-900 ring-offset-2',
+                                                    )}
+                                                    style={{ backgroundColor: customColor }}
                                                 />
-                                            ) : (
-                                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 text-xs font-bold">
-                                                    {data.clinic_name.substring(0, 2).toUpperCase() || 'SV'}
-                                                </div>
-                                            )}
-                                            <div className="mt-4 space-y-2">
-                                                <div className="h-1.5 w-6 rounded bg-white/40" />
-                                                <div className="h-1.5 w-6 rounded bg-white/20" />
-                                                <div className="h-1.5 w-6 rounded bg-white/20" />
                                             </div>
                                         </div>
-                                        {/* Content area */}
-                                        <div className="flex-1 bg-slate-50 p-4">
-                                            <div className="mb-3 h-2 w-24 rounded bg-slate-300" />
-                                            <div className="space-y-2">
-                                                <div className="h-1.5 w-full rounded bg-slate-200" />
-                                                <div className="h-1.5 w-3/4 rounded bg-slate-200" />
-                                                <div className="h-1.5 w-1/2 rounded bg-slate-200" />
+
+                                        <div>
+                                            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                                Preview
+                                            </p>
+                                            <div className="flex overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                                                <div
+                                                    className="flex w-14 flex-col items-center py-3 text-white transition-colors"
+                                                    style={{ backgroundColor: getActiveColor() }}
+                                                >
+                                                    {logoPreview ? (
+                                                        <img
+                                                            src={logoPreview}
+                                                            alt="Logo"
+                                                            className="h-7 w-7 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 text-[10px] font-bold">
+                                                            {data.clinic_name.substring(0, 2).toUpperCase() || 'SV'}
+                                                        </div>
+                                                    )}
+                                                    <div className="mt-3 space-y-1.5">
+                                                        <div className="h-1.5 w-5 rounded bg-white/40" />
+                                                        <div className="h-1.5 w-5 rounded bg-white/20" />
+                                                        <div className="h-1.5 w-5 rounded bg-white/20" />
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 bg-slate-50 p-3">
+                                                    <div className="mb-2 h-2 w-20 rounded bg-slate-300" />
+                                                    <div className="space-y-1.5">
+                                                        <div className="h-1.5 w-full rounded bg-slate-200" />
+                                                        <div className="h-1.5 w-3/4 rounded bg-slate-200" />
+                                                        <div className="h-1.5 w-1/2 rounded bg-slate-200" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-8 flex justify-between">
+                                <div className="mt-6 flex justify-between">
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -466,7 +465,7 @@ export default function Setup({ user }: SetupProps) {
                 </form>
 
                 {/* Step labels */}
-                <div className="mt-6 flex items-center gap-8 text-xs text-slate-400">
+                <div className="mt-4 flex items-center gap-6 text-xs text-slate-400">
                     <span className={cn(step === 1 && 'font-semibold text-slate-700')}>
                         Clinic Info
                     </span>

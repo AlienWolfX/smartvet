@@ -3,28 +3,28 @@ import { ReactNode, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuSeparator, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { UserMenuContent } from '@/components/user-menu-content';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { NotificationBell } from '@/components/notification-bell';
 import { dashboard } from '@/routes';
-import { 
+import {
     Activity,
-    ChevronDown, 
-    Menu, 
-    Users, 
+    ChevronDown,
+    Menu,
+    Users,
     BarChart3,
     Boxes,
     Heart,
-    CreditCard,
-    Settings
+    CreditCard,    PawPrint,    Settings,
+    QrCode
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -36,8 +36,8 @@ interface AdminLayoutProps {
     actions?: ReactNode;
 }
 
-export default function AdminLayout({ 
-    children, 
+export default function AdminLayout({
+    children,
     title = 'SmartVet Control Center',
     description = 'Monitor hospital performance, triage schedules, and handle operational workflows.',
     breadcrumbs = [
@@ -51,7 +51,7 @@ export default function AdminLayout({
     const { auth } = usePage<SharedData>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-    
+
     const isAdmin = (auth.user as { role?: string })?.role === 'admin';
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
@@ -65,10 +65,17 @@ export default function AdminLayout({
             adminOnly: false,
             clinicOnly: true
         },
-           {
+        {
             name: 'Pet Records',
             href: '/pet-records',
             icon: Heart,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Scan Pet QR',
+            href: '/pet-records/scan',
+            icon: QrCode,
             adminOnly: false,
             clinicOnly: true
         },
@@ -101,8 +108,15 @@ export default function AdminLayout({
             clinicOnly: false
         },
         {
+            name: 'Owner Management',
+            href: '/owner-management',
+            icon: PawPrint,
+            adminOnly: true,
+            clinicOnly: false
+        },
+        {
             name: 'System Settings',
-            href: '/clinic-settings',
+            href: isAdmin ? '/admin/settings' : '/clinic-settings',
             icon: Settings,
             adminOnly: false,
             clinicOnly: false
@@ -116,7 +130,7 @@ export default function AdminLayout({
          ...item,
          current: item.href === '/dashboard' || item.href === '/'
              ? currentPath === item.href || currentPath === '/dashboard'
-             : currentPath.startsWith(item.href),
+             : currentPath === item.href,
      }));
 
     const SidebarContent = () => (
@@ -127,10 +141,8 @@ export default function AdminLayout({
                     {clinicLogo ? (
                         <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-8 w-8 rounded-lg object-cover" />
                     ) : (
-                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">
-                                {clinicName.substring(0, 2).toUpperCase()}
-                            </span>
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center overflow-hidden">
+                            <img src="/images/logo.png" alt="SmartVet" className="h-6 w-auto brightness-0 invert" />
                         </div>
                     )}
                     <span className="text-white font-semibold text-sm truncate max-w-[140px]">
@@ -161,33 +173,23 @@ export default function AdminLayout({
                 })}
             </nav>
 
-            {/* User section */}
-            <div className="p-4 border-t border-white/10">
-                <div className="flex items-center space-x-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={(auth.user as { avatar?: string })?.avatar ?? ''} />
-                        <AvatarFallback className="text-xs">
-                            {auth.user.name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate text-white">
-                            {auth.user.name}
-                        </p>
-                        <p className="text-xs text-white/60 capitalize">
-                            {(auth.user as { role?: string })?.role || 'Clinic'}
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 
     return (
         <>
             <Head title={title} />
-            
-            <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.12),_transparent_42%),_#f1f5f9] flex flex-col">
+
+            <div
+                className="min-h-screen flex flex-col"
+                style={{
+                    backgroundColor: '#f1f5f9',
+                    backgroundImage: 'var(--paw-pattern), radial-gradient(circle at top, rgba(16,185,129,0.12), transparent 42%)',
+                    backgroundSize: '160px 160px, 100%',
+                    backgroundRepeat: 'repeat, no-repeat',
+                    backgroundAttachment: 'fixed, scroll',
+                }}
+            >
                 {/* Mobile sidebar */}
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                     <SheetContent side="left" className="p-0 w-72">
@@ -221,9 +223,6 @@ export default function AdminLayout({
                         <div className="flex flex-1">
                             <div className="flex items-center">
                                 <div>
-                                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-neutral-400">
-                                        Admin Console
-                                    </p>
                                     <p className="text-sm font-semibold text-neutral-800">
                                         {title}
                                     </p>
@@ -279,20 +278,6 @@ export default function AdminLayout({
                             </div>
                         </div>
                     </main>
-
-                    {/* Footer */}
-                    <footer className="border-t mt-auto">
-                        <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                            <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: themeColor }}>
-                                        <span className="text-white font-bold text-xs">{clinicName.substring(0, 2).toUpperCase()}</span>
-                                    </div>
-                                    <span className="font-medium">{clinicName}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </footer>
                 </div>
             </div>
         </>

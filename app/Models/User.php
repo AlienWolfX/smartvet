@@ -6,14 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     const ROLE_ADMIN = 'admin';
     const ROLE_CLINIC = 'clinic';
+    const ROLE_OWNER = 'owner';
 
     /**
      * The attributes that are mass assignable.
@@ -42,6 +44,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_recovery_codes',
+        'two_factor_secret',
     ];
 
     /**
@@ -75,6 +79,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is a pet owner
+     */
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
+    }
+
+    /**
      * Check if user has a specific role
      */
     public function hasRole(string $role): bool
@@ -93,6 +105,11 @@ class User extends Authenticatable
     public function owners(): HasMany
     {
         return $this->hasMany(Owner::class);
+    }
+
+    public function ownersAsAccount(): HasMany
+    {
+        return $this->hasMany(Owner::class, 'account_user_id');
     }
 
     public function inventoryItems(): HasMany

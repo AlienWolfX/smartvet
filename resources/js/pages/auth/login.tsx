@@ -1,29 +1,41 @@
 import InputError from '@/components/input-error';
+import TurnstileCaptcha from '@/components/turnstile-captcha';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { Head, useForm } from '@inertiajs/react';
-import { FormEvent } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { FormEvent, useCallback, useState } from 'react';
 
 interface LoginProps {
     status?: string;
     canResetPassword?: boolean;
     canRegister?: boolean;
+    captchaSiteKey: string | null;
 }
 
-export default function Login({ status }: LoginProps) {
+export default function Login({ status, captchaSiteKey }: LoginProps) {
+    const [captchaRefreshNonce, setCaptchaRefreshNonce] = useState(0);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
         remember: false,
+        captcha_token: '',
     });
+
+    const handleCaptchaTokenChange = useCallback((token: string) => {
+        setData('captcha_token', token);
+    }, [setData]);
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         post('/login', {
-            onFinish: () => setData('password', ''),
+            onFinish: () => {
+                setData('password', '');
+                setData('captcha_token', '');
+                setCaptchaRefreshNonce((prev) => prev + 1);
+            },
         });
     };
 
@@ -40,17 +52,18 @@ export default function Login({ status }: LoginProps) {
                         loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent" />
-                 
+
                 </div>
 
                 <div className="flex h-full items-center justify-center bg-white px-8 py-12 shadow-lg shadow-slate-900/5">
                     <div className="w-full max-w-md space-y-10">
                         <div className="space-y-3 text-left">
-                            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">
-                                SmartVet
-                            </p>
+                            <img src="/images/logo.png" alt="SmartVet" className="h-14 w-auto" />
                             <div>
-                                <h1 className="text-3xl font-semibold">Admin access</h1>
+                                <h1 className="text-3xl font-semibold">Login</h1>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Sign in with your account.
+                                </p>
                             </div>
                         </div>
 
@@ -111,6 +124,13 @@ export default function Login({ status }: LoginProps) {
                                 <Label htmlFor="remember">Remember me</Label>
                             </div>
 
+                            <TurnstileCaptcha
+                                siteKey={captchaSiteKey}
+                                error={errors.captcha_token}
+                                refreshNonce={captchaRefreshNonce}
+                                onTokenChange={handleCaptchaTokenChange}
+                            />
+
                             <Button
                                 type="submit"
                                 className="mt-2 w-full"
@@ -122,6 +142,15 @@ export default function Login({ status }: LoginProps) {
                                 Log in
                             </Button>
                         </form>
+
+                        <div className="text-center text-sm text-slate-500">
+                            <p>
+                                Don't have an account?{' '}
+                                <Link href="/register" className="font-medium text-slate-700 underline underline-offset-4 hover:text-slate-900">
+                                    Create one
+                                </Link>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -11,27 +11,40 @@ export const petSpecies = [
 
 export const petBreeds = {
     dog: [
-        "Golden Retriever", "Labrador Retriever", "German Shepherd", "Bulldog", 
-        "Poodle", "Beagle", "Rottweiler", "Yorkshire Terrier", "Dachshund", 
+        "Golden Retriever", "Labrador Retriever", "German Shepherd", "Bulldog",
+        "Poodle", "Beagle", "Rottweiler", "Yorkshire Terrier", "Dachshund",
         "Siberian Husky", "Shih Tzu", "Boston Terrier", "Aspin (Mixed)", "Chihuahua"
     ],
     cat: [
-        "Persian", "Maine Coon", "British Shorthair", "Ragdoll", "Siamese", 
-        "American Shorthair", "Abyssinian", "Russian Blue", "Scottish Fold", 
+        "Persian", "Maine Coon", "British Shorthair", "Ragdoll", "Siamese",
+        "American Shorthair", "Abyssinian", "Russian Blue", "Scottish Fold",
         "Domestic Shorthair", "Domestic Longhair", "Puspin (Mixed)"
     ],
     rabbit: [
-        "Holland Lop", "Netherland Dwarf", "Mini Rex", "Lionhead", "Flemish Giant", 
+        "Holland Lop", "Netherland Dwarf", "Mini Rex", "Lionhead", "Flemish Giant",
         "English Angora", "Dutch", "New Zealand White"
     ],
     bird: [
-        "Budgerigar", "Cockatiel", "Love Bird", "Canary", "Cockatoo", "Parrot", 
+        "Budgerigar", "Cockatiel", "Love Bird", "Canary", "Cockatoo", "Parrot",
         "Conure", "Finch", "Macaw"
     ]
 };
 
 export const petRecords = [
     {
+        // Add a sample medication to all pets
+        ...existingPet,
+        currentMedications: [
+            {
+                name: "SampleMed",
+                dosage: "10mg once daily",
+                startDate: "2026-03-18",
+                duration: "7 days",
+                purpose: "Demo medication for all pets"
+            },
+            ...(existingPet.currentMedications || [])
+        ]
+    },
         id: "PET-001",
         name: "Mika",
         species: "dog",
