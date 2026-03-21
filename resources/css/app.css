@@ -147,3 +147,54 @@
         background-attachment: fixed;
     }
 }
+
+@layer utilities {
+    @media print {
+        body * {
+            visibility: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .receipt-paper,
+        .receipt-paper * {
+            visibility: visible !important;
+        }
+
+        .receipt-paper {
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            position: fixed !important;
+            width: 130mm !important;
+            max-height: 260mm !important; /* A4 page minus margins */
+            top: 0 !important;
+            right: 0 !important;
+            margin: 8mm !important;
+            padding: 16px !important;
+            box-shadow: none !important;
+            border: 1px solid #000 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            overflow: hidden !important;
+            white-space: normal !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        .receipt-paper * {
+            color: #000 !important;
+        }
+
+        .receipt-footer {
+            display: none !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 8mm;
+        }
+    }
+}
+
+

@@ -16,38 +16,57 @@ class BillingController extends Controller
     public function index()
     {
         // Fetch all pending payments from PetPayment table (both consultations and vaccinations)
-        $pendingPayments = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'consultation', 'vaccination'])
+        $pendingPayments = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'consultation', 'vaccination', 'items'])
             ->where('status', 'pending'))
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($payment) {
                 $isVaccination = $payment->vaccination_id !== null;
                 $isConsultation = $payment->consultation_id !== null;
-                
+
                 return [
                     'id' => $payment->id,
                     'type' => $isVaccination ? 'vaccination' : 'consultation',
-                    'date' => $payment->created_at->format('Y-m-d'),
+                    'date' => $payment->created_at->format('F j, Y h:i A'),
+                    'createdAt' => $payment->created_at->toDateTimeString(),
                     'petName' => $payment->pet->name,
                     'ownerName' => $payment->pet->owner->name,
-                    'service' => $isVaccination 
+                    'service' => $isVaccination
                         ? 'Vaccination: ' . ($payment->vaccination->vaccine_name ?? 'Unknown')
-                        : ($isConsultation 
+                        : ($isConsultation
                             ? ucfirst(str_replace('-', ' ', $payment->consultation->consultation_type ?? 'Consultation'))
                             : 'Service'),
                     'amount' => $payment->total_amount,
                     'status' => $payment->status,
+                    'items' => ($payment->items->map(function ($item) {
+                        return [
+                            'service_type' => $item->service_type,
+                            'description' => $item->description,
+                            'amount' => $item->amount,
+                        ];
+                    })->toArray() ?: [
+                        [
+                            'service_type' => $isVaccination ? 'vaccination' : 'consultation',
+                            'description' => $isVaccination
+                                ? 'Vaccination: ' . ($payment->vaccination->vaccine_name ?? 'Unknown')
+                                : ($isConsultation
+                                    ? ucfirst(str_replace('-', ' ', $payment->consultation->consultation_type ?? 'Consultation'))
+                                    : 'Service'),
+                            'amount' => $payment->total_amount,
+                        ],
+                    ]),
                 ];
             });
 
-        $paymentHistory = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'recordedBy'])
+        $paymentHistory = $this->scopeThroughPetOwner(PetPayment::with(['pet.owner', 'recordedBy', 'items'])
             ->where('status', 'paid'))
             ->orderBy('paid_at', 'desc')
             ->get()
             ->map(function ($payment) {
                 return [
                     'id' => $payment->id,
-                    'date' => optional($payment->paid_at)->format('Y-m-d H:i'),
+                    'date' => optional($payment->paid_at)->format('F j, Y h:i A'),
+                    'paidAt' => optional($payment->paid_at)->toDateTimeString(),
                     'petName' => $payment->pet->name,
                     'ownerName' => $payment->pet->owner->name,
                     'amount' => $payment->total_amount,
@@ -57,6 +76,23 @@ class BillingController extends Controller
                     'reference' => $payment->reference_number,
                     'status' => $payment->status,
                     'recordedBy' => $payment->recordedBy->name ?? 'System',
+                    'items' => ($payment->items->map(function ($item) {
+                        return [
+                            'service_type' => $item->service_type,
+                            'description' => $item->description,
+                            'amount' => $item->amount,
+                        ];
+                    })->toArray() ?: [
+                        [
+                            'service_type' => $payment->vaccination_id ? 'vaccination' : 'consultation',
+                            'description' => $payment->vaccination_id
+                                ? 'Vaccination: ' . ($payment->vaccination->vaccine_name ?? 'Unknown')
+                                : ($payment->consultation_id
+                                    ? ucfirst(str_replace('-', ' ', $payment->consultation->consultation_type ?? 'Consultation'))
+                                    : 'Service'),
+                            'amount' => $payment->total_amount,
+                        ],
+                    ]),
                 ];
             });
 
@@ -68,9 +104,12 @@ class BillingController extends Controller
 
     public function processPayment(Request $request, PetPayment $payment)
     {
-        // Verify ownership
         $user = auth()->user();
-        if (!$user->isAdmin()) {
+        if (! $user) {
+            abort(403);
+        }
+
+        if (! $user->isAdmin()) {
             $ownerUserId = $payment->pet?->owner?->user_id;
             if ($ownerUserId !== $user->id) {
                 abort(403);
@@ -85,7 +124,6 @@ class BillingController extends Controller
 
         try {
             DB::transaction(function () use ($payment, $validated) {
-                // Update the PetPayment record
                 $payment->update([
                     'payment_method' => $validated['payment_method'],
                     'reference_number' => $validated['reference_number'],
@@ -95,13 +133,11 @@ class BillingController extends Controller
                     'status' => 'paid',
                 ]);
 
-                // If it's a consultation payment, update the consultation payment_status
                 if ($payment->consultation_id) {
                     Consultation::where('id', $payment->consultation_id)
                         ->update(['payment_status' => 'paid']);
                 }
 
-                // If it's a vaccination payment, update the vaccination payment_status
                 if ($payment->vaccination_id) {
                     Vaccination::where('id', $payment->vaccination_id)
                         ->update(['payment_status' => 'paid']);
@@ -110,7 +146,7 @@ class BillingController extends Controller
 
             return redirect()->back()->with('success', 'Payment processed successfully!');
         } catch (\Exception $e) {
-            \Log::error('Payment processing failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Payment processing failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['general' => 'Failed to process payment. Please try again.']);
         }
     }

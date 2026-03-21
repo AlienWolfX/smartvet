@@ -126,7 +126,7 @@ interface InventoryLine {
 interface Props {
     pet: Pet;
     inventoryItems: InventoryItemOption[];
-    vaccinationItems: InventoryItemOption[];
+    vaccineItems: InventoryItemOption[];
 }
 
 const formatDate = (dateString: string) => {
@@ -165,7 +165,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function PetManage({ pet, inventoryItems, vaccinationItems }: Props) {
+export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) {
     const { auth } = usePage<SharedData>().props;
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -173,9 +173,11 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
     const [isAddVaccinationOpen, setIsAddVaccinationOpen] = useState(false);
     const [isEditVaccinationOpen, setIsEditVaccinationOpen] = useState(false);
     const [editingVaccination, setEditingVaccination] = useState<any>(null);
+    const [consultationErrors, setConsultationErrors] = useState<Record<string, string>>({});
     const [selectedConsultation, setSelectedConsultation] = useState<any>(null);
     const [consultationInventory, setConsultationInventory] = useState<InventoryLine[]>([]);
     const [vaccinationInventory, setVaccinationInventory] = useState<InventoryLine[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [inventorySelections, setInventorySelections] = useState({
         consultation: { itemId: '', quantity: 1 },
         vaccination: { itemId: '', quantity: 1 },
@@ -404,21 +406,32 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
     const handleAddConsultation = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validation
+        setIsSubmitting(true);
+        setConsultationErrors({});
+
+        const newErrors: Record<string, string> = {};
         if (!data.consultationType) {
-            error('Please select a consultation type');
-            return;
+            newErrors.consultationType = 'Please select a consultation type';
         }
         if (!data.chiefComplaint) {
-            error('Please enter the chief complaint');
-            return;
+            newErrors.chiefComplaint = 'Please enter the chief complaint';
         }
         if (!data.consultationDate) {
-            error('Please select a consultation date');
+            newErrors.consultationDate = 'Please select a consultation date';
+        }
+
+        if (Object.keys(newErrors).length > 0) {
+            setConsultationErrors(newErrors);
+            Object.values(newErrors).forEach((msg) => error(msg));
+            const firstField = Object.keys(newErrors)[0];
+            const fieldEl = document.querySelector(`[name="${firstField}"]`) as HTMLElement | null;
+            if (fieldEl) {
+                fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                fieldEl.focus();
+            }
             return;
         }
 
-        // Use FormData for file uploads
         const formData = new FormData();
         formData.append('consultation_type', data.consultationType);
         formData.append('chief_complaint', data.chiefComplaint);
@@ -428,7 +441,6 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
         formData.append('consultation_date', data.consultationDate);
         formData.append('consultation_fee', data.consultationFee || '0');
 
-        // Append files
         data.consultationFiles.forEach((file, index) => {
             formData.append(`consultation_files[${index}]`, file);
         });
@@ -438,59 +450,51 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
             formData.append(`inventory_items[${index}][quantity]`, item.quantity.toString());
         });
 
-        console.log('Submitting consultation with data:', {
-            consultation_type: data.consultationType,
-            chief_complaint: data.chiefComplaint,
-            consultation_date: data.consultationDate,
-            files_count: data.consultationFiles.length
-        });
-
         router.post(`/pet-records/${pet.id}/consultations`, formData, {
             onStart: () => {
-                console.log('Starting consultation submission...');
+                setConsultationErrors({});
             },
-            onSuccess: (page) => {
-                console.log('Consultation submission successful:', page);
+            onSuccess: () => {
                 success('Consultation record added successfully!');
+                setConsultationErrors({});
                 setIsAddConsultationOpen(false);
                 reset();
                 resetInventoryState('consultation');
             },
-            onError: (errors: Record<string, string>) => {
-                console.log('Consultation submission errors:', errors);
+            onError: (errors: Record<string, any>) => {
+                const normalizedErrors: Record<string, string> = Object.fromEntries(
+                    Object.entries(errors).map(([key, value]) => {
+                        let msg = '';
+                        if (Array.isArray(value) && value.length > 0) {
+                            msg = value[0];
+                        } else if (typeof value === 'string') {
+                            msg = value;
+                        } else if (value && typeof value === 'object') {
+                            const first = Object.values(value)[0];
+                            msg = Array.isArray(first) ? first[0] : String(first);
+                        } else {
+                            msg = 'Invalid input.';
+                        }
+                        return [key === 'consultation_type' ? 'consultationType' : key === 'chief_complaint' ? 'chiefComplaint' : key === 'consultation_date' ? 'consultationDate' : key, msg];
+                    })
+                );
 
-                if (errors.consultation_type) {
-                    error('Consultation Type: ' + errors.consultation_type);
-                }
-                if (errors.chief_complaint) {
-                    error('Chief Complaint: ' + errors.chief_complaint);
-                }
-                if (errors.consultation_date) {
-                    error('Consultation Date: ' + errors.consultation_date);
-                }
-                if (errors.general) {
-                    error(errors.general);
+                setConsultationErrors(normalizedErrors);
+                Object.values(normalizedErrors).forEach((msg) => error(msg));
+
+                const firstField = Object.keys(normalizedErrors)[0];
+                const fieldEl = document.querySelector(`[name="${firstField}"]`) as HTMLElement | null;
+                if (fieldEl) {
+                    fieldEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    fieldEl.focus();
                 }
 
-                // Handle file validation errors
-                Object.keys(errors).forEach(key => {
-                    if (key.startsWith('consultation_files.')) {
-                        const fileIndex = key.split('.')[1];
-                        error(`File ${parseInt(fileIndex) + 1}: ${errors[key]}`);
-                    }
-                });
-
-                // Show generic error if no specific errors found
-                if (Object.keys(errors).length === 0) {
+                if (Object.keys(normalizedErrors).length === 0) {
                     error('Failed to add consultation. Please try again.');
-                } else if (!errors.consultation_type && !errors.chief_complaint && !errors.consultation_date && !errors.general && !Object.keys(errors).some(key => key.startsWith('consultation_files.'))) {
-                    // Show first error if it's not one of the handled ones
-                    const firstErrorKey = Object.keys(errors)[0];
-                    error(`${firstErrorKey}: ${errors[firstErrorKey]}`);
                 }
             },
             onFinish: () => {
-                console.log('Consultation submission finished');
+                setIsSubmitting(false);
             }
         });
     };
@@ -888,6 +892,16 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                         </ModalHeader>
                                         <div className="flex-1 overflow-y-auto">
                                             <form onSubmit={handleAddConsultation} className="p-6">
+                                                {Object.keys(consultationErrors).length > 0 && (
+                                                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 mb-3">
+                                                        {/* <p className="text-sm font-semibold">Please fix the following errors:</p>
+                                                        <ul className="list-disc pl-5 mt-1 text-xs">
+                                                            {Object.entries(consultationErrors).map(([field, message]) => (
+                                                                <li key={field} className="truncate">{field}: {message}</li>
+                                                            ))}
+                                                        </ul> */}
+                                                    </div>
+                                                )}
                                                 <div className="space-y-6">
                                                     {/* Basic Information */}
                                                     <div className="space-y-4">
@@ -895,8 +909,8 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Consultation Type *</label>
-                                                                <Select value={data.consultationType} onValueChange={handleConsultationTypeChange} required>
-                                                                    <SelectTrigger>
+                                                                <Select name="consultationType" value={data.consultationType} onValueChange={handleConsultationTypeChange} required>
+                                                                    <SelectTrigger className={consultationErrors.consultationType ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}>
                                                                         <SelectValue placeholder="Select type" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
@@ -911,9 +925,11 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Date *</label>
                                                                 <Input
+                                                                    name="consultationDate"
                                                                     type="date"
                                                                     value={data.consultationDate}
                                                                     onChange={(e) => setData('consultationDate', e.target.value)}
+                                                                    className={consultationErrors.consultationDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                                     required
                                                                 />
                                                             </div>
@@ -927,12 +943,13 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                             <div className="space-y-2">
                                                                 <label className="text-sm font-medium">Chief Complaint *</label>
                                                                 <Textarea
+                                                                    name="chiefComplaint"
                                                                     placeholder="Main reason for visit..."
                                                                     value={data.chiefComplaint}
                                                                     onChange={(e) => setData('chiefComplaint', e.target.value)}
                                                                     rows={3}
                                                                     required
-                                                                    className="resize-none"
+                                                                    className={`resize-none ${consultationErrors.chiefComplaint ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
                                                                 />
                                                             </div>
 
@@ -1350,24 +1367,31 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                         value={data.vaccineName}
                                                         onValueChange={(value) => {
                                                             setData('vaccineName', value);
-                                                            const selectedVaccine = vaccinationItems.find(item => item.name === value);
+                                                            const selectedVaccine = vaccineItems.find(item => item.name === value);
                                                             if (selectedVaccine) {
                                                                 setData('vaccinationCost', selectedVaccine.unitPrice?.toString() || '');
-                                                                // Automatically add the vaccine to inventory items with quantity 1
-                                                                setVaccinationInventory([{
-                                                                    inventory_item_id: selectedVaccine.id,
-                                                                    quantity: 1
-                                                                }]);
+                                                                // Automatically include the selected vaccine in the inventory items list
+                                                                setVaccinationInventory((prev) => {
+                                                                    const existing = prev.find(item => item.inventory_item_id === selectedVaccine.id);
+                                                                    if (existing) {
+                                                                        return prev.map((item) =>
+                                                                            item.inventory_item_id === selectedVaccine.id
+                                                                                ? { ...item, quantity: item.quantity + 1 }
+                                                                                : item
+                                                                        );
+                                                                    }
+                                                                    return [...prev, { inventory_item_id: selectedVaccine.id, quantity: 1 }];
+                                                                });
                                                             }
                                                         }}
                                                         required
-                                                        disabled={vaccinationItems.length === 0}
+                                                        disabled={vaccineItems.length === 0}
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder={vaccinationItems.length === 0 ? "No vaccines in inventory" : "Select vaccine from inventory"} />
+                                                            <SelectValue placeholder={vaccineItems.length === 0 ? "No vaccines in inventory" : "Select vaccine from inventory"} />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {vaccinationItems.map((item) => (
+                                                            {vaccineItems.map((item) => (
                                                                 <SelectItem key={item.id} value={item.name}>
                                                                     {item.name} {item.brand && `(${item.brand})`} - Stock: {item.currentStock}
                                                                 </SelectItem>
@@ -1418,7 +1442,7 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-sm font-medium">Total Cost</span>
                                                         <span className="text-lg font-bold text-primary">
-                                                            ₱{(vaccinationItems.find(item => item.name === data.vaccineName)?.unitPrice ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                                                            ₱{(vaccineItems.find(item => item.name === data.vaccineName)?.unitPrice ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1522,13 +1546,13 @@ export default function PetManage({ pet, inventoryItems, vaccinationItems }: Pro
                                             value={data.vaccineName}
                                             onValueChange={(value) => setData('vaccineName', value)}
                                             required
-                                            disabled={vaccinationItems.length === 0}
+                                            disabled={vaccineItems.length === 0}
                                         >
                                             <SelectTrigger>
-                                                <SelectValue placeholder={vaccinationItems.length === 0 ? "No vaccines in inventory" : "Select vaccine from inventory"} />
+                                                <SelectValue placeholder={vaccineItems.length === 0 ? "No vaccines in inventory" : "Select vaccine from inventory"} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {vaccinationItems.map((item) => (
+                                                {vaccineItems.map((item) => (
                                                     <SelectItem key={item.id} value={item.name}>
                                                         {item.name} {item.brand && `(${item.brand})`} - Stock: {item.currentStock}
                                                     </SelectItem>

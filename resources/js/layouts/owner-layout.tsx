@@ -212,15 +212,6 @@ export default function OwnerLayout({
                             <div className="mt-6 flex flex-col gap-6">{children}</div>
                         </div>
                     </main>
-
-                    {/* Footer */}
-                    <footer className="border-t border-white mt-auto bg-white">
-                        <div className="max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                            <div className="flex flex-col items-center justify-between gap-4 text-center text-sm text-muted-foreground sm:flex-row sm:text-left">
-                                <p className="text-xs">© {new Date().getFullYear()} SmartVet. All rights reserved.</p>
-                            </div>
-                        </div>
-                    </footer>
                 </div>
             </div>
         </>

@@ -430,27 +430,43 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                 success('Pet registered successfully!');
                 setTimeout(() => router.reload(), 250);
             },
-            onError: (errs: Record<string, string>) => {
+            onError: (errs: Record<string, any>) => {
                 setIsSubmitting(false);
-                setFormErrors(errs);
 
-                if (errs.petName) error('Pet name is required');
-                if (errs.species) error('Please select a species');
-                if (errs.gender) error('Please select a gender');
-                if (errs.ownerName) error('Owner name is required');
-                if (errs.phone) error('Phone number is required');
-                if (errs.province || errs.city || errs.barangay) error('Please complete the address fields');
-                if (errs.microchipId) error('This microchip ID is already registered');
-                if (errs.email) error('Please enter a valid email address');
-                if (errs.petImage && data.petImage) error('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
+                const normalizedErrors: Record<string, string> = Object.fromEntries(
+                    Object.entries(errs).map(([key, value]) => {
+                        let message = '';
 
-                const errKeys = Object.keys(errs);
-                const docErrs = errKeys.filter(k => k === 'petDocuments' || k.startsWith('petDocuments.'));
-                if (docErrs.length > 0) error('One or more documents are invalid. Max 3 files, 10MB each.');
+                        if (Array.isArray(value) && value.length > 0) {
+                            message = value[0];
+                        } else if (typeof value === 'string') {
+                            message = value;
+                        } else if (value && typeof value === 'object') {
+                            const first = Object.values(value)[0];
+                            message = Array.isArray(first) ? first[0] : String(first);
+                        } else {
+                            message = 'Invalid value.';
+                        }
 
-                const handled = ['petName', 'species', 'gender', 'ownerName', 'phone', 'province', 'city', 'barangay', 'street', 'zipCode', 'microchipId', 'email', 'petImage'];
-                const unhandled = errKeys.filter(k => !handled.includes(k) && k !== 'petDocuments' && !k.startsWith('petDocuments.'));
-                if (unhandled.length > 0) error('Please check the form for errors and try again');
+                        return [key, message];
+                    })
+                );
+
+                setFormErrors(normalizedErrors);
+
+                // Top-level flash messages for immediate visible feedback
+                Object.values(normalizedErrors).forEach((msg) => {
+                    if (msg) error(msg);
+                });
+
+                const firstInvalidField = Object.keys(normalizedErrors)[0];
+                if (firstInvalidField) {
+                    const inputEl = document.querySelector(`[name="${firstInvalidField}"]`) as HTMLElement;
+                    if (inputEl) {
+                        inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        inputEl.focus();
+                    }
+                }
             },
             onFinish: () => setIsSubmitting(false),
         });
@@ -675,6 +691,16 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         </div>
                                     </ModalHeader>
                                     <form onSubmit={handleSubmit}>
+                                        {Object.keys(formErrors).length > 0 && (
+                                            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 mb-3">
+                                                {/* <p className="text-sm font-semibold">Please fix the following errors:</p>
+                                                <ul className="list-disc pl-5 mt-1 text-xs">
+                                                    {Object.entries(formErrors).map(([field, message]) => (
+                                                        <li key={field} className="truncate">{field}: {message}</li>
+                                                    ))}
+                                                </ul> */}
+                                            </div>
+                                        )}
                                         <div className="grid gap-4 py-4">
                                             {/* Pet Basic Information */}
                                             <div className="space-y-4">
@@ -683,17 +709,19 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Pet Name *</label>
                                                         <Input
+                                                            name="petName"
                                                             placeholder="e.g., Buddy"
                                                             value={data.petName}
                                                             onChange={(e) => setData('petName', e.target.value)}
+                                                            className={formErrors.petName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                             required
                                                         />
                                                         {formErrors.petName && <div className="text-red-500 text-xs">{formErrors.petName}</div>}
                                                     </div>
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Species *</label>
-                                                        <Select value={data.species} onValueChange={(value) => { setData(prev => ({ ...prev, species: value, breed: '' })); setBreedSelection(''); setCustomBreed(''); }}>
-                                                            <SelectTrigger>
+                                                        <Select name="species" value={data.species} onValueChange={(value) => { setData(prev => ({ ...prev, species: value, breed: '' })); setBreedSelection(''); setCustomBreed(''); }}>
+                                                            <SelectTrigger className={formErrors.species ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}>
                                                                 <SelectValue placeholder="Select species" />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -770,8 +798,8 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                 <div className="grid grid-cols-3 gap-4">
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Gender *</label>
-                                                        <Select value={data.gender} onValueChange={(value) => setData('gender', value)}>
-                                                            <SelectTrigger>
+                                                        <Select name="gender" value={data.gender} onValueChange={(value) => setData('gender', value)}>
+                                                            <SelectTrigger className={formErrors.gender ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}>
                                                                 <SelectValue placeholder="Select gender" />
                                                             </SelectTrigger>
                                                             <SelectContent>
@@ -913,9 +941,11 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Owner Name *</label>
                                                         <Input
+                                                            name="ownerName"
                                                             placeholder="e.g., John Smith"
                                                             value={data.ownerName}
                                                             onChange={(e) => setData('ownerName', e.target.value)}
+                                                            className={formErrors.ownerName ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                             required
                                                         />
                                                         {formErrors.ownerName && <div className="text-red-500 text-xs">{formErrors.ownerName}</div>}
@@ -923,6 +953,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                     <div className="space-y-2">
                                                         <label className="text-sm font-medium">Phone Number *</label>
                                                         <Input
+                                                            name="phone"
                                                             placeholder="e.g., 09171234567"
                                                             inputMode="numeric"
                                                             pattern="[0-9]*"
@@ -932,6 +963,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                                 const val = e.target.value.replace(/[^0-9]/g, '');
                                                                 setData('phone', val);
                                                             }}
+                                                            className={formErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                             required
                                                         />
                                                         {formErrors.phone && <div className="text-red-500 text-xs">{formErrors.phone}</div>}
@@ -1626,6 +1658,9 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                 <span className="text-sm text-neutral-500 ml-2">
                                                     {vax.lastDate ? `Last: ${formatDate(vax.lastDate)}` : 'Not administered'}
                                                 </span>
+                                                {vax.clinicLocation && (
+                                                    <p className="text-xs text-neutral-500">Clinic: {vax.clinicLocation}</p>
+                                                )}
                                             </div>
                                             <Badge variant="outline" className={getVaccinationStatusColor(vax.status)}>
                                                 {getStatusIcon(vax.status)}

@@ -375,12 +375,12 @@ class PetController extends Controller
                 'unitPrice' => (float) $item->unit_price,
             ]);
 
-        $vaccinationItems = $inventoryItems->filter(fn ($item) => $item['categorySlug'] === 'vaccination')->values();
+        $vaccineItems = $inventoryItems->filter(fn ($item) => in_array($item['categorySlug'], ['vaccines', 'vaccination']))->values();
 
         return Inertia::render('pet-manage', [
             'pet' => $petData,
             'inventoryItems' => $inventoryItems,
-            'vaccinationItems' => $vaccinationItems,
+            'vaccineItems' => $vaccineItems,
         ]);
     }
 

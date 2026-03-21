@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
+import { PasswordStrengthIndicator, PasswordMatchIndicator } from '@/components/password-strength-indicator';
 import { Camera, Check, Copy, Download, Save, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import AdminLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
@@ -90,6 +91,12 @@ export default function ClinicSettings({
         theme_color: settings.theme_color || '#0f172a',
     });
 
+    const passwordForm = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
+
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -137,6 +144,16 @@ export default function ClinicSettings({
                 success('Settings updated! Reloading...');
                 // Reload after short delay to reflect theme changes
                 setTimeout(() => window.location.reload(), 500);
+            },
+        });
+    };
+
+    const handlePasswordSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        passwordForm.put('/settings/password', {
+            onSuccess: () => {
+                success('Password updated successfully.');
+                passwordForm.reset();
             },
         });
     };
@@ -488,8 +505,66 @@ export default function ClinicSettings({
                         {processing ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </div>
+            </form>
 
+            <form onSubmit={handlePasswordSubmit} className="mt-4">
                 <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)]">
+                    <CardHeader className="flex flex-row items-center gap-3 pb-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${themeColor}1A` }}>
+                            <ShieldCheck className="h-4 w-4" style={{ color: themeColor }} />
+                        </div>
+                        <div>
+                            <CardTitle className="text-base">Change Password</CardTitle>
+                            <CardDescription className="text-xs">Use a secure password and keep it private.</CardDescription>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="grid gap-2">
+                            <Label htmlFor="current_password" className="text-xs">Current password</Label>
+                            <Input
+                                id="current_password"
+                                type="password"
+                                value={passwordForm.data.current_password}
+                                onChange={(e) => passwordForm.setData('current_password', e.target.value)}
+                                autoComplete="current-password"
+                                className="h-9"
+                            />
+                            <InputError message={passwordForm.errors.current_password} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="new_password" className="text-xs">New password</Label>
+                            <Input
+                                id="new_password"
+                                type="password"
+                                value={passwordForm.data.password}
+                                onChange={(e) => passwordForm.setData('password', e.target.value)}
+                                autoComplete="new-password"
+                                className="h-9"
+                            />
+                            <PasswordStrengthIndicator password={passwordForm.data.password} />
+                            <InputError message={passwordForm.errors.password} />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="password_confirmation" className="text-xs">Confirm new password</Label>
+                            <Input
+                                id="password_confirmation"
+                                type="password"
+                                value={passwordForm.data.password_confirmation}
+                                onChange={(e) => passwordForm.setData('password_confirmation', e.target.value)}
+                                autoComplete="new-password"
+                                className="h-9"
+                            />
+                            <PasswordMatchIndicator password={passwordForm.data.password} confirmation={passwordForm.data.password_confirmation} />
+                            <InputError message={passwordForm.errors.password_confirmation} />
+                        </div>
+                        <Button type="submit" size="sm" disabled={passwordForm.processing} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
+                            {passwordForm.processing ? 'Updating...' : 'Update password'}
+                        </Button>
+                    </CardContent>
+                </Card>
+            </form>
+
+            <Card className="border border-white/60 bg-white/95 shadow-[0_12px_40px_rgba(15,23,42,0.07)]">
                     <CardHeader className="flex flex-row items-center gap-3 pb-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: `${themeColor}1A` }}>
                             <ShieldCheck className="h-4 w-4" style={{ color: themeColor }} />
@@ -521,7 +596,6 @@ export default function ClinicSettings({
                         )}
                     </CardContent>
                 </Card>
-            </form>
 
             <Dialog open={setupModalOpen} onOpenChange={setSetupModalOpen}>
                 <DialogContent className="sm:max-w-xl">

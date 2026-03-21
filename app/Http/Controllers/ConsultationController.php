@@ -7,6 +7,7 @@ use App\Models\ConsultationFile;
 use App\Models\InventoryItem;
 use App\Models\Pet;
 use App\Models\PetPayment;
+use App\Models\PetPaymentItem;
 use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
 use Illuminate\Http\Request;
@@ -21,13 +22,13 @@ class ConsultationController extends Controller
     {
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
-        
+
         // Validate pet exists and belongs to this user
         $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (!$pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
-        
+
         $validated = $request->validate([
             'consultation_type' => 'required|in:routine-checkup,emergency,vaccination,surgery,follow-up',
             'chief_complaint' => 'required|string|max:1000',
@@ -68,7 +69,7 @@ class ConsultationController extends Controller
                     'consultation_fee' => $consultationFee,
                     'consultation_date' => $validated['consultation_date'],
                     'consultation_time' => now()->format('H:i:s'),
-                    'veterinarian' => auth()->user()->name ?? 'Dr. Admin',
+'veterinarian' => auth()->user()?->name ?? 'Dr. Admin',
                     'status' => 'completed',
                     'payment_status' => 'pending',
                 ]);
@@ -97,7 +98,7 @@ class ConsultationController extends Controller
                     app(InventoryUsageService::class)->attach($consultation, $inventoryItems);
                 }
 
-                PetPayment::create([
+                $payment = PetPayment::create([
                     'pet_id' => $numericId,
                     'consultation_id' => $consultation->id,
                     'total_amount' => $consultationFee + $inventoryTotal,
@@ -105,14 +106,61 @@ class ConsultationController extends Controller
                     'reference_number' => null,
                     'notes' => null,
                     'paid_at' => null,
-                    'recorded_by' => auth()->id(),
+                    'recorded_by' => auth()->id() ?? null,
                     'status' => 'pending',
                 ]);
+
+                $paymentItems = [
+                    [
+                        'pet_payment_id' => $payment->id,
+                        'service_type' => 'consultation',
+                        'service_id' => $consultation->id,
+                        'description' => 'Consultation: ' . ucfirst(str_replace('-', ' ', $consultation->consultation_type)),
+                        'amount' => $consultationFee,
+                    ],
+                ];
+
+                $inventoryItemIds = collect($inventoryItems)
+                    ->pluck('inventory_item_id')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                $inventoryModelMap = InventoryItem::whereIn('id', $inventoryItemIds)
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($inventoryItems as $item) {
+                    $itemId = $item['inventory_item_id'] ?? null;
+                    $quantity = max(0, (int) ($item['quantity'] ?? 0));
+
+                    if (!$itemId || $quantity <= 0 || !isset($inventoryModelMap[$itemId])) {
+                        continue;
+                    }
+
+                    $inventoryModel = $inventoryModelMap[$itemId];
+                    $lineTotal = $inventoryModel->unit_price * $quantity;
+
+                    $paymentItems[] = [
+                        'pet_payment_id' => $payment->id,
+                        'service_type' => 'inventory_item',
+                        'service_id' => $inventoryModel->id,
+                        'description' => $inventoryModel->name . ' x' . $quantity,
+                        'amount' => $lineTotal,
+                    ];
+                }
+
+                if (! empty($paymentItems)) {
+                    PetPaymentItem::insert($paymentItems);
+                }
             });
 
             return redirect()->back()->with('success', 'Consultation record added successfully!');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::warning('Consultation validation failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            \Log::error('Consultation creation failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Consultation creation failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['general' => 'Failed to create consultation. Please try again.']);
         }
     }
@@ -122,18 +170,18 @@ class ConsultationController extends Controller
         if (str_starts_with($mimeType, 'image/')) {
             return 'image';
         }
-        
+
         if ($mimeType === 'application/pdf') {
             return 'document';
         }
-        
+
         if (in_array($mimeType, [
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         ])) {
             return 'document';
         }
-        
+
         // Handle additional image types
         if (in_array($mimeType, [
             'image/webp',
@@ -141,7 +189,7 @@ class ConsultationController extends Controller
         ])) {
             return 'image';
         }
-        
+
         return 'document';
     }
 
