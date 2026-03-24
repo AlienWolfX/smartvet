@@ -31,6 +31,7 @@ class OwnerPortalController extends Controller
                     'weight'      => $pet->weight,
                     'gender'      => $pet->gender ?: '—',
                     'color'       => $pet->color ?: '—',
+                    'microchipId' => $pet->microchip_id ?? '',
                     'status'      => $pet->status ?? 'Healthy',
                     'lastVisit'   => $pet->last_visit?->format('M d, Y'),
                     'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
@@ -163,14 +164,7 @@ class OwnerPortalController extends Controller
         $pet = \App\Models\Pet::whereIn('owner_id', $ownerIds)->findOrFail($petId);
 
         $validated = $request->validate([
-            'name'       => 'required|string|max:100',
-            'species_id' => 'required|exists:pet_species,id',
-            'breed'      => 'nullable|string|max:100',
-            'age'        => 'nullable|integer|min:0|max:100',
-            'weight'     => 'nullable|numeric|min:0|max:999',
-            'gender'     => 'nullable|in:Male,Female',
-            'color'      => 'nullable|string|max:100',
-            'petImage'   => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         if ($request->hasFile('petImage')) {
@@ -178,13 +172,13 @@ class OwnerPortalController extends Controller
             if ($pet->image_path) {
                 Storage::disk('public')->delete($pet->image_path);
             }
-            $validated['image_path'] = $request->file('petImage')->store('pets', 'public');
+
+            $newImagePath = $request->file('petImage')->store('pets', 'public');
+            $pet->update(['image_path' => $newImagePath]);
+
+            return redirect()->route('owner.pets')->with('success', "{$pet->name}'s photo has been updated.");
         }
 
-        unset($validated['petImage']);
-
-        $pet->update($validated);
-
-        return redirect()->route('owner.pets')->with('success', "{$pet->name}'s info has been updated.");
+        return redirect()->route('owner.pets')->with('info', 'No photo selected. Pet profile remains unchanged.');
     }
 }

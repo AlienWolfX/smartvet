@@ -214,6 +214,35 @@ class PetController extends Controller
         return redirect()->back()->with('success', 'Pet registered successfully!');
     }
 
+    public function update(Request $request, $petId)
+    {
+        $numericId = (int) str_replace('PET-', '', $petId);
+
+        $pet = $this->scopePetToUser(Pet::with('owner', 'species'))
+            ->where('id', $numericId)
+            ->firstOrFail();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'breed' => 'nullable|string|max:255',
+            'age' => 'nullable|integer|min:0|max:50',
+            'weight' => 'nullable|numeric|min:0|max:500',
+            'color' => 'nullable|string|max:255',
+            'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id,' . $pet->id,
+        ]);
+
+        $pet->update([
+            'name' => $request->input('name'),
+            'breed' => $request->input('breed'),
+            'age' => $request->input('age'),
+            'weight' => $request->input('weight'),
+            'color' => $request->input('color'),
+            'microchip_id' => $request->input('microchipId'),
+        ]);
+
+        return redirect()->route('pet-records.manage', ['pet' => $petId])->with('success', 'Pet profile updated successfully!');
+    }
+
     public function scannerPage()
     {
         return Inertia::render('clinic/pet-scanner');
@@ -337,7 +366,7 @@ class PetController extends Controller
             'weight' => $pet->weight ?? 0,
             'gender' => $pet->gender,
             'color' => $pet->color ?? 'Unknown',
-            'microchipId' => $pet->microchip_id ?? 'Not assigned',
+            'microchipId' => $pet->microchip_id ?? '',
             'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
             'status' => $pet->status,
             'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),

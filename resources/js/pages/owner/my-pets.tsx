@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import OwnerLayout from '@/layouts/owner-layout';
 import { Head, useForm } from '@inertiajs/react';
 import {
@@ -44,12 +43,6 @@ interface Pet {
     microchipId?: string;
 }
 
-interface Species {
-    id: number;
-    name: string;
-    icon: string;
-}
-
 interface Vaccination {
     vaccine: string;
     date: string;
@@ -74,7 +67,7 @@ interface ConsultationInventoryItem {
 }
 
 interface Consultation {
-    clinicName: any;
+    clinicName: string | null;
     type: string;
     date: string;
     complaint: string;
@@ -118,7 +111,6 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
 
 interface MyPetsProps {
     pets: Pet[];
-    speciesList: Species[];
 }
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -218,7 +210,7 @@ function PetCard({ pet, onShowQr, onShowRecord, onEdit }: { pet: Pet; onShowQr: 
     );
 }
 
-export default function MyPets({ pets, speciesList }: MyPetsProps) {
+export default function MyPets({ pets }: MyPetsProps) {
     const hasPets = pets.length > 0;
 
     // QR modal
@@ -274,14 +266,7 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
 
     // Edit modal
     const [editPet, setEditPet] = useState<Pet | null>(null);
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        species_id: '',
-        breed: '',
-        age: '',
-        weight: '',
-        gender: '',
-        color: '',
+    const { setData, post, processing, errors, reset, clearErrors } = useForm({
         petImage: null as File | null,
         _method: 'PUT',
     });
@@ -291,14 +276,6 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
         reset();
         clearErrors();
         setData({
-            name: pet.name,
-            species_id: pet.speciesId ? String(pet.speciesId) : '',
-            breed: pet.breed === '—' ? '' : pet.breed,
-            age: pet.age ? String(pet.age) : '',
-            weight: pet.weight ? String(pet.weight) : '',
-            // Ensure we use the same lowercase enum values used by the select options
-            gender: pet.gender === '—' ? '' : pet.gender.toLowerCase(),
-            color: pet.color === '—' ? '' : pet.color,
             petImage: null,
             _method: 'PUT',
         });
@@ -591,91 +568,39 @@ export default function MyPets({ pets, speciesList }: MyPetsProps) {
                         <form onSubmit={handleEditSubmit} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="col-span-2 space-y-1">
-                                    <Label htmlFor="edit-name">Pet Name *</Label>
-                                    <Input
-                                        id="edit-name"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                                    <Label>Pet Name</Label>
+                                    <Input value={editPet?.name ?? ''} disabled />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label>Species *</Label>
-                                    <Select value={data.species_id} onValueChange={(v) => setData('species_id', v)} disabled={processing}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select species" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {speciesList.map((s) => (
-                                                <SelectItem key={s.id} value={String(s.id)}>
-                                                    {s.icon} {s.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.species_id && <p className="text-xs text-red-500">{errors.species_id}</p>}
+                                    <Label>Species</Label>
+                                    <Input value={editPet?.species ?? ''} disabled />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label htmlFor="edit-breed">Breed</Label>
-                                    <Input
-                                        id="edit-breed"
-                                        value={data.breed}
-                                        onChange={(e) => setData('breed', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.breed && <p className="text-xs text-red-500">{errors.breed}</p>}
+                                    <Label>Breed</Label>
+                                    <Input value={editPet?.breed ?? ''} disabled />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label htmlFor="edit-color">Color</Label>
-                                    <Input
-                                        id="edit-color"
-                                        value={data.color}
-                                        onChange={(e) => setData('color', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.color && <p className="text-xs text-red-500">{errors.color}</p>}
+                                    <Label>Color</Label>
+                                    <Input value={editPet?.color ?? ''} disabled />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label htmlFor="edit-age">Age (years)</Label>
-                                    <Input
-                                        id="edit-age"
-                                        type="number"
-                                        min={0}
-                                        value={data.age}
-                                        onChange={(e) => setData('age', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.age && <p className="text-xs text-red-500">{errors.age}</p>}
+                                    <Label>Age (years)</Label>
+                                    <Input value={editPet?.age ?? ''} disabled />
                                 </div>
                                 <div className="space-y-1">
-                                    <Label htmlFor="edit-weight">Weight (kg)</Label>
-                                    <Input
-                                        id="edit-weight"
-                                        type="number"
-                                        min={0}
-                                        step="0.01"
-                                        value={data.weight}
-                                        onChange={(e) => setData('weight', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.weight && <p className="text-xs text-red-500">{errors.weight}</p>}
+                                    <Label>Weight (kg)</Label>
+                                    <Input value={editPet?.weight ?? ''} disabled />
                                 </div>
                                 <div className="space-y-1">
                                     <Label>Gender</Label>
-                                    <Select value={data.gender} onValueChange={(v) => setData('gender', v)} disabled={processing}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select gender" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="male">Male</SelectItem>
-                                            <SelectItem value="female">Female</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
+                                    <Input value={editPet?.gender ?? ''} disabled />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label>Microchip ID</Label>
+                                    <Input value={editPet?.microchipId ?? ''} disabled />
                                 </div>
                                 <div className="col-span-2 space-y-1">
-                                    <Label htmlFor="edit-photo">Photo (optional)</Label>
+                                    <Label htmlFor="edit-photo">Photo</Label>
                                     <Input
                                         id="edit-photo"
                                         type="file"

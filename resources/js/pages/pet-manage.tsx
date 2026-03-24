@@ -199,6 +199,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         age: pet.age.toString(),
         weight: pet.weight.toString(),
         color: pet.color,
+        microchipId: pet.microchipId || '',
         // Consultation data
         consultationType: '',
         consultationFee: '',
@@ -245,11 +246,30 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         },
     ];
 
+    const handleSaveProfile = () => {
+        const payload = {
+            name: data.name,
+            breed: data.breed || null,
+            age: data.age ? Number(data.age) : null,
+            weight: data.weight ? Number(data.weight) : null,
+            color: data.color || null,
+            microchipId: data.microchipId || null,
+        };
+
+        router.put(`/pet-records/${pet.id}`, payload, {
+            onSuccess: () => {
+                success('Pet profile updated successfully!');
+                setIsEditingProfile(false);
+            },
+            onError: () => {
+                error('Failed to update pet profile. Please check your inputs.');
+            },
+        });
+    };
+
     const handleUpdateProfile = (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle profile update logic
-        success('Pet profile updated successfully!');
-        setIsEditingProfile(false);
+        handleSaveProfile();
     };
 
     const handleConsultationTypeChange = (value: string) => {
@@ -751,7 +771,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                 </div>
                                 <Button
                                     variant={isEditingProfile ? "default" : "outline"}
-                                    onClick={() => setIsEditingProfile(!isEditingProfile)}
+                                    onClick={isEditingProfile ? handleSaveProfile : () => setIsEditingProfile(true)}
                                 >
                                     {isEditingProfile ? (
                                         <>
@@ -815,6 +835,14 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                 <Input
                                                     value={data.color}
                                                     onChange={(e) => setData('color', e.target.value)}
+                                                    disabled={!isEditingProfile}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Microchip ID</label>
+                                                <Input
+                                                    value={data.microchipId}
+                                                    onChange={(e) => setData('microchipId', e.target.value)}
                                                     disabled={!isEditingProfile}
                                                 />
                                             </div>
