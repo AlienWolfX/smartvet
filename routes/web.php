@@ -33,6 +33,13 @@ Route::middleware('guest')->group(function () {
     Route::post('register', [App\Http\Controllers\OwnerRegisterController::class, 'register'])->name('owner.register.submit');
 });
 
+// Email verification after register
+Route::middleware('auth')->group(function () {
+    Route::get('email/verify', [App\Http\Controllers\EmailVerificationController::class, 'showVerificationNotice'])->name('verification.notice');
+    Route::post('email/verify', [App\Http\Controllers\EmailVerificationController::class, 'verify'])->name('verification.verify');
+    Route::post('email/verification-notification', [App\Http\Controllers\EmailVerificationController::class, 'resend'])->name('verification.send');
+});
+
 // Admin login routes
 Route::middleware('guest')->group(function () {
     Route::get('admin', [App\Http\Controllers\AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -52,7 +59,7 @@ Route::post('clinic/logout', [App\Http\Controllers\ClinicAuthController::class, 
     ->middleware('auth');
 
 // Owner portal routes
-Route::middleware(['auth', 'role:owner'])->prefix('owner')->group(function () {
+Route::middleware(['auth', 'role:owner', \App\Http\Middleware\EnsureEmailIsVerified::class])->prefix('owner')->group(function () {
     Route::get('pets', [App\Http\Controllers\OwnerPortalController::class, 'myPets'])->name('owner.pets');
     Route::get('settings', [App\Http\Controllers\OwnerPortalController::class, 'settings'])->name('owner.settings');
     Route::get('settings/appearance', [App\Http\Controllers\AppearanceSettingsController::class, 'ownerEdit'])->name('owner.settings.appearance');

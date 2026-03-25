@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmailVerificationCode;
 use App\Models\Owner;
 use App\Models\User;
 use App\Services\TurnstileVerifier;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
@@ -35,12 +38,17 @@ class OwnerRegisterController extends Controller
 
         $this->turnstileVerifier->verifyOrFail($data['captcha_token'], $request->ip());
 
+        $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
+            'name' => $data['name'],
+            'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role'     => User::ROLE_OWNER,
+            'role' => User::ROLE_OWNER,
             'is_setup_complete' => true,
+            'email_verified_at' => null,
+            'email_verification_code' => $verificationCode,
+            'email_verification_expires_at' => Carbon::now()->addMinutes(30),
         ]);
 
         // Retroactively link any clinic-created owner records that share this email
@@ -48,8 +56,10 @@ class OwnerRegisterController extends Controller
             ->whereNull('account_user_id')
             ->update(['account_user_id' => $user->id]);
 
+        Mail::to($user->email)->send(new EmailVerificationCode($user, $verificationCode));
+
         Auth::login($user);
 
-        return redirect()->route('owner.pets');
+        return redirect()->route('verification.notice')->with('status', 'A verification code has been sent to your email.');
     }
 }
