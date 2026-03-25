@@ -5,18 +5,19 @@ namespace App\Http\Controllers;
 use App\Mail\EmailVerificationCode;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class EmailVerificationController extends Controller
 {
     public function showVerificationNotice(Request $request)
     {
+        $user = $request->user();
+
         return Inertia::render('auth/verify-email', [
-            'email' => $request->user()?->email,
+            'email' => $user?->email,
             'status' => $request->session()->get('status'),
+            'expiresAt' => $user?->email_verification_expires_at?->toIso8601String(),
         ]);
     }
 
@@ -68,7 +69,7 @@ class EmailVerificationController extends Controller
         $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $user->forceFill([
             'email_verification_code' => $verificationCode,
-            'email_verification_expires_at' => Carbon::now()->addMinutes(30),
+            'email_verification_expires_at' => Carbon::now()->addMinutes(3),
         ])->save();
 
         Mail::to($user->email)->send(new EmailVerificationCode($user, $verificationCode));

@@ -78,7 +78,7 @@
 
             <div class="code-box">{{ $code }}</div>
 
-            <p class="subtext">This code is valid for 30 minutes. If it expires, request a new code on the verification page.</p>
+            <p class="subtext">This code is valid for 3 minutes. If it expires, request a new code on the verification page.</p>
 
             <p>If you didn’t create this account, you can safely ignore this email and no action is required.</p>
         </div>

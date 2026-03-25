@@ -48,7 +48,7 @@ class OwnerRegisterController extends Controller
             'is_setup_complete' => true,
             'email_verified_at' => null,
             'email_verification_code' => $verificationCode,
-            'email_verification_expires_at' => Carbon::now()->addMinutes(30),
+            'email_verification_expires_at' => Carbon::now()->addMinutes(3),
         ]);
 
         // Retroactively link any clinic-created owner records that share this email

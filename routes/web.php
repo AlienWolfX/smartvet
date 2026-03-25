@@ -77,7 +77,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('setup', [App\Http\Controllers\SetupController::class, 'store'])->name('setup.store');
 
     // Clinic-only routes
-    Route::middleware(['role:clinic'])->group(function () {
+    Route::middleware(['role:clinic', \App\Http\Middleware\EnsureEmailIsVerified::class])->group(function () {
         Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
         Route::get('inventory-management', [App\Http\Controllers\InventoryController::class, 'index'])->name('inventory-management');
         Route::post('inventory-management', [App\Http\Controllers\InventoryController::class, 'store'])->name('inventory-management.store');

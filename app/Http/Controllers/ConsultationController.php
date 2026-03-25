@@ -11,8 +11,8 @@ use App\Models\PetPaymentItem;
 use App\Http\Traits\ScopesToTenant;
 use App\Services\InventoryUsageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ConsultationController extends Controller
@@ -20,10 +20,8 @@ class ConsultationController extends Controller
     use ScopesToTenant;
     public function store(Request $request, $petId)
     {
-        // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        // Validate pet exists and belongs to this user
         $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
         if (!$pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
@@ -59,6 +57,7 @@ class ConsultationController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $numericId, $inventoryItems, $consultationFee, $inventoryTotal) {
+                $currentUser = Auth::user();
                 $consultation = Consultation::create([
                     'pet_id' => $numericId,
                     'consultation_type' => $validated['consultation_type'],
@@ -69,7 +68,7 @@ class ConsultationController extends Controller
                     'consultation_fee' => $consultationFee,
                     'consultation_date' => $validated['consultation_date'],
                     'consultation_time' => now()->format('H:i:s'),
-'veterinarian' => auth()->user()?->name ?? 'Dr. Admin',
+                    'veterinarian' => $currentUser?->name ?? 'Dr. Admin',
                     'status' => 'completed',
                     'payment_status' => 'pending',
                 ]);
@@ -89,7 +88,7 @@ class ConsultationController extends Controller
                             'file_type' => $fileType,
                             'mime_type' => $file->getMimeType(),
                             'file_size' => $file->getSize(),
-                            'uploaded_by' => auth()->user()->name ?? 'Dr. Admin',
+                            'uploaded_by' => $currentUser?->name ?? 'Dr. Admin',
                         ]);
                     }
                 }
@@ -106,7 +105,7 @@ class ConsultationController extends Controller
                     'reference_number' => null,
                     'notes' => null,
                     'paid_at' => null,
-                    'recorded_by' => auth()->id() ?? null,
+                    'recorded_by' => $currentUser?->id ?? null,
                     'status' => 'pending',
                 ]);
 

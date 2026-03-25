@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\EmailVerificationCode;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -54,13 +57,26 @@ class UserController extends Controller
             'role' => 'required|in:admin,clinic',
         ]);
 
-        User::create([
+        $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
             'status' => 'active',
-        ]);
+        ];
+
+        if ($validated['role'] === 'clinic') {
+            $verificationCode = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $userData['email_verified_at'] = null;
+            $userData['email_verification_code'] = $verificationCode;
+            $userData['email_verification_expires_at'] = Carbon::now()->addMinutes(3);
+        }
+
+        $user = User::create($userData);
+
+        if ($validated['role'] === 'clinic') {
+            Mail::to($user->email)->send(new EmailVerificationCode($user, $verificationCode));
+        }
 
         return redirect()->back()->with('success', 'User created successfully!');
     }

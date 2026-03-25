@@ -50,6 +50,11 @@ class ClinicAuthController extends Controller
             ])->onlyInput('email');
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            Auth::login($user, $request->boolean('remember'));
+            return redirect()->route('verification.notice')->with('status', 'Please verify your email before accessing the clinic dashboard.');
+        }
+
         if ($this->requiresTwoFactorChallenge($user)) {
             $request->session()->put([
                 'login.id' => $user->getKey(),
