@@ -71,7 +71,7 @@ Route::middleware(['auth', 'role:owner', \App\Http\Middleware\EnsureEmailIsVerif
 // Public pet QR scan page (no auth required)
 Route::get('scan/{token}', [App\Http\Controllers\PetScanController::class, 'scan'])->name('pet.scan');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->group(function () {
     // Setup route (must be before EnsureSetupComplete middleware check)
     Route::get('setup', [App\Http\Controllers\SetupController::class, 'show'])->name('setup');
     Route::post('setup', [App\Http\Controllers\SetupController::class, 'store'])->name('setup.store');

@@ -316,8 +316,8 @@ export default function MyPets({ pets }: MyPetsProps) {
 
             {/* QR Modal */}
             {qrPet && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setQrPet(null)}>
-                    <div className="relative w-full max-w-xs rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4" onClick={() => setQrPet(null)}>
+                    <div className="mx-auto mt-4 w-full max-w-xs rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setQrPet(null)} className="absolute right-3 top-3 rounded-full p-1 text-neutral-400 hover:text-neutral-700">
                             <X className="h-5 w-5" />
                         </button>
@@ -347,8 +347,8 @@ export default function MyPets({ pets }: MyPetsProps) {
 
             {/* Pet Record Modal */}
             {recordPet && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={closeRecordModal}>
-                    <div className="relative w-full max-w-lg max-h-[80vh] overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4" onClick={closeRecordModal}>
+                    <div className="mx-auto mt-4 w-full max-w-lg rounded-2xl bg-white shadow-2xl max-h-[95vh] min-h-[54vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between border-b px-5 py-4">
                             <div>
                                 <p className="text-lg font-semibold text-neutral-900">{recordPet.name}'s Record</p>
@@ -358,7 +358,7 @@ export default function MyPets({ pets }: MyPetsProps) {
                                 <X className="h-5 w-5" />
                             </button>
                         </div>
-                        <div className="max-h-[80vh] overflow-y-auto flex-1 px-5 py-4 space-y-5">
+                        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5">
                             {recordLoading ? (
                                 <div className="py-10 text-center text-neutral-400">Loading...</div>
                             ) : (
@@ -554,8 +554,8 @@ export default function MyPets({ pets }: MyPetsProps) {
             )}
             {/* Edit Pet Modal */}
             {editPet && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setEditPet(null)}>
-                    <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4" onClick={() => setEditPet(null)}>
+                    <div className="mx-auto mt-4 w-full max-w-md rounded-2xl bg-white shadow-2xl max-h-[90vh] min-h-[48vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between border-b px-5 py-4">
                             <div>
                                 <p className="text-lg font-semibold text-neutral-900">Edit {editPet.name}</p>
@@ -566,12 +566,12 @@ export default function MyPets({ pets }: MyPetsProps) {
                             </button>
                         </div>
                         <form onSubmit={handleEditSubmit} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="col-span-2 space-y-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="col-span-1 sm:col-span-2 space-y-1">
                                     <Label>Pet Name</Label>
                                     <Input value={editPet?.name ?? ''} disabled />
                                 </div>
-                                <div className="col-span-2 space-y-1">
+                                <div className="col-span-1 sm:col-span-2 space-y-1">
                                     <Label>Species</Label>
                                     <Input value={editPet?.species ?? ''} disabled />
                                 </div>

@@ -13,11 +13,23 @@ class EnsureSetupComplete
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && !$request->user()->isAdmin() && !$request->user()->isOwner() && !$request->user()->is_setup_complete) {
-            // Allow access to setup routes, logout, and login
-            $allowedRoutes = ['setup', 'setup.store', 'logout'];
+        $routeName = $request->route()?->getName();
+        $user = $request->user();
 
-            if (!in_array($request->route()?->getName(), $allowedRoutes)) {
+        if ($user && !$user->isAdmin() && !$user->isOwner() && !$user->is_setup_complete) {
+            if (! $user->hasVerifiedEmail()) {
+                $allowedVerificationRoutes = ['verification.notice', 'verification.verify', 'verification.send', 'logout'];
+
+                if (! in_array($routeName, $allowedVerificationRoutes)) {
+                    return redirect()->route('verification.notice');
+                }
+
+                return $next($request);
+            }
+
+            $allowedSetupRoutes = ['setup', 'setup.store', 'logout'];
+
+            if (! in_array($routeName, $allowedSetupRoutes)) {
                 return redirect()->route('setup');
             }
         }

@@ -34,6 +34,12 @@ class EmailVerificationController extends Controller
         }
 
         if ($user->email_verified_at) {
+            if ($user->isClinic()) {
+                return redirect()->route($user->is_setup_complete ? 'dashboard' : 'setup');
+            }
+            if ($user->isAdmin()) {
+                return redirect()->route('user-management');
+            }
             return redirect()->route('owner.pets');
         }
 
@@ -51,6 +57,14 @@ class EmailVerificationController extends Controller
             'email_verification_expires_at' => null,
         ])->save();
 
+        if ($user->isClinic()) {
+            return redirect()->route($user->is_setup_complete ? 'dashboard' : 'setup')->with('status', 'Email verified successfully.');
+        }
+
+        if ($user->isAdmin()) {
+            return redirect()->route('user-management')->with('status', 'Email verified successfully.');
+        }
+
         return redirect()->route('owner.pets')->with('status', 'Email verified successfully.');
     }
 
@@ -63,6 +77,12 @@ class EmailVerificationController extends Controller
         }
 
         if ($user->email_verified_at) {
+            if ($user->isClinic()) {
+                return redirect()->route($user->is_setup_complete ? 'dashboard' : 'setup');
+            }
+            if ($user->isAdmin()) {
+                return redirect()->route('user-management');
+            }
             return redirect()->route('owner.pets');
         }
 

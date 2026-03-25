@@ -8,11 +8,14 @@ use Inertia\Inertia;
 
 class SetupController extends Controller
 {
-    public function show()
+    public function show(Request $request)
     {
-        $user = auth()->user();
+        $user = $request->user();
 
-        // If setup is already complete, redirect to dashboard
+        if (! $user->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')->with('status', 'Please verify your email before completing setup.');
+        }
+
         if ($user->is_setup_complete) {
             return redirect()->route('dashboard');
         }
@@ -37,7 +40,7 @@ class SetupController extends Controller
             'theme_color' => 'required|string|max:7',
         ]);
 
-        $user = auth()->user();
+        $user = $request->user();
 
         $updateData = [
             'clinic_name' => $validated['clinic_name'],
@@ -47,7 +50,6 @@ class SetupController extends Controller
         ];
 
         if ($request->hasFile('clinic_logo')) {
-            // Delete old logo if exists
             if ($user->clinic_logo) {
                 Storage::disk('public')->delete($user->clinic_logo);
             }
