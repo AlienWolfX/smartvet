@@ -56,17 +56,15 @@ export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) 
                             <LockKeyhole className="h-7 w-7 text-white" />
                         </div>
                         <h1 className="mt-4 text-xl font-semibold">Admin Portal</h1>
-                        <p className="mt-0.5 text-xs text-indigo-200">Secure sign in for administrators</p>
-                    </div>
-
-                    <div className="space-y-5 px-8 py-7">
                         <div className="flex justify-center">
                             <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-indigo-700">
                                 <Sparkles className="h-3 w-3" />
                                 Elevated access
                             </span>
                         </div>
+                    </div>
 
+                    <div className="space-y-5 px-8 py-7">
                         {status && (
                             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800">
                                 {status}
