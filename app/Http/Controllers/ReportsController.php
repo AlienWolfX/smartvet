@@ -24,7 +24,7 @@ class ReportsController extends Controller
         $endDate = now()->endOfDay();
 
         // Revenue data by month (only paid payments)
-        $revenueData = $this->scopeThroughPetOwner(PetPayment::select(
+        $revenueDataQuery = PetPayment::select(
                 DB::raw("DATE_FORMAT(paid_at, '%b %Y') as period"),
                 DB::raw('SUM(total_amount) as revenue'),
                 DB::raw('MONTH(paid_at) as month_num'),
@@ -32,10 +32,14 @@ class ReportsController extends Controller
             )
             ->where('status', 'paid')
             ->whereNotNull('paid_at')
-            ->whereBetween('paid_at', [$startDate, $endDate]))
-            ->groupBy(DB::raw("DATE_FORMAT(paid_at, '%b %Y')"), DB::raw('MONTH(paid_at)'), DB::raw('YEAR(paid_at)'))
-            ->orderBy('year_num')
-            ->orderBy('month_num')
+            ->whereBetween('paid_at', [$startDate, $endDate]);
+
+        $revenueData = $this->scopeThroughPetOwner(
+                $revenueDataQuery
+                    ->groupBy(DB::raw("DATE_FORMAT(paid_at, '%b %Y')"), DB::raw('MONTH(paid_at)'), DB::raw('YEAR(paid_at)'))
+                    ->orderBy('year_num')
+                    ->orderBy('month_num')
+            )
             ->get()
             ->map(function ($item) {
                 return [

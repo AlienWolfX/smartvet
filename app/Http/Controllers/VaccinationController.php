@@ -22,7 +22,7 @@ class VaccinationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
@@ -72,7 +72,6 @@ class VaccinationController extends Controller
                 'administered_by' => Auth::user()->name,
             ]));
 
-            // Always create a payment record for the vaccination
             $payment = PetPayment::create([
                 'pet_id' => $numericId,
                 'vaccination_id' => $vaccination->id,
@@ -82,7 +81,6 @@ class VaccinationController extends Controller
                 'notes' => "Vaccination: {$validated['vaccine_name']}",
             ]);
 
-            // Add vaccination item to payment items
             PetPaymentItem::create([
                 'pet_payment_id' => $payment->id,
                 'service_type' => 'vaccination',
@@ -92,7 +90,6 @@ class VaccinationController extends Controller
             ]);
 
             if (! empty($inventoryItems)) {
-                // Add extra inventory usage for vaccination materials
                 app(InventoryUsageService::class)->attach($vaccination, $inventoryItems);
 
                 foreach ($inventoryItems as $item) {
@@ -119,7 +116,7 @@ class VaccinationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }

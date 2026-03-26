@@ -104,7 +104,7 @@ class BillingController extends Controller
 
     public function processPayment(Request $request, PetPayment $payment)
     {
-        $user = auth()->user();
+        $user = $request->user();
         if (! $user) {
             abort(403);
         }
@@ -123,13 +123,13 @@ class BillingController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($payment, $validated) {
+            DB::transaction(function () use ($payment, $validated, $request) {
                 $payment->update([
                     'payment_method' => $validated['payment_method'],
                     'reference_number' => $validated['reference_number'],
                     'notes' => $validated['notes'],
                     'paid_at' => now(),
-                    'recorded_by' => auth()->id(),
+                    'recorded_by' => $request->user()->id,
                     'status' => 'paid',
                 ]);
 
