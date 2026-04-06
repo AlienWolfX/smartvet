@@ -387,11 +387,22 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         barangay: '',
         street: '',
         zipCode: '',
+        qrToken: '',
     });
 
     const [petDocs, setPetDocs] = useState<File[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const importToken = params.get('importToken')?.trim();
+
+        if (importToken) {
+            setData('qrToken', importToken);
+            setIsAddModalOpen(true);
+        }
+    }, [setData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -415,6 +426,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         fd.append('barangay', data.barangay);
         fd.append('street', data.street);
         fd.append('zipCode', data.zipCode);
+        if (data.qrToken) fd.append('qrToken', data.qrToken);
         if (data.petImage) fd.append('petImage', data.petImage);
         petDocs.forEach(f => fd.append('petDocuments[]', f));
 
@@ -679,6 +691,21 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         <ModalDescription>
                                             Register a new pet in the system with complete information.
                                         </ModalDescription>
+                                        {data.qrToken && (
+                                            <div className="mt-2 space-y-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-3 text-xs font-medium text-blue-800">
+                                                <div className="inline-flex items-center gap-2">
+                                                    <QrCode className="h-3.5 w-3.5" />
+                                                    Imported QR token
+                                                </div>
+                                                <Input
+                                                    name="qrToken"
+                                                    value={data.qrToken}
+                                                    readOnly
+                                                    className="h-9 border-blue-200 bg-white font-mono text-[11px] text-blue-900"
+                                                />
+                                                {formErrors.qrToken && <div className="text-xs font-normal text-red-600">{formErrors.qrToken}</div>}
+                                            </div>
+                                        )}
                                         <div className="mt-2 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800">
                                             {clinicLogo ? (
                                                 <img src={`/storage/${clinicLogo}`} alt={clinicName} className="h-4 w-4 rounded object-cover" />

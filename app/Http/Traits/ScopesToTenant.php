@@ -44,13 +44,21 @@ trait ScopesToTenant
     }
 
     /**
-     * Scope a Pet query through its owner.
+     * Scope a Pet query through its owner or clinic_ids access.
+     * Includes pets where:
+     * 1. The user owns the pet (via owner.user_id), OR
+     * 2. The user's clinic ID is in the pet's clinic_ids array (for imported pets)
      */
     protected function scopePetToUser(Builder $query): Builder
     {
         $user = auth()->user();
         if ($user && !$user->isAdmin()) {
-            return $query->whereHas('owner', fn (Builder $q) => $q->where('owners.user_id', $user->id));
+            return $query->where(function (Builder $q) use ($user) {
+                // Pets owned by this clinic
+                $q->whereHas('owner', fn (Builder $subQ) => $subQ->where('owners.user_id', $user->id))
+                    // OR pets imported from other clinics (clinic_id in clinic_ids array)
+                    ->orWhereJsonContains('clinic_ids', $user->id);
+            });
         }
         return $query;
     }

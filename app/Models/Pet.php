@@ -22,6 +22,7 @@ class Pet extends Model
         'gender',
         'color',
         'microchip_id',
+        'clinic_ids',
         'qr_token',
         'image_path',
         'status',
@@ -33,6 +34,7 @@ class Pet extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'weight' => 'decimal:2',
+        'clinic_ids' => 'array',
     ];
 
     public function owner(): BelongsTo

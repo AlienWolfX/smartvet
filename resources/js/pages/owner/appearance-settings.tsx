@@ -46,6 +46,11 @@ export default function OwnerAppearanceSettings({ settings }: OwnerAppearanceSet
         setData('theme_name', theme.name);
         setData('theme_color', theme.color);
         setCustomColor(theme.color);
+        // Save to localStorage for real-time update
+        localStorage.setItem('ownerThemeColor', theme.color);
+        localStorage.setItem('ownerThemeName', theme.name);
+        // Dispatch custom event so other components can listen
+        window.dispatchEvent(new CustomEvent('themeChange', { detail: { color: theme.color, name: theme.name } }));
     };
 
     const handleCustomColor = (color: string) => {
@@ -53,6 +58,11 @@ export default function OwnerAppearanceSettings({ settings }: OwnerAppearanceSet
         setSelectedTheme('custom');
         setData('theme_name', 'custom');
         setData('theme_color', color);
+        // Save to localStorage for real-time update
+        localStorage.setItem('ownerThemeColor', color);
+        localStorage.setItem('ownerThemeName', 'custom');
+        // Dispatch custom event so other components can listen
+        window.dispatchEvent(new CustomEvent('themeChange', { detail: { color: color, name: 'custom' } }));
     };
 
     const activeColor = selectedTheme === 'custom'

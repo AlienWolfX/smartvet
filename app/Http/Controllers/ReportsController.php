@@ -6,7 +6,6 @@ use App\Models\Consultation;
 use App\Models\PetPayment;
 use App\Models\Vaccination;
 use App\Http\Traits\ScopesToTenant;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -24,7 +23,7 @@ class ReportsController extends Controller
         $endDate = now()->endOfDay();
 
         // Revenue data by month (only paid payments)
-        $revenueDataQuery = PetPayment::select(
+        $revenueDataQuery = PetPayment::query()->select(
                 DB::raw("DATE_FORMAT(paid_at, '%b %Y') as period"),
                 DB::raw('SUM(total_amount) as revenue'),
                 DB::raw('MONTH(paid_at) as month_num'),
@@ -65,7 +64,7 @@ class ReportsController extends Controller
         }
 
         // Service data - consultations grouped by consultation_type
-        $serviceData = $this->scopeThroughPetOwner(Consultation::select(
+        $serviceData = $this->scopeThroughPetOwner(Consultation::query()->select(
                 'consultation_type',
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(consultation_fee) as revenue')
@@ -84,7 +83,7 @@ class ReportsController extends Controller
             });
 
         // Add vaccinations as a service
-        $vaccinationCount = $this->scopeThroughPetOwner(Vaccination::whereBetween('created_at', [$startDate, $endDate]))->count();
+        $vaccinationCount = $this->scopeThroughPetOwner(Vaccination::query()->whereBetween('created_at', [$startDate, $endDate]))->count();
         if ($vaccinationCount > 0) {
             $serviceData->push([
                 'service' => 'Vaccinations',
@@ -95,7 +94,7 @@ class ReportsController extends Controller
         }
 
         // Calculate totals (only paid payments)
-        $totalRevenue = $this->scopeThroughPetOwner(PetPayment::where('status', 'paid')
+        $totalRevenue = $this->scopeThroughPetOwner(PetPayment::query()->where('status', 'paid')
             ->whereNotNull('paid_at')
             ->whereBetween('paid_at', [$startDate, $endDate]))
             ->sum('total_amount');
@@ -125,14 +124,19 @@ class ReportsController extends Controller
         [$startDate, $endDate] = $this->getDateRange($request);
 
         // Get payments data
-        $payments = $this->scopeThroughPetOwner(PetPayment::with(['consultation.pet', 'items'])
-            ->whereBetween('created_at', [$startDate, $endDate]))
+        /** @var \Illuminate\Database\Eloquent\Builder $paymentsQuery */
+        $paymentsQuery = PetPayment::query()->with(['consultation.pet', 'items'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $payments = $this->scopeThroughPetOwner($paymentsQuery)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get consultations for revenue by service
-        $consultations = $this->scopeThroughPetOwner(Consultation::with(['pet'])
-            ->whereBetween('created_at', [$startDate, $endDate]))
+        /** @var \Illuminate\Database\Eloquent\Builder $consultationsQuery */
+        $consultationsQuery = Consultation::query()->with(['pet'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $consultations = $this->scopeThroughPetOwner($consultationsQuery)
             ->get();
 
         $spreadsheet = new Spreadsheet();
@@ -250,8 +254,12 @@ class ReportsController extends Controller
         $serviceType = $request->input('service_type');
 
         // Get consultations
-        $consultationsQuery = $this->scopeThroughPetOwner(Consultation::with(['pet.owner', 'pet.species'])
-            ->whereBetween('created_at', [$startDate, $endDate]));
+        /** @var \Illuminate\Database\Eloquent\Builder $consultationsBaseQuery */
+        $consultationsBaseQuery = Consultation::query();
+        $consultationsBaseQuery->with(['pet.owner', 'pet.species'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $consultationsQuery = $this->scopeThroughPetOwner($consultationsBaseQuery);
 
         if ($serviceType && $serviceType !== 'all') {
             $consultationsQuery->where('consultation_type', 'like', "%{$serviceType}%");
@@ -260,8 +268,12 @@ class ReportsController extends Controller
         $consultations = $consultationsQuery->orderBy('created_at', 'desc')->get();
 
         // Get vaccinations
-        $vaccinations = $this->scopeThroughPetOwner(Vaccination::with(['pet.owner', 'pet.species'])
-            ->whereBetween('created_at', [$startDate, $endDate]))
+        /** @var \Illuminate\Database\Eloquent\Builder $vaccinationsQuery */
+        $vaccinationsBaseQuery = Vaccination::query();
+        $vaccinationsBaseQuery->with(['pet.owner', 'pet.species'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        $vaccinations = $this->scopeThroughPetOwner($vaccinationsBaseQuery)
             ->orderBy('created_at', 'desc')
             ->get();
 

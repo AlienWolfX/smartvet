@@ -82,6 +82,19 @@ class PetController extends Controller
     {
         $actorName = $request->user()?->name ?? 'Clinic Staff';
 
+        // Check if pet with this microchip already exists (for imports)
+        $existingPetByMicrochip = null;
+        if ($request->microchipId) {
+            $existingPetByMicrochip = Pet::where('microchip_id', $request->microchipId)->first();
+        }
+
+        // Build qrToken validation rule
+        $qrTokenRule = 'nullable|uuid';
+        if (!$existingPetByMicrochip) {
+            // Only require uniqueness for NEW pets, not imports
+            $qrTokenRule .= '|unique:pets,qr_token';
+        }
+
         $request->validate([
             'petName' => 'required|string|max:255',
             'species' => 'required|string',
@@ -90,7 +103,8 @@ class PetController extends Controller
             'weight' => 'nullable|numeric|min:0|max:500',
             'gender' => 'required|in:male,female',
             'color' => 'nullable|string|max:255',
-            'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id',
+            'microchipId' => 'nullable|string|max:255',
+            'qrToken' => $qrTokenRule,
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'petDocuments' => 'sometimes|nullable|array|max:3',
             'petDocuments.*' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240',
@@ -104,7 +118,23 @@ class PetController extends Controller
             'zipCode' => 'nullable|string|max:10',
         ]);
 
-        DB::transaction(function () use ($request, $actorName) {
+        DB::transaction(function () use ($request, $actorName, $existingPetByMicrochip) {
+            $currentClinicId = $this->tenantUserId();
+
+            // If pet exists by microchip, add current clinic to clinic_ids and return
+            if ($existingPetByMicrochip) {
+                $clinicIds = $existingPetByMicrochip->clinic_ids ?? [];
+
+                // Add the clinic ID if not already present
+                if (!in_array($currentClinicId, $clinicIds)) {
+                    $clinicIds[] = $currentClinicId;
+                    $existingPetByMicrochip->update(['clinic_ids' => $clinicIds]);
+                }
+
+                // Don't show QR modal on import - just redirect
+                return;
+            }
+
             // Handle image upload
             $imagePath = null;
             if ($request->hasFile('petImage')) {
@@ -128,7 +158,7 @@ class PetController extends Controller
                 : null;
 
             $owner = Owner::create([
-                'user_id'         => $this->tenantUserId(),
+                'user_id'         => $currentClinicId,
                 'account_user_id' => $accountUser?->id,
                 'name'            => $request->ownerName,
                 'phone'           => $request->phone,
@@ -148,7 +178,7 @@ class PetController extends Controller
                 'emergency_contact' => null,
             ]);
 
-            // Create pet
+            // Create pet with clinic_ids initialized
             $pet = Pet::create([
                 'name' => $request->petName,
                 'owner_id' => $owner->id,
@@ -159,7 +189,8 @@ class PetController extends Controller
                 'gender' => $request->gender,
                 'color' => $request->color,
                 'microchip_id' => $request->microchipId,
-                'qr_token' => Str::uuid(),
+                'clinic_ids' => [$currentClinicId],
+                'qr_token' => $request->qrToken ?: (string) Str::uuid(),
                 'image_path' => $imagePath,
                 'status' => 'active',
                 'last_visit' => now(),
@@ -691,7 +722,49 @@ class PetController extends Controller
 
         $pet = $this->scopePetToUser(Pet::where('id', $numericId))->firstOrFail();
 
-        // Delete pet image if it exists
+        $currentClinicId = $this->tenantUserId();
+        $petName = $pet->name;
+        $ownerClinicId = $pet->owner->user_id;
+        $clinicIds = $pet->clinic_ids ?? [];
+        $isOwner = $ownerClinicId === $currentClinicId;
+
+        // Case 1
+        if (!$isOwner) {
+            $clinicIds = array_filter($clinicIds, fn($id) => $id !== $currentClinicId);
+            $pet->update(['clinic_ids' => array_values($clinicIds)]);
+            return redirect()->route('pet-records')->with('success', "{$petName} has been removed from your clinic.");
+        }
+
+        // Case 2
+        $otherClinicIds = array_filter($clinicIds, fn($id) => $id !== $currentClinicId);
+
+        if (!empty($otherClinicIds)) {
+            $newOwnerClinicId = reset($otherClinicIds);
+
+            $newOwner = Owner::create([
+                'user_id'         => $newOwnerClinicId,
+                'account_user_id' => $pet->owner->account_user_id,
+                'name'            => $pet->owner->name,
+                'phone'           => $pet->owner->phone,
+                'email'           => $pet->owner->email,
+                'street'          => $pet->owner->street,
+                'barangay'        => $pet->owner->barangay,
+                'city'            => $pet->owner->city,
+                'province'        => $pet->owner->province,
+                'zip_code'        => $pet->owner->zip_code,
+                'address'         => $pet->owner->address,
+                'emergency_contact' => $pet->owner->emergency_contact,
+            ]);
+
+            $pet->update(['owner_id' => $newOwner->id]);
+
+            $remainingClinicIds = array_filter($clinicIds, fn($id) => $id !== $currentClinicId);
+            $pet->update(['clinic_ids' => array_values($remainingClinicIds)]);
+
+            return redirect()->route('pet-records')->with('success', "{$petName}'s ownership has been deleted.");
+        }
+
+        // Case 3
         if ($pet->image_path) {
             $imagePath = storage_path('app/public/' . $pet->image_path);
             if (file_exists($imagePath)) {
@@ -699,7 +772,6 @@ class PetController extends Controller
             }
         }
 
-        // Delete consultation files
         foreach ($pet->consultations as $consultation) {
             foreach ($consultation->files as $file) {
                 $filePath = storage_path('app/public/' . $file->file_path);
@@ -709,7 +781,6 @@ class PetController extends Controller
             }
         }
 
-        $petName = $pet->name;
         $pet->delete(); // Cascade handles related records
 
         return redirect()->route('pet-records')->with('success', "{$petName}'s record has been deleted.");

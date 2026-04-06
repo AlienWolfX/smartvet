@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,9 +34,42 @@ export default function OwnerLayout({
 }: OwnerLayoutProps) {
     const { auth, clinicSettings } = usePage<SharedData>().props;
     const ownerThemeColor = (auth.user as { theme_color?: string })?.theme_color;
-    const themeColor = ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR;
+    const [themeColor, setThemeColor] = useState(
+        ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR
+    );
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    // Listen for theme color changes in localStorage and custom events
+    useEffect(() => {
+        const handleThemeChange = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            setThemeColor(customEvent.detail.color);
+        };
+
+        // Listen to custom theme change event
+        window.addEventListener('themeChange', handleThemeChange);
+
+        // Also check localStorage on mount for theme color
+        const storedColor = localStorage.getItem('ownerThemeColor');
+        if (storedColor) {
+            setThemeColor(storedColor);
+        }
+
+        // Listen for storage changes from other tabs
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'ownerThemeColor' && e.newValue) {
+                setThemeColor(e.newValue);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('themeChange', handleThemeChange);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
 
     const navigation = [
         { name: 'My Pets', href: '/owner/pets', icon: PawPrint },

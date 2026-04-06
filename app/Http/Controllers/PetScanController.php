@@ -5,13 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Pet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 class PetScanController extends Controller
 {
-    /**
-     * Legacy scan URL endpoint.
-     * We now use the clinic scanner page as the single scanning experience.
-     */
     public function scan(string $token): RedirectResponse
     {
         return redirect()->route('pet-records.scan');
@@ -22,7 +19,7 @@ class PetScanController extends Controller
      */
     public function clinicScan(string $token): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $clinicName = $user?->clinic_name ?? 'SmartVet';
 
         $pet = Pet::with([
@@ -50,9 +47,11 @@ class PetScanController extends Controller
                 'species'     => $pet->species->name,
                 'breed'       => $pet->breed ?? 'Mixed',
                 'age'         => $pet->age,
+                'weight'      => $pet->weight,
                 'gender'      => $pet->gender,
                 'color'       => $pet->color,
                 'microchipId' => $pet->microchip_id,
+                'clinicIds'   => $pet->clinic_ids ?? [],
                 'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
                 'status'      => $pet->status,
                 'publicUrl'   => route('pet-records.scan'),
@@ -69,6 +68,7 @@ class PetScanController extends Controller
                 'province'         => $pet->owner->province,
                 'zipCode'          => $pet->owner->zip_code,
                 'emergencyContact' => $pet->owner->emergency_contact,
+                'clinicUserId'     => $pet->owner->user_id,
             ],
             'documents'      => $documents,
             'vaccinations'   => $pet->vaccinations->map(fn ($v) => [

@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import AdminLayout from '@/layouts/admin-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -6,7 +6,7 @@ import { dashboard } from '@/routes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
     QrCode,
@@ -56,9 +56,11 @@ interface PetResult {
         species: string;
         breed: string;
         age: number | null;
+        weight: number | null;
         gender: string;
         color: string | null;
         microchipId: string | null;
+        clinicIds?: number[];
         imageUrl: string | null;
         status: string;
         publicUrl: string;
@@ -75,6 +77,7 @@ interface PetResult {
         province?: string;
         zipCode?: string;
         emergencyContact?: string;
+        clinicUserId?: number;
     };
     documents: ConsultationFile[];
     clinicName?: string;
@@ -106,12 +109,16 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
 export default function PetScanner() {
     const { auth } = usePage<SharedData>().props;
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
+    const currentUserId = (auth.user as { id?: number })?.id;
 
     const [scanning, setScanning] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
     const [manualToken, setManualToken] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<PetResult | null>(null);
+    const [missingPetToken, setMissingPetToken] = useState<string | null>(null);
+    const [scannedToken, setScannedToken] = useState<string | null>(null);
+    const [isImporting, setIsImporting] = useState(false);
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const lastInvalidPromptAtRef = useRef(0);
     const { success, error } = useToast();
@@ -211,12 +218,17 @@ export default function PetScanner() {
     const fetchPet = async (token: string) => {
         setLoading(true);
         setResult(null);
+        setMissingPetToken(null);
+        setScannedToken(token);
         try {
             const res = await fetch(`/pet-records/scan-lookup/${token}`, {
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
             if (!res.ok) {
                 error(res.status === 404 ? 'No SmartVet pet found for this QR code.' : 'Failed to load pet data.');
+                if (res.status === 404) {
+                    setMissingPetToken(token);
+                }
                 return;
             }
             const data: PetResult = await res.json();
@@ -237,6 +249,81 @@ export default function PetScanner() {
         }
 
         fetchPet(token);
+    };
+
+    const handleDirectImport = useCallback(async () => {
+        if (!result || !scannedToken) return;
+
+        setIsImporting(true);
+        try {
+            const formData = new FormData();
+            formData.append('petName', result.pet.name);
+            formData.append('species', result.pet.species);
+            formData.append('breed', result.pet.breed);
+            formData.append('age', result.pet.age?.toString() || '');
+            formData.append('weight', result.pet.weight?.toString() || '');
+            formData.append('gender', result.pet.gender);
+            formData.append('color', result.pet.color || '');
+            formData.append('microchipId', result.pet.microchipId || '');
+            formData.append('ownerName', result.owner.name);
+            formData.append('phone', result.owner.phone);
+            formData.append('email', result.owner.email || '');
+            formData.append('street', result.owner.street || '');
+            formData.append('barangay', result.owner.barangay || '');
+            formData.append('city', result.owner.city || '');
+            formData.append('province', result.owner.province || '');
+            formData.append('zipCode', result.owner.zipCode || '');
+            formData.append('qrToken', scannedToken);
+
+            // Download and add pet image if available
+            if (result.pet.imageUrl) {
+                try {
+                    const response = await fetch(result.pet.imageUrl);
+                    const blob = await response.blob();
+                    const fileName = `imported-${scannedToken}.${blob.type.split('/')[1] || 'jpg'}`;
+                    const file = new File([blob], fileName, { type: blob.type });
+                    formData.append('petImage', file);
+                } catch (imgErr) {
+                    console.warn('Failed to download pet image:', imgErr);
+                    // Continue without image if download fails
+                }
+            }
+
+            router.post('/pet-records', formData, {
+                onSuccess: () => {
+                    success('Pet imported successfully!');
+                    setResult(null);
+                    setScannedToken(null);
+                    setTimeout(() => router.visit('/pet-records'), 500);
+                },
+                onError: (errs) => {
+                    let errorMsg = 'Failed to import pet';
+                    if (errs && typeof errs === 'object') {
+                        const firstErr = Object.values(errs)[0];
+                        if (Array.isArray(firstErr)) {
+                            errorMsg = firstErr[0];
+                        } else if (typeof firstErr === 'string') {
+                            errorMsg = firstErr;
+                        }
+                    }
+                    error(errorMsg);
+                    setIsImporting(false);
+                },
+                onFinish: () => setIsImporting(false),
+            });
+        } catch (err) {
+            error('Error preparing pet import');
+            setIsImporting(false);
+            console.error('Import error:', err);
+        }
+    }, [result, scannedToken, router, success, error]);
+
+    const handleImportPet = () => {
+        if (!missingPetToken) {
+            return;
+        }
+
+        router.visit(`/pet-records?importToken=${encodeURIComponent(missingPetToken)}`);
     };
 
     const sortedVaccinations = result ? sortRecordsLatestFirst(result.vaccinations) : [];
@@ -571,8 +658,32 @@ export default function PetScanner() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex justify-end pt-1">
-                                        <Button variant="outline" onClick={() => setResult(null)}>
+                                    <div className="flex justify-end gap-2 pt-1">
+                                        {result && result.owner.clinicUserId !== currentUserId && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
+                                            <Button
+                                                className="gap-2 text-white"
+                                                style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                                                onClick={handleDirectImport}
+                                                disabled={isImporting}
+                                            >
+                                                {isImporting ? (
+                                                    <>
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Importing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <PawPrint className="h-4 w-4" />
+                                                        Import Pet
+                                                    </>
+                                                )}
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => { setResult(null); setScannedToken(null); }}
+                                            disabled={isImporting}
+                                        >
                                             <X className="h-4 w-4 mr-2" />
                                             Close
                                         </Button>
@@ -580,6 +691,40 @@ export default function PetScanner() {
                                 </div>
                             </>
                         )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Missing Pet Import Modal ── */}
+            {missingPetToken && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl">
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
+                                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <h2 className="text-lg font-semibold text-slate-800">Pet Not Found</h2>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        This QR code doesn't exist in the clinic database yet. Import the pet and complete their information to register them in SmartVet.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 rounded-lg p-3 mt-4">
+                                <p className="text-xs font-medium text-slate-500 uppercase">QR Token</p>
+                                <p className="font-mono text-sm text-slate-700 mt-1 break-all">{missingPetToken}</p>
+                            </div>
+                            <div className="flex justify-end gap-3 mt-6">
+                                <Button variant="outline" onClick={() => setMissingPetToken(null)}>
+                                    Cancel
+                                </Button>
+                                <Button className="gap-2 text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }} onClick={handleImportPet}>
+                                    <PawPrint className="h-4 w-4" />
+                                    Import Pet
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>
