@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -50,10 +50,41 @@ export default function AdminLayout({
 }: AdminLayoutProps) {
     const { auth } = usePage<SharedData>().props;
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [themeColor, setThemeColor] = useState((auth.user as { theme_color?: string })?.theme_color || '#0f172a');
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
+    // Listen for theme color changes
+    useEffect(() => {
+        const handleThemeChange = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            setThemeColor(customEvent.detail.color);
+        };
+
+        // Listen to custom clinic theme change event
+        window.addEventListener('clinicThemeChange', handleThemeChange);
+
+        // Also check localStorage on mount for theme color
+        const storedColor = localStorage.getItem('clinicThemeColor');
+        if (storedColor) {
+            setThemeColor(storedColor);
+        }
+
+        // Listen for storage changes from other tabs
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'clinicThemeColor' && e.newValue) {
+                setThemeColor(e.newValue);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('clinicThemeChange', handleThemeChange);
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
     const isAdmin = (auth.user as { role?: string })?.role === 'admin';
-    const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
     const clinicLogo = (auth.user as { clinic_logo?: string })?.clinic_logo;
 

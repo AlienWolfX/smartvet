@@ -122,6 +122,11 @@ export default function ClinicSettings({
         setData('theme_name', theme.name);
         setData('theme_color', theme.color);
         setCustomColor(theme.color);
+        // Save to localStorage for real-time update
+        localStorage.setItem('clinicThemeColor', theme.color);
+        localStorage.setItem('clinicThemeName', theme.name);
+        // Dispatch custom event so other components can listen
+        window.dispatchEvent(new CustomEvent('clinicThemeChange', { detail: { color: theme.color, name: theme.name } }));
     };
 
     const handleCustomColor = (color: string) => {
@@ -129,6 +134,11 @@ export default function ClinicSettings({
         setSelectedTheme('custom');
         setData('theme_name', 'custom');
         setData('theme_color', color);
+        // Save to localStorage for real-time update
+        localStorage.setItem('clinicThemeColor', color);
+        localStorage.setItem('clinicThemeName', 'custom');
+        // Dispatch custom event so other components can listen
+        window.dispatchEvent(new CustomEvent('clinicThemeChange', { detail: { color: color, name: 'custom' } }));
     };
 
     const getActiveColor = () => {

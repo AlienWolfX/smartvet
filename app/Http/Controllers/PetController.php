@@ -82,16 +82,18 @@ class PetController extends Controller
     {
         $actorName = $request->user()?->name ?? 'Clinic Staff';
 
-        // Check if pet with this microchip already exists (for imports)
+        $existingPetByQrToken = null;
+        if ($request->qrToken) {
+            $existingPetByQrToken = Pet::where('qr_token', $request->qrToken)->first();
+        }
+
         $existingPetByMicrochip = null;
         if ($request->microchipId) {
             $existingPetByMicrochip = Pet::where('microchip_id', $request->microchipId)->first();
         }
 
-        // Build qrToken validation rule
         $qrTokenRule = 'nullable|uuid';
-        if (!$existingPetByMicrochip) {
-            // Only require uniqueness for NEW pets, not imports
+        if (!$existingPetByQrToken && !$existingPetByMicrochip) {
             $qrTokenRule .= '|unique:pets,qr_token';
         }
 
@@ -118,30 +120,27 @@ class PetController extends Controller
             'zipCode' => 'nullable|string|max:10',
         ]);
 
-        DB::transaction(function () use ($request, $actorName, $existingPetByMicrochip) {
+        DB::transaction(function () use ($request, $actorName, $existingPetByMicrochip, $existingPetByQrToken) {
             $currentClinicId = $this->tenantUserId();
 
-            // If pet exists by microchip, add current clinic to clinic_ids and return
-            if ($existingPetByMicrochip) {
-                $clinicIds = $existingPetByMicrochip->clinic_ids ?? [];
+            $existingPet = $existingPetByQrToken ?? $existingPetByMicrochip;
 
-                // Add the clinic ID if not already present
+            if ($existingPet) {
+                $clinicIds = $existingPet->clinic_ids ?? [];
+
                 if (!in_array($currentClinicId, $clinicIds)) {
                     $clinicIds[] = $currentClinicId;
-                    $existingPetByMicrochip->update(['clinic_ids' => $clinicIds]);
+                    $existingPet->update(['clinic_ids' => $clinicIds]);
                 }
 
-                // Don't show QR modal on import - just redirect
                 return;
             }
 
-            // Handle image upload
             $imagePath = null;
             if ($request->hasFile('petImage')) {
                 $imagePath = $request->file('petImage')->store('pets', 'public');
             }
 
-            // Find or create the species
             $species = PetSpecies::where('name', $request->species)->first();
             if (!$species) {
                 $species = PetSpecies::create([
@@ -150,7 +149,6 @@ class PetController extends Controller
                 ]);
             }
 
-            // Create or find owner
             $accountUser = $request->email
                 ? \App\Models\User::where('email', $request->email)
                     ->where('role', \App\Models\User::ROLE_OWNER)
@@ -178,7 +176,6 @@ class PetController extends Controller
                 'emergency_contact' => null,
             ]);
 
-            // Create pet with clinic_ids initialized
             $pet = Pet::create([
                 'name' => $request->petName,
                 'owner_id' => $owner->id,

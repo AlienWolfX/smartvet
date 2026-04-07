@@ -398,18 +398,17 @@ export default function PetScanner() {
                     </div>
                 )}
 
-                {/* Manual token lookup */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-3">
                     <h2 className="font-semibold text-slate-800 flex items-center gap-2 text-sm">
                         <Search className="h-4 w-4" />
-                        Manual Token Lookup
+                        Manual Lookup
                     </h2>
                     <p className="text-xs text-slate-400">
-                        Enter the pet's QR token manually if the camera isn't available.
+                        Enter the pet's token.
                     </p>
                     <div className="flex gap-2">
                         <Input
-                            placeholder="Paste QR token or UUID…"
+                            placeholder="Paste token…"
                             value={manualToken}
                             onChange={(e) => setManualToken(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleManualLookup()}
@@ -470,47 +469,43 @@ export default function PetScanner() {
                                 </div>
 
                                 <div className="p-5 space-y-5">
-                                    {/* Details grid */}
-                                    <div className="grid grid-cols-3 gap-3 text-center">
-                                        {[
-                                            { label: 'Age', value: result.pet.age != null ? `${result.pet.age} yr` : '—' },
-                                            { label: 'Gender', value: result.pet.gender },
-                                            { label: 'Color', value: result.pet.color || '—' },
-                                        ].map(({ label, value }) => (
-                                            <div key={label} className="rounded-xl bg-slate-50 px-3 py-2.5">
-                                                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                                                <p className="text-sm font-semibold capitalize text-slate-800 mt-0.5">{value}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {result.pet.microchipId && (
-                                        <p className="text-xs text-slate-400 text-center">Microchip: <span className="font-mono text-slate-600">{result.pet.microchipId}</span></p>
-                                    )}
-
                                     {/* Pet + Owner Details */}
                                     <div className="grid gap-4 md:grid-cols-2">
-                                        <div className="rounded-xl border border-slate-100 p-4 space-y-2">
+                                        <div className="rounded-xl border border-slate-100 p-4 space-y-3">
                                             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
-                                                <Info className="h-3 w-3" /> Pet
+                                                <Info className="h-3 w-3" /> Pet Information
                                             </p>
-                                            <div className="grid grid-cols-2 gap-2 text-xs text-neutral-600">
-                                                <div className="rounded-lg bg-white px-2 py-1">
-                                                    <p className="font-medium">Age</p>
-                                                    <p className="truncate">{result.pet.age != null ? `${result.pet.age} yr` : '—'}</p>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                    <span className="text-xs font-medium text-slate-500">Species</span>
+                                                    <span className="text-sm font-semibold text-slate-800">{result.pet.species}</span>
                                                 </div>
-                                                <div className="rounded-lg bg-white px-2 py-1">
-                                                    <p className="font-medium">Gender</p>
-                                                    <p className="truncate capitalize">{result.pet.gender || '—'}</p>
+                                                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                    <span className="text-xs font-medium text-slate-500">Breed</span>
+                                                    <span className="text-sm font-semibold text-slate-800">{result.pet.breed || '—'}</span>
                                                 </div>
-                                                <div className="rounded-lg bg-white px-2 py-1">
-                                                    <p className="font-medium">Color</p>
-                                                    <p className="truncate capitalize">{result.pet.color || '—'}</p>
+                                                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                    <span className="text-xs font-medium text-slate-500">Age</span>
+                                                    <span className="text-sm font-semibold text-slate-800">{result.pet.age != null ? `${result.pet.age} years` : '—'}</span>
                                                 </div>
+                                                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                    <span className="text-xs font-medium text-slate-500">Gender</span>
+                                                    <span className="text-sm font-semibold text-slate-800 capitalize">{result.pet.gender || '—'}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                    <span className="text-xs font-medium text-slate-500">Color</span>
+                                                    <span className="text-sm font-semibold text-slate-800 capitalize">{result.pet.color || '—'}</span>
+                                                </div>
+                                                {result.pet.weight && (
+                                                    <div className="flex justify-between items-center py-1.5 border-b border-slate-50">
+                                                        <span className="text-xs font-medium text-slate-500">Weight</span>
+                                                        <span className="text-sm font-semibold text-slate-800">{result.pet.weight} kg</span>
+                                                    </div>
+                                                )}
                                                 {result.pet.microchipId && (
-                                                    <div className="rounded-lg bg-white px-2 py-1">
-                                                        <p className="font-medium">Microchip</p>
-                                                        <p className="truncate">{result.pet.microchipId}</p>
+                                                    <div className="flex justify-between items-start py-1.5">
+                                                        <span className="text-xs font-medium text-slate-500">Microchip</span>
+                                                        <span className="text-sm font-mono text-slate-800 text-right">{result.pet.microchipId}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -608,9 +603,16 @@ export default function PetScanner() {
 
                                     {/* Consultations */}
                                     <div>
-                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5 mb-2">
-                                            <FileText className="h-3 w-3" /> Visit History ({result.consultations.length})
-                                        </p>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 flex items-center gap-1.5">
+                                                <FileText className="h-3 w-3" /> Visit History ({result.consultations.length})
+                                            </p>
+                                            {result.consultations.length > 5 && (
+                                                <a href={result.pet.publicUrl} className="text-xs font-semibold" style={{ color: themeColor }}>
+                                                    View All →
+                                                </a>
+                                            )}
+                                        </div>
                                         {result.consultations.length === 0 ? (
                                             <p className="text-xs text-slate-400 italic">No visits on record.</p>
                                         ) : (
@@ -658,10 +660,10 @@ export default function PetScanner() {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex justify-end gap-2 pt-1">
+                                    <div className="flex gap-2 pt-3 border-t border-slate-100">
                                         {result && result.owner.clinicUserId !== currentUserId && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
                                             <Button
-                                                className="gap-2 text-white"
+                                                className="gap-2 text-white flex-1"
                                                 style={{ backgroundColor: themeColor, borderColor: themeColor }}
                                                 onClick={handleDirectImport}
                                                 disabled={isImporting}
@@ -674,13 +676,14 @@ export default function PetScanner() {
                                                 ) : (
                                                     <>
                                                         <PawPrint className="h-4 w-4" />
-                                                        Import Pet
+                                                        Import Pet to Clinic
                                                     </>
                                                 )}
                                             </Button>
                                         )}
                                         <Button
                                             variant="outline"
+                                            className="flex-1"
                                             onClick={() => { setResult(null); setScannedToken(null); }}
                                             disabled={isImporting}
                                         >
@@ -700,29 +703,48 @@ export default function PetScanner() {
             {missingPetToken && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl">
-                        <div className="p-6 space-y-4">
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                        <button
+                            onClick={() => setMissingPetToken(null)}
+                            className="absolute top-3 right-3 h-7 w-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                        <div className="p-6 space-y-5">
+                            <div className="flex items-start gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: themeColor + '15' }}>
+                                    <QrCode className="h-6 w-6" style={{ color: themeColor }} />
                                 </div>
                                 <div className="flex-1">
-                                    <h2 className="text-lg font-semibold text-slate-800">Pet Not Found</h2>
-                                    <p className="text-sm text-slate-600 mt-1">
-                                        This QR code doesn't exist in the clinic database yet. Import the pet and complete their information to register them in SmartVet.
+                                    <h2 className="text-lg font-semibold text-slate-800">QR Code Not Found</h2>
+                                    <p className="text-sm text-slate-600 mt-2">
+                                        This QR code doesn't match any pet in your clinic's database. You can import this new pet by creating a registration record.
                                     </p>
                                 </div>
                             </div>
-                            <div className="bg-slate-50 rounded-lg p-3 mt-4">
-                                <p className="text-xs font-medium text-slate-500 uppercase">QR Token</p>
-                                <p className="font-mono text-sm text-slate-700 mt-1 break-all">{missingPetToken}</p>
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                <div>
+                                    <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">QR Token ID</p>
+                                    <p className="font-mono text-sm text-blue-900 mt-1 break-all font-semibold">{missingPetToken}</p>
+                                </div>
+                                <p className="text-xs text-blue-700 mt-2">You'll be able to view and edit pet details during import.</p>
                             </div>
-                            <div className="flex justify-end gap-3 mt-6">
-                                <Button variant="outline" onClick={() => setMissingPetToken(null)}>
+
+                            <div className="flex gap-3 pt-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={() => setMissingPetToken(null)}
+                                >
                                     Cancel
                                 </Button>
-                                <Button className="gap-2 text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }} onClick={handleImportPet}>
+                                <Button
+                                    className="flex-1 gap-2 text-white"
+                                    style={{ backgroundColor: themeColor, borderColor: themeColor }}
+                                    onClick={handleImportPet}
+                                >
                                     <PawPrint className="h-4 w-4" />
-                                    Import Pet
+                                    Import New Pet
                                 </Button>
                             </div>
                         </div>
