@@ -71,12 +71,15 @@ class PetScanController extends Controller
                 'clinicUserId'     => $pet->owner->user_id,
             ],
             'documents'      => $documents,
-            'vaccinations'   => $pet->vaccinations->map(fn ($v) => [
-                'vaccine'    => $v->vaccine_name,
-                'date'       => $v->vaccination_date->toDateString(),
-                'nextDue'    => $v->next_due_date->toDateString(),
-                'clinicName' => $v->clinic_location ?? $clinicName,
-            ]),
+            'vaccinations'   => $pet->vaccinations->map(function ($v) use ($pet, $clinicName) {
+                $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
+                return [
+                    'vaccine'    => $v->vaccine_name,
+                    'date'       => $v->vaccination_date->toDateString(),
+                    'nextDue'    => $v->next_due_date->toDateString(),
+                    'clinicName' => $ownerClinicName,
+                ];
+            }),
             'consultations' => $pet->consultations->map(function ($c) use ($pet, $clinicName) {
                 $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
                 return [
