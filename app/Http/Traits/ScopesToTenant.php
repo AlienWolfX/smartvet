@@ -38,7 +38,9 @@ trait ScopesToTenant
     {
         $user = auth()->user();
         if ($user && !$user->isAdmin()) {
-            return $query->whereHas('pet.owner', fn (Builder $q) => $q->where('owners.user_id', $user->id));
+            return $query->whereHas('pet.owner', function (Builder $q) use ($user) {
+                $q->where('owners.user_id', $user->id);
+            });
         }
         return $query;
     }
@@ -55,7 +57,9 @@ trait ScopesToTenant
         if ($user && !$user->isAdmin()) {
             return $query->where(function (Builder $q) use ($user) {
                 // Pets owned by this clinic
-                $q->whereHas('owner', fn (Builder $subQ) => $subQ->where('owners.user_id', $user->id))
+                $q->whereHas('owner', function (Builder $subQ) use ($user) {
+                    $subQ->where('owners.user_id', $user->id);
+                })
                     // OR pets imported from other clinics (clinic_id in clinic_ids array)
                     ->orWhereJsonContains('clinic_ids', $user->id);
             });

@@ -23,7 +23,7 @@ class PetScanController extends Controller
         $clinicName = $user?->clinic_name ?? 'SmartVet';
 
         $pet = Pet::with([
-            'owner',
+            'owner.user',
             'species',
             'vaccinations',
             'consultations.files',
@@ -77,29 +77,32 @@ class PetScanController extends Controller
                 'nextDue'    => $v->next_due_date->toDateString(),
                 'clinicName' => $v->clinic_location ?? $clinicName,
             ]),
-            'consultations' => $pet->consultations->map(fn ($c) => [
-                'type'       => $c->consultation_type,
-                'date'       => $c->consultation_date->toDateString(),
-                'complaint'  => $c->chief_complaint,
-                'diagnosis'  => $c->diagnosis,
-                'treatment'  => $c->treatment,
-                'clinicName' => $c->clinic_location ?? $clinicName,
-                'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
-                    'id'        => $u->id,
-                    'name'      => $u->inventoryItem?->name ?? 'Item',
-                    'quantity'  => $u->quantity,
-                    'unitPrice' => $u->unit_price,
-                ]),
-                'files' => $c->files->map(fn ($f) => [
-                    'id'            => $f->id,
-                    'name'          => $f->original_name ?? $f->file_name,
-                    'url'           => $f->file_url,
-                    'mimeType'      => $f->mime_type,
-                    'size'          => $f->file_size,
-                    'sizeFormatted' => $f->file_size_formatted,
-                    'isImage'       => $f->isImage(),
-                ]),
-            ]),
+            'consultations' => $pet->consultations->map(function ($c) use ($pet, $clinicName) {
+                $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
+                return [
+                    'type'       => $c->consultation_type,
+                    'date'       => $c->consultation_date->toDateString(),
+                    'complaint'  => $c->chief_complaint,
+                    'diagnosis'  => $c->diagnosis,
+                    'treatment'  => $c->treatment,
+                    'clinicName' => $ownerClinicName,
+                    'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
+                        'id'        => $u->id,
+                        'name'      => $u->inventoryItem?->name ?? 'Item',
+                        'quantity'  => $u->quantity,
+                        'unitPrice' => $u->unit_price,
+                    ]),
+                    'files' => $c->files->map(fn ($f) => [
+                        'id'            => $f->id,
+                        'name'          => $f->original_name ?? $f->file_name,
+                        'url'           => $f->file_url,
+                        'mimeType'      => $f->mime_type,
+                        'size'          => $f->file_size,
+                        'sizeFormatted' => $f->file_size_formatted,
+                        'isImage'       => $f->isImage(),
+                    ]),
+                ];
+            }),
         ]);
     }
 }
