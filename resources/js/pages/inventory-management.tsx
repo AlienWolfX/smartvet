@@ -1148,8 +1148,8 @@ export default function InventoryManagement({ categories, items }: InventoryPage
             <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
                 <CardContent className="p-6">
                     {/* Table Headers */}
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
-                        <div className="md:col-span-2">
+                    <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
+                        <div>
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Item Details
                             </h3>
@@ -1166,46 +1166,45 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                         </div>
                         <div>
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-                                Pricing
-                            </h3>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Actions
                             </h3>
                         </div>
                     </div>
 
-                    <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-760px)]">
+                    <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-400px)]">
                         {filteredItems.map((item) => {
                             const status = getStockLevel(item);
                             const totalValue = item.currentStock * item.unitPrice;
 
                             return (
-                                <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800">
-                                    <div className="md:col-span-2">
-                                        <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                                <div key={item.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 items-center">
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-neutral-900 dark:text-neutral-100 truncate">
                                             {item.name}
                                         </p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                                            {item.brand} • {item.id}
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                                            {item.brand && item.brand !== 'null' ? item.brand : 'N/A'} • {item.id}
                                         </p>
-                                        <p className="text-xs text-neutral-400 mt-1">
+                                        <p className="text-xs text-neutral-400 mt-1 truncate">
                                             {item.categoryName}
                                         </p>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-medium">{item.currentStock}</span>
-                                        <span className="text-xs text-neutral-500">
-                                            / {item.maxStock}
-                                        </span>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                        <span className="text-xs text-neutral-500 sm:hidden font-medium">Stock:</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-medium text-sm">{item.currentStock}</span>
+                                            <span className="text-xs text-neutral-500">
+                                                / {item.maxStock}
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                        <span className="text-xs text-neutral-500 sm:hidden font-medium">Status:</span>
                                         <Badge
                                             variant="outline"
-                                            className={cn("capitalize", getStockLevelColor(status))}
+                                            className={cn("capitalize text-xs w-fit", getStockLevelColor(status))}
                                         >
                                             <span className="flex items-center gap-1">
                                                 {getStockIcon(status)}
@@ -1214,21 +1213,21 @@ export default function InventoryManagement({ categories, items }: InventoryPage
                                         </Badge>
                                     </div>
 
-                                    <div>
-                                        <p className="font-medium text-sm">
-                                            {formatPeso(item.unitPrice)}
-                                        </p>
-                                        <p className="text-xs text-neutral-500">
-                                            Total: {formatPeso(totalValue)}
-                                        </p>
-                                    </div>
+                                    <div className="flex items-center justify-between sm:justify-end gap-2">
+                                        <div className="hidden lg:block">
+                                            <p className="font-medium text-sm">
+                                                {formatPeso(item.unitPrice)}
+                                            </p>
+                                            <p className="text-xs text-neutral-500">
+                                                Total: {formatPeso(totalValue)}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex items-center">
                                         <Select
                                             value={actionSelections[item.dbId]}
                                             onValueChange={(value) => handleActionSelection(item, value)}
                                         >
-                                            <SelectTrigger className="w-[150px]">
+                                            <SelectTrigger className="w-[140px] text-xs">
                                                 <SelectValue placeholder="Actions" />
                                             </SelectTrigger>
                                             <SelectContent align="end">

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Consultation;
 use App\Models\Pet;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class ConsultationSeeder extends Seeder
 {
@@ -14,19 +14,21 @@ class ConsultationSeeder extends Seeder
      */
     public function run(): void
     {
-        $pets = Pet::all();
+        $petsByName = Pet::query()
+            ->get()
+            ->keyBy(fn (Pet $pet) => strtolower($pet->name));
 
         $consultations = [
             // Bantay (Dog) - Multiple consultations
             [
                 'pet_name' => 'Bantay',
-                'consultation_date' => Carbon::now()->subDays(30),
+                'consultation_date' => Carbon::today()->subDays(30),
                 'consultation_time' => '09:00:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Annual checkup - routine wellness visit',
                 'diagnosis' => 'Healthy - no issues found',
                 'treatment' => 'Administered annual vaccinations, deworming',
-                'notes' => 'Owner advised to continue current diet. Pet is in excellent health. Weight: 12.50kg, Temp: 38.5°C, HR: 100bpm',
+                'notes' => 'Owner advised to continue current diet. Pet is in excellent health. Weight: 12.50kg, Temp: 38.5 C, HR: 100bpm',
                 'consultation_fee' => 500.00,
                 'veterinarian' => 'Dr. Santos',
                 'status' => 'completed',
@@ -34,13 +36,13 @@ class ConsultationSeeder extends Seeder
             ],
             [
                 'pet_name' => 'Bantay',
-                'consultation_date' => Carbon::now()->subDays(7),
+                'consultation_date' => Carbon::today()->subDays(7),
                 'consultation_time' => '14:30:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Skin irritation - Excessive scratching, red patches on belly',
                 'diagnosis' => 'Allergic dermatitis',
                 'treatment' => 'Prescribed antihistamines and medicated shampoo',
-                'notes' => 'Possible food allergy. Recommended hypoallergenic diet trial. Weight: 12.80kg, Temp: 38.7°C',
+                'notes' => 'Possible food allergy. Recommended hypoallergenic diet trial. Weight: 12.80kg, Temp: 38.7 C',
                 'consultation_fee' => 600.00,
                 'veterinarian' => 'Dr. Santos',
                 'status' => 'completed',
@@ -49,7 +51,7 @@ class ConsultationSeeder extends Seeder
             // Mingming (Cat)
             [
                 'pet_name' => 'Mingming',
-                'consultation_date' => Carbon::now()->subDays(45),
+                'consultation_date' => Carbon::today()->subDays(45),
                 'consultation_time' => '10:00:00',
                 'consultation_type' => 'vaccination',
                 'chief_complaint' => 'Routine vaccination visit',
@@ -64,7 +66,7 @@ class ConsultationSeeder extends Seeder
             // Bruno (Golden Retriever)
             [
                 'pet_name' => 'Bruno',
-                'consultation_date' => Carbon::now()->subDays(14),
+                'consultation_date' => Carbon::today()->subDays(14),
                 'consultation_time' => '11:00:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Limping on right hind leg, reluctance to jump, mild pain on palpation',
@@ -79,7 +81,7 @@ class ConsultationSeeder extends Seeder
             // Max (German Shepherd)
             [
                 'pet_name' => 'Max',
-                'consultation_date' => Carbon::now()->subDays(60),
+                'consultation_date' => Carbon::today()->subDays(60),
                 'consultation_time' => '09:30:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Head shaking, scratching ears, foul odor from ears',
@@ -93,7 +95,7 @@ class ConsultationSeeder extends Seeder
             ],
             [
                 'pet_name' => 'Max',
-                'consultation_date' => Carbon::now()->subDays(45),
+                'consultation_date' => Carbon::today()->subDays(45),
                 'consultation_time' => '10:30:00',
                 'consultation_type' => 'follow-up',
                 'chief_complaint' => 'Follow-up for ear infection - Improved, minimal scratching',
@@ -108,7 +110,7 @@ class ConsultationSeeder extends Seeder
             // Snowball (Rabbit)
             [
                 'pet_name' => 'Snowball',
-                'consultation_date' => Carbon::now()->subDays(20),
+                'consultation_date' => Carbon::today()->subDays(20),
                 'consultation_time' => '15:00:00',
                 'consultation_type' => 'surgery',
                 'chief_complaint' => 'Dental checkup - Decreased appetite, drooling',
@@ -123,7 +125,7 @@ class ConsultationSeeder extends Seeder
             // Whiskers (Persian Cat)
             [
                 'pet_name' => 'Whiskers',
-                'consultation_date' => Carbon::now()->subDays(5),
+                'consultation_date' => Carbon::today()->subDays(5),
                 'consultation_time' => '13:00:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Watery eyes, mild redness, excessive tearing',
@@ -138,7 +140,7 @@ class ConsultationSeeder extends Seeder
             // Rocky (Bulldog)
             [
                 'pet_name' => 'Rocky',
-                'consultation_date' => Carbon::now()->subDays(90),
+                'consultation_date' => Carbon::today()->subDays(90),
                 'consultation_time' => '11:30:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Snoring, labored breathing during exercise, overheating',
@@ -153,7 +155,7 @@ class ConsultationSeeder extends Seeder
             // Luna (Siamese Cat)
             [
                 'pet_name' => 'Luna',
-                'consultation_date' => Carbon::now()->subDays(3),
+                'consultation_date' => Carbon::today()->subDays(3),
                 'consultation_time' => '16:00:00',
                 'consultation_type' => 'emergency',
                 'chief_complaint' => 'Vomiting 2-3 times daily, lethargy, decreased appetite',
@@ -168,7 +170,7 @@ class ConsultationSeeder extends Seeder
             // Buddy (Beagle)
             [
                 'pet_name' => 'Buddy',
-                'consultation_date' => Carbon::now()->subDays(10),
+                'consultation_date' => Carbon::today()->subDays(10),
                 'consultation_time' => '10:00:00',
                 'consultation_type' => 'routine-checkup',
                 'chief_complaint' => 'Annual wellness exam - routine checkup',
@@ -183,7 +185,7 @@ class ConsultationSeeder extends Seeder
             // Cleo (Maine Coon)
             [
                 'pet_name' => 'Cleo',
-                'consultation_date' => Carbon::now()->subDays(25),
+                'consultation_date' => Carbon::today()->subDays(25),
                 'consultation_time' => '08:00:00',
                 'consultation_type' => 'surgery',
                 'chief_complaint' => 'Elective spay surgery',
@@ -197,35 +199,43 @@ class ConsultationSeeder extends Seeder
             ],
         ];
 
+        $latestVisitByPet = [];
+
         foreach ($consultations as $consultationData) {
-            $pet = $pets->where('name', $consultationData['pet_name'])->first();
+            $pet = $petsByName->get(strtolower($consultationData['pet_name']));
 
-            if ($pet) {
-                Consultation::firstOrCreate(
-                    [
-                        'pet_id' => $pet->id,
-                        'consultation_date' => $consultationData['consultation_date'],
-                        'chief_complaint' => $consultationData['chief_complaint'],
-                    ],
-                    [
-                        'pet_id' => $pet->id,
-                        'consultation_date' => $consultationData['consultation_date'],
-                        'consultation_time' => $consultationData['consultation_time'],
-                        'consultation_type' => $consultationData['consultation_type'],
-                        'chief_complaint' => $consultationData['chief_complaint'],
-                        'diagnosis' => $consultationData['diagnosis'],
-                        'treatment' => $consultationData['treatment'],
-                        'notes' => $consultationData['notes'],
-                        'consultation_fee' => $consultationData['consultation_fee'],
-                        'veterinarian' => $consultationData['veterinarian'],
-                        'status' => $consultationData['status'],
-                        'payment_status' => $consultationData['payment_status'],
-                    ]
-                );
-
-                // Update pet's last_visit
-                $pet->update(['last_visit' => $consultationData['consultation_date']]);
+            if (! $pet) {
+                continue;
             }
+
+            $consultationDate = Carbon::parse($consultationData['consultation_date'])->toDateString();
+
+            Consultation::updateOrCreate(
+                [
+                    'pet_id' => $pet->id,
+                    'consultation_date' => $consultationDate,
+                    'consultation_time' => $consultationData['consultation_time'],
+                    'consultation_type' => $consultationData['consultation_type'],
+                ],
+                [
+                    'chief_complaint' => $consultationData['chief_complaint'],
+                    'diagnosis' => $consultationData['diagnosis'],
+                    'treatment' => $consultationData['treatment'],
+                    'notes' => $consultationData['notes'],
+                    'consultation_fee' => $consultationData['consultation_fee'],
+                    'veterinarian' => $consultationData['veterinarian'],
+                    'status' => $consultationData['status'],
+                    'payment_status' => $consultationData['payment_status'],
+                ]
+            );
+
+            $latestVisitByPet[$pet->id] = isset($latestVisitByPet[$pet->id])
+                ? max($latestVisitByPet[$pet->id], $consultationDate)
+                : $consultationDate;
+        }
+
+        foreach ($latestVisitByPet as $petId => $lastVisitDate) {
+            Pet::whereKey($petId)->update(['last_visit' => $lastVisitDate]);
         }
     }
 }
