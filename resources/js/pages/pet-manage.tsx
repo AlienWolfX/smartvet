@@ -83,6 +83,7 @@ interface Pet {
     status: string;
     lastVisit: string;
     registrationDate: string;
+    qrToken: string | null;
     owner: {
         name: string;
         phone: string;
@@ -1193,14 +1194,16 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                     {record.diagnosis || '-'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={cn(
-                                                        "capitalize",
-                                                        record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                        record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                        "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                    )}>
-                                                        {record.paymentStatus}
-                                                    </Badge>
+                                                    {!pet.qrToken && (
+                                                        <Badge variant="outline" className={cn(
+                                                            "capitalize",
+                                                            record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
+                                                            record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                            "bg-neutral-50 text-neutral-700 border-neutral-200"
+                                                        )}>
+                                                            {record.paymentStatus}
+                                                        </Badge>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="sm" onClick={() => setSelectedConsultation(record)}>
@@ -1233,14 +1236,16 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                 <div>
                                                     <span className="text-sm font-medium text-neutral-500">Payment Status</span>
                                                     <div className="mt-1">
-                                                        <Badge variant="outline" className={cn(
-                                                            "capitalize",
-                                                            selectedConsultation.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                            selectedConsultation.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                            "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                        )}>
-                                                            {selectedConsultation.paymentStatus}
-                                                        </Badge>
+                                                        {!pet.qrToken && (
+                                                            <Badge variant="outline" className={cn(
+                                                                "capitalize",
+                                                                selectedConsultation.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
+                                                                selectedConsultation.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                                "bg-neutral-50 text-neutral-700 border-neutral-200"
+                                                            )}>
+                                                                {selectedConsultation.paymentStatus}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -1530,13 +1535,15 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                     {vaccination.administeredBy || <span className="text-muted-foreground">-</span>}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={vaccination.paymentStatus === 'paid'
-                                                        ? 'border-transparent bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-                                                        : 'border-transparent bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200'
-                                                    }>
-                                                        {vaccination.paymentStatus === 'paid' ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
-                                                        <span className="ml-1 capitalize">{vaccination.paymentStatus}</span>
-                                                    </Badge>
+                                                    {!pet.qrToken && (
+                                                        <Badge variant="outline" className={vaccination.paymentStatus === 'paid'
+                                                            ? 'border-transparent bg-emerald-50 text-emerald-700 dark:border-emerald-400/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+                                                            : 'border-transparent bg-amber-50 text-amber-700 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-200'
+                                                        }>
+                                                            {vaccination.paymentStatus === 'paid' ? <CheckCircle className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
+                                                            <span className="ml-1 capitalize">{vaccination.paymentStatus}</span>
+                                                        </Badge>
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button

@@ -416,6 +416,7 @@ class PetController extends Controller
             'allergies' => [],
             'currentMedications' => $medications,
             'consultationOptions' => $consultationOptions,
+            'qrToken' => $pet->qr_token,
         ];
 
         $inventoryItems = $this->scopeToUser(InventoryItem::with('category'))
