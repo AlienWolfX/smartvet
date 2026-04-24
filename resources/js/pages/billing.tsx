@@ -87,6 +87,8 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     const [processing, setProcessing] = useState(false);
     const [deductionReason, setDeductionReason] = useState('');
     const [deductionAmount, setDeductionAmount] = useState(0);
+    const [deductionType, setDeductionType] = useState<'pesos' | 'percentage' | ''>('');
+    const [modalErrors, setModalErrors] = useState<{[key: string]: string}>({});
 
     const [billingSlipModalOpen, setBillingSlipModalOpen] = useState(false);
     const [selectedHistoryPayment, setSelectedHistoryPayment] = useState<PaymentHistoryItem | null>(null);
@@ -113,6 +115,8 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
         setNotes('');
         setDeductionReason('');
         setDeductionAmount(0);
+        setDeductionType('');
+        setModalErrors({});
         setPaymentModalOpen(true);
     };
 
@@ -121,29 +125,69 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
         setBillingSlipModalOpen(true);
     };
 
+    // Helper to check if deduction is valid
+    const isDeductionValid = () => {
+        if (deductionAmount > 0) {
+            return deductionType === 'pesos' || deductionType === 'percentage';
+        }
+        return true; // Valid if no deduction amount
+    };
+
     const handleProcessPayment = () => {
         if (!selectedPayment || !paymentMethod) return;
 
+        // Frontend validation - strict check for deduction type
+        const errors: {[key: string]: string} = {};
+        const hasDeductionAmount = deductionAmount > 0;
+        const hasDeductionType = deductionType === 'pesos' || deductionType === 'percentage';
+
+        if (hasDeductionAmount && !hasDeductionType) {
+            errors['deduction_type'] = 'Please select a deduction type (Pesos or Percentage) when applying a deduction.';
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setModalErrors(errors);
+            return;
+        }
+
+        setModalErrors({});
         setProcessing(true);
+
+        // Calculate deduction only if BOTH amount and type are valid
+        let deductionValue = 0;
+        let deductionTypeToSend = null;
+
+        if (hasDeductionAmount && hasDeductionType) {
+            deductionTypeToSend = deductionType;
+            if (deductionType === 'percentage') {
+                deductionValue = (Number(selectedPayment.amount) * deductionAmount) / 100;
+            } else {
+                deductionValue = deductionAmount;
+            }
+        }
+
         const finalAmount = Math.max(
             0,
-            selectedPayment.amount - deductionAmount
+            Number(selectedPayment.amount) - deductionValue
         );
 
         router.post(`/billing/process/${selectedPayment.id}`, {
             payment_method: paymentMethod,
             reference_number: referenceNumber || null,
             notes: notes || null,
-            deduction_amount: deductionAmount,
+            deduction_amount: deductionValue > 0 ? deductionValue : null,
             deduction_reason: deductionReason || null,
+            deduction_type: deductionTypeToSend,
             final_amount: finalAmount,
         }, {
             onSuccess: () => {
                 setPaymentModalOpen(false);
                 setSelectedPayment(null);
                 setProcessing(false);
+                setModalErrors({});
             },
-            onError: () => {
+            onError: (errors: any) => {
+                setModalErrors(errors);
                 setProcessing(false);
             },
         });
@@ -319,7 +363,18 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                                         <span className="text-xs text-muted-foreground">{payment.petName}</span>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell>₱{payment.amount}</TableCell>
+                                                <TableCell>
+                                                    {Number(payment.finalAmount) < Number(payment.amount) ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span>₱{Number(payment.finalAmount).toFixed(2)}</span>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                Deducted: ₱{(Number(payment.amount) - Number(payment.finalAmount)).toFixed(2)}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <>₱{Number(payment.amount).toFixed(2)}</>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell>{payment.method || '-'}</TableCell>
                                                 <TableCell>{payment.reference || '-'}</TableCell>
                                                 <TableCell>
@@ -382,22 +437,14 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                     </DialogHeader>
                     <div className="overflow-y-auto flex-1">
                         <div className="grid gap-5 py-4 px-6">
-                        {selectedPayment?.items?.length > 0 && (
-                            <div className="border p-3 rounded-lg bg-muted/30">
-                                <div className="mb-2 text-sm font-semibold">Payment Items</div>
-                                <div className="space-y-1">
-                                    {selectedPayment.items.map((item) => {
-                                        const itemAmount = Number(item.amount);
-                                        const displayAmount = Number.isNaN(itemAmount) ? '0.00' : itemAmount.toFixed(2);
-
-                                        return (
-                                            <div key={`${item.service_type}-${item.description}`} className="flex justify-between text-sm">
-                                                <span>{item.description}</span>
-                                                <span>₱{displayAmount}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                        {Object.keys(modalErrors).length > 0 && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                <p className="text-sm font-semibold text-red-800 mb-2">Please fix the following errors:</p>
+                                <ul className="space-y-1">
+                                    {Object.entries(modalErrors).map(([key, message]) => (
+                                        <li key={key} className="text-sm text-red-700">• {message}</li>
+                                    ))}
+                                </ul>
                             </div>
                         )}
                         <div className="border-t pt-3">
@@ -414,16 +461,39 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="deduction-amount">Deduction Amount (₱)</Label>
+                                    <Label htmlFor="deduction-type">Deduction Type</Label>
+                                    <Select value={deductionType} onValueChange={(value) => setDeductionType(value as 'pesos' | 'percentage')}>
+                                        <SelectTrigger id="deduction-type" className={`h-11 ${modalErrors['deduction_type'] ? 'border-red-500' : ''}`}>
+                                            <SelectValue placeholder="Select deduction type" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pesos">Pesos (₱)</SelectItem>
+                                            <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    {modalErrors['deduction_type'] && (
+                                        <p className="text-sm text-red-600">{modalErrors['deduction_type']}</p>
+                                    )}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deduction-amount">Deduction Amount {deductionType === 'percentage' ? '(%)' : '(₱)'}</Label>
                                     <Input
                                         id="deduction-amount"
                                         type="number"
-                                        placeholder="Enter deduction amount (optional)"
+                                        placeholder={deductionType === 'percentage' ? "Enter percentage (0-100)" : "Enter deduction amount (optional)"}
                                         value={deductionAmount || ''}
-                                        onChange={(e) => setDeductionAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                                        onChange={(e) => {
+                                            const value = parseFloat(e.target.value) || 0;
+                                            if (deductionType === 'percentage') {
+                                                setDeductionAmount(Math.min(Math.max(0, value), 100));
+                                            } else {
+                                                setDeductionAmount(Math.max(0, value));
+                                            }
+                                        }}
                                         className="h-11"
                                         min="0"
-                                        step="1"
+                                        max={deductionType === 'percentage' ? "100" : undefined}
+                                        step={deductionType === 'percentage' ? "0.1" : "1"}
                                     />
                                 </div>
                             </div>
@@ -434,15 +504,28 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     <span>Original Amount:</span>
                                     <span>₱{Number(selectedPayment?.amount || 0).toFixed(2)}</span>
                                 </div>
-                                {deductionAmount > 0 && (
+                                {deductionAmount > 0 && deductionType && (
                                     <div className="flex justify-between text-sm text-red-600">
-                                        <span>Deduction:</span>
-                                        <span>-₱{deductionAmount.toFixed(2)}</span>
+                                        <span>Deduction ({deductionType === 'percentage' ? `${deductionAmount}%` : 'Pesos'}):</span>
+                                        <span>-₱{(
+                                            deductionType === 'percentage'
+                                                ? (Number(selectedPayment?.amount || 0) * deductionAmount) / 100
+                                                : deductionAmount
+                                        ).toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                                     <span>Final Amount:</span>
-                                    <span className="text-primary">₱{Math.max(0, Number(selectedPayment?.amount || 0) - deductionAmount).toFixed(2)}</span>
+                                    <span className="text-primary">₱{(() => {
+                                        const original = Number(selectedPayment?.amount || 0);
+                                        let deductionValue = 0;
+                                        if (deductionAmount > 0 && deductionType) {
+                                            deductionValue = deductionType === 'percentage'
+                                                ? (original * deductionAmount) / 100
+                                                : deductionAmount;
+                                        }
+                                        return Math.max(0, original - deductionValue).toFixed(2);
+                                    })()}</span>
                                 </div>
                             </div>
                         </div>
@@ -497,7 +580,8 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                         </Button>
                         <Button
                             onClick={handleProcessPayment}
-                            disabled={!paymentMethod || processing}
+                            disabled={!paymentMethod || processing || !isDeductionValid()}
+                            title={!isDeductionValid() ? 'Please select a deduction type (Pesos or Percentage)' : ''}
                         >
                             {processing ? 'Processing...' : 'Confirm Payment'}
                         </Button>
@@ -545,12 +629,6 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     <span>Original Amount:</span>
                                     <span className="font-semibold">₱{selectedHistoryPayment ? Number(selectedHistoryPayment.amount).toFixed(2) : '0.00'}</span>
                                 </div>
-                                {selectedHistoryPayment?.deductionAmount > 0 && (
-                                    <div className="flex justify-between text-red-600">
-                                        <span>Deduction{selectedHistoryPayment.deductionReason ? ` (${selectedHistoryPayment.deductionReason})` : ''}:</span>
-                                        <span>-₱{Number(selectedHistoryPayment.deductionAmount).toFixed(2)}</span>
-                                    </div>
-                                )}
                                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                                     <span>Final Amount:</span>
                                     <span>₱{Number(selectedHistoryPayment?.finalAmount || 0).toFixed(2)}</span>

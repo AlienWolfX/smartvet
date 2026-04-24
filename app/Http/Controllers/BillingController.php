@@ -123,9 +123,12 @@ class BillingController extends Controller
             'payment_method' => 'required|string|in:cash,gcash,maya,credit_card,debit_card,bank_transfer',
             'reference_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
-            'deduction_amount' => 'nullable|integer|min:0',
+            'deduction_amount' => 'nullable|numeric|min:0',
             'deduction_reason' => 'nullable|string|max:255',
+            'deduction_type' => 'nullable|string|in:pesos,percentage',
             'final_amount' => 'nullable|numeric|min:0',
+        ], [], [
+            'deduction_type' => 'deduction type',
         ]);
 
         try {
@@ -136,6 +139,7 @@ class BillingController extends Controller
                     'notes' => $validated['notes'],
                     'deduction_amount' => $validated['deduction_amount'] ?? 0,
                     'deduction_reason' => $validated['deduction_reason'],
+                    'deduction_type' => $validated['deduction_type'] ?? null,
                     'final_amount' => $validated['final_amount'] ?? $payment->total_amount,
                     'paid_at' => now(),
                     'recorded_by' => $request->user()->id,
