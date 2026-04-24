@@ -51,6 +51,14 @@ class DashboardController extends Controller
         // Today's patients/consultations
         $todayConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', $today))->count();
         $yesterdayConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', $yesterday))->count();
+        $lastMonthConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', '>=', $lastMonth)->whereDate('consultation_date', '<=', $lastMonthEnd))->count();
+
+        // Vaccinations counts
+        $presentMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::whereDate('vaccination_date', '>=', $thisMonth)->whereDate('vaccination_date', '<=', Carbon::now()))->count();
+        $previousMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::whereDate('vaccination_date', '>=', $lastMonth)->whereDate('vaccination_date', '<=', $lastMonthEnd))->count();
+
+        // Present month consultations
+        $presentMonthlyConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', '>=', $thisMonth)->whereDate('consultation_date', '<=', Carbon::now()))->count();
 
         // Total pets and owners
         $totalPets = $this->scopePetToUser(Pet::query())->count();
@@ -101,8 +109,8 @@ class DashboardController extends Controller
             ->count();
 
         // Calculate percentage changes
-        $revenueChange = $yesterdayRevenue > 0 
-            ? round((($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100, 1) 
+        $revenueChange = $yesterdayRevenue > 0
+            ? round((($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100, 1)
             : ($todayRevenue > 0 ? 100 : 0);
 
         $consultationChange = $yesterdayConsultations > 0
@@ -111,33 +119,32 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'stats' => [
-                'dailyGross' => [
-                    'value' => $todayRevenue,
-                    'change' => $revenueChange,
-                    'changeText' => ($revenueChange >= 0 ? '+' : '') . $revenueChange . '% vs yesterday',
-                    'trend' => $revenueChange >= 0 ? 'up' : 'down',
-                    'meta' => $todayInvoices . ' invoices issued',
-                ],
-                'monthlyRevenue' => [
-                    'value' => $thisMonthRevenue,
-                    'change' => $thisMonthRevenue - $lastMonthRevenue,
-                    'changeText' => '₱' . number_format(abs($thisMonthRevenue - $lastMonthRevenue)) . ' ' . ($thisMonthRevenue >= $lastMonthRevenue ? 'more' : 'less'),
-                    'trend' => $thisMonthRevenue >= $lastMonthRevenue ? 'up' : 'down',
-                    'meta' => 'This month total',
-                ],
-                'pendingPayments' => [
-                    'value' => $pendingAmount,
-                    'count' => $pendingCount,
-                    'changeText' => $pendingCount . ' pending invoices',
-                    'trend' => 'down',
-                    'meta' => 'Awaiting payment',
-                ],
                 'patientsToday' => [
                     'value' => $todayConsultations,
                     'change' => $consultationChange,
                     'changeText' => ($consultationChange >= 0 ? '+' : '') . $consultationChange . ' vs yesterday',
                     'trend' => $consultationChange >= 0 ? 'up' : 'down',
-                    'meta' => $totalPets . ' total registered pets',
+                    'meta' => 'Today consultation count',
+                ],
+                'presentMonthlyVaccinations' => [
+                    'value' => $presentMonthlyVaccinations,
+                    'change' => $presentMonthlyVaccinations - $previousMonthlyVaccinations,
+                    'changeText' => ($presentMonthlyVaccinations - $previousMonthlyVaccinations >= 0 ? '+' : '') . ($presentMonthlyVaccinations - $previousMonthlyVaccinations) . ' vs last month',
+                    'trend' => $presentMonthlyVaccinations >= $previousMonthlyVaccinations ? 'up' : 'down',
+                    'meta' => 'This month vaccinations',
+                ],
+                'previousMonthlyVaccinations' => [
+                    'value' => $previousMonthlyVaccinations,
+                    'changeText' => 'Last month total',
+                    'trend' => 'up',
+                    'meta' => 'Previous month vaccinations',
+                ],
+                'presentMonthlyConsultations' => [
+                    'value' => $presentMonthlyConsultations,
+                    'change' => $presentMonthlyConsultations - ($lastMonthConsultations ?? 0),
+                    'changeText' => (($presentMonthlyConsultations - ($lastMonthConsultations ?? 0)) >= 0 ? '+' : '') . abs($presentMonthlyConsultations - ($lastMonthConsultations ?? 0)) . ' vs last month',
+                    'trend' => $presentMonthlyConsultations >= ($lastMonthConsultations ?? 0) ? 'up' : 'down',
+                    'meta' => 'This month consultations',
                 ],
                 'totalPets' => $totalPets,
                 'totalOwners' => $totalOwners,
@@ -146,8 +153,8 @@ class DashboardController extends Controller
                 'upcomingVaccinations' => $upcomingVaccinations,
             ],
             'recentTransactions' => $recentPayments,
-            'serviceHighlights' => $consultationBreakdown->isEmpty() 
-                ? $this->getDefaultServiceHighlights() 
+            'serviceHighlights' => $consultationBreakdown->isEmpty()
+                ? $this->getDefaultServiceHighlights()
                 : $consultationBreakdown,
         ]);
     }

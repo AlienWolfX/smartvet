@@ -18,9 +18,8 @@ import {
     ArrowUpRight,
     CreditCard,
     PawPrint,
-    PiggyBank,
     ShoppingBag,
-    Wallet,
+    Syringe,
 } from 'lucide-react';
 import { type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -58,28 +57,27 @@ interface ServiceHighlight {
 }
 
 interface Stats {
-    dailyGross: {
-        value: number;
-        change: number;
-        changeText: string;
-        trend: 'up' | 'down';
-        meta: string;
-    };
-    monthlyRevenue: {
-        value: number;
-        change: number;
-        changeText: string;
-        trend: 'up' | 'down';
-        meta: string;
-    };
-    pendingPayments: {
-        value: number;
-        count: number;
-        changeText: string;
-        trend: 'up' | 'down';
-        meta: string;
-    };
     patientsToday: {
+        value: number;
+        change: number;
+        changeText: string;
+        trend: 'up' | 'down';
+        meta: string;
+    };
+    presentMonthlyVaccinations: {
+        value: number;
+        change: number;
+        changeText: string;
+        trend: 'up' | 'down';
+        meta: string;
+    };
+    previousMonthlyVaccinations: {
+        value: number;
+        changeText: string;
+        trend: 'up' | 'down';
+        meta: string;
+    };
+    presentMonthlyConsultations: {
         value: number;
         change: number;
         changeText: string;
@@ -133,40 +131,40 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
 
     const metricCards: MetricCard[] = [
         {
-            title: 'Daily Revenue',
-            value: formatPeso(stats?.dailyGross?.value || 0),
-            change: stats?.dailyGross?.changeText || 'No data',
-            trend: stats?.dailyGross?.trend || 'up',
-            meta: stats?.dailyGross?.meta || '0 invoices issued',
-            icon: Wallet,
-            accent: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200',
-        },
-        {
-            title: 'Monthly Revenue',
-            value: formatPeso(stats?.monthlyRevenue?.value || 0),
-            change: stats?.monthlyRevenue?.changeText || 'No data',
-            trend: stats?.monthlyRevenue?.trend || 'up',
-            meta: stats?.monthlyRevenue?.meta || 'This month total',
-            icon: CreditCard,
-            accent: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-200',
-        },
-        {
-            title: 'Pending Payments',
-            value: formatPeso(stats?.pendingPayments?.value || 0),
-            change: stats?.pendingPayments?.changeText || '0 pending',
-            trend: stats?.pendingPayments?.trend || 'down',
-            meta: stats?.pendingPayments?.meta || 'Awaiting payment',
-            icon: PiggyBank,
-            accent: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200',
-        },
-        {
             title: 'Patients Today',
             value: `${stats?.patientsToday?.value || 0} patients`,
             change: stats?.patientsToday?.changeText || 'No visits',
             trend: stats?.patientsToday?.trend || 'up',
-            meta: stats?.patientsToday?.meta || '0 total pets',
+            meta: stats?.patientsToday?.meta || 'Today consultation count',
             icon: PawPrint,
             accent: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-200',
+        },
+        {
+            title: 'Present Monthly Vaccinations',
+            value: `${stats?.presentMonthlyVaccinations?.value || 0}`,
+            change: stats?.presentMonthlyVaccinations?.changeText || 'No data',
+            trend: stats?.presentMonthlyVaccinations?.trend || 'up',
+            meta: stats?.presentMonthlyVaccinations?.meta || 'This month vaccinations',
+            icon: Syringe,
+            accent: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-200',
+        },
+        {
+            title: 'Previous Monthly Vaccinations',
+            value: `${stats?.previousMonthlyVaccinations?.value || 0}`,
+            change: stats?.previousMonthlyVaccinations?.changeText || 'Last month total',
+            trend: stats?.previousMonthlyVaccinations?.trend || 'up',
+            meta: stats?.previousMonthlyVaccinations?.meta || 'Last month vaccinations',
+            icon: ShoppingBag,
+            accent: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200',
+        },
+        {
+            title: 'Present Monthly Consultations',
+            value: `${stats?.presentMonthlyConsultations?.value || 0}`,
+            change: stats?.presentMonthlyConsultations?.changeText || 'No data',
+            trend: stats?.presentMonthlyConsultations?.trend || 'up',
+            meta: stats?.presentMonthlyConsultations?.meta || 'This month consultations',
+            icon: CreditCard,
+            accent: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200',
         },
     ];
 
@@ -201,7 +199,7 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
         <AdminLayout
             breadcrumbs={breadcrumbs}
             title="Clinic Dashboard"
-            description="Revenue, patients, and service overview for SmartVet clinic."
+            description="Clinic activity overview for patients, vaccinations, and consultations."
         >
             <Head title="Dashboard" />
             <div className="flex flex-col gap-3 h-full">
