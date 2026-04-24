@@ -85,6 +85,11 @@ class OwnerPortalController extends Controller
             ->whereIn('owner_id', $owners)
             ->findOrFail($petId);
 
+        $firstClinicId = $pet->clinic_ids[0] ?? null;
+        $registeredClinicName = $firstClinicId
+            ? \App\Models\User::where('id', $firstClinicId)->value('clinic_name')
+            : null;
+
         $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
             'id'            => $f->id,
             'name'          => $f->original_name ?? $f->file_name,
@@ -96,7 +101,7 @@ class OwnerPortalController extends Controller
         ]);
 
         return response()->json([
-            'clinicName' => $user->clinic_name ?? $pet->owner?->clinic_name ?? 'SmartVet',
+            'clinicName' => $registeredClinicName ?? $user->clinic_name ?? $pet->owner?->clinic_name ?? 'SmartVet',
             'pet' => [
                 'id'          => $pet->id,
                 'name'        => $pet->name,

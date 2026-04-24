@@ -226,6 +226,7 @@ export default function MyPets({ pets }: MyPetsProps) {
     const [recordPet, setRecordPet] = useState<Pet | null>(null);
     const [recordPetDetails, setRecordPetDetails] = useState<Partial<Pet> | null>(null);
     const [recordOwner, setRecordOwner] = useState<OwnerInfo | null>(null);
+    const [recordClinicName, setRecordClinicName] = useState<string | null>(null);
     const [recordDocuments, setRecordDocuments] = useState<DocumentFile[]>([]);
     const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
     const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -237,6 +238,7 @@ export default function MyPets({ pets }: MyPetsProps) {
         setRecordPet(null);
         setRecordPetDetails(null);
         setRecordOwner(null);
+        setRecordClinicName(null);
         setRecordDocuments([]);
         setVaccinations([]);
         setConsultations([]);
@@ -256,6 +258,7 @@ export default function MyPets({ pets }: MyPetsProps) {
             const data = await res.json();
             setRecordPetDetails(data.pet ?? null);
             setRecordOwner(data.owner ?? null);
+            setRecordClinicName(data.clinicName ?? null);
             setRecordDocuments(data.documents ?? []);
             setVaccinations(data.vaccinations ?? []);
             setConsultations(data.consultations ?? []);
@@ -353,6 +356,11 @@ export default function MyPets({ pets }: MyPetsProps) {
                             <div>
                                 <p className="text-lg font-semibold text-neutral-900">{recordPet.name}'s Record</p>
                                 <p className="text-sm text-neutral-500">{recordPet.species} · {recordPet.breed}</p>
+                                {recordClinicName && (
+                                    <p className="text-sm text-neutral-500 mt-1">
+                                        <span className="font-medium">Registered at:</span> {recordClinicName}
+                                    </p>
+                                )}
                             </div>
                             <button onClick={closeRecordModal} className="rounded-full p-1 text-neutral-400 hover:text-neutral-700">
                                 <X className="h-5 w-5" />
