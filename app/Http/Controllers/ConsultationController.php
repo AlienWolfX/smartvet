@@ -22,7 +22,7 @@ class ConsultationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
         if (!$pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
@@ -34,6 +34,7 @@ class ConsultationController extends Controller
             'treatment' => 'nullable|string|max:1000',
             'notes' => 'nullable|string|max:1000',
             'consultation_date' => 'required|date',
+            'weight' => 'required|numeric|min:0.1|max:500',
             'consultation_fee' => 'nullable|numeric|min:0',
             'consultation_files.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240', // 10MB max
             'inventory_items' => 'nullable|array',
@@ -55,8 +56,9 @@ class ConsultationController extends Controller
         $consultationFee = $this->resolveConsultationFee($validated);
         $inventoryTotal = $this->calculateInventoryTotal($inventoryItems);
 
+        /** @var \App\Models\Pet $pet */
         try {
-            DB::transaction(function () use ($validated, $numericId, $inventoryItems, $consultationFee, $inventoryTotal) {
+            DB::transaction(function () use ($validated, $numericId, $inventoryItems, $consultationFee, $inventoryTotal, $pet) {
                 $currentUser = Auth::user();
                 $consultation = Consultation::create([
                     'pet_id' => $numericId,
@@ -66,6 +68,7 @@ class ConsultationController extends Controller
                     'treatment' => $validated['treatment'],
                     'notes' => $validated['notes'],
                     'consultation_fee' => $consultationFee,
+                    'weight' => $validated['weight'],
                     'consultation_date' => $validated['consultation_date'],
                     'consultation_time' => now()->format('H:i:s'),
                     'veterinarian' => $currentUser?->name ?? 'Dr. Admin',
@@ -96,6 +99,8 @@ class ConsultationController extends Controller
                 if (! empty($inventoryItems)) {
                     app(InventoryUsageService::class)->attach($consultation, $inventoryItems);
                 }
+
+                $pet->update(['weight' => $validated['weight']]);
 
                 $payment = PetPayment::create([
                     'pet_id' => $numericId,

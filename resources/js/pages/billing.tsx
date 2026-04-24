@@ -629,6 +629,17 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                     <span>Original Amount:</span>
                                     <span className="font-semibold">₱{selectedHistoryPayment ? Number(selectedHistoryPayment.amount).toFixed(2) : '0.00'}</span>
                                 </div>
+                                {selectedHistoryPayment?.deductionAmount && selectedHistoryPayment.deductionAmount > 0 && (
+                                    <div className="flex justify-between text-sm text-red-600">
+                                        <span>Deduction:</span>
+                                        <span>-₱{Number(selectedHistoryPayment.deductionAmount).toFixed(2)}</span>
+                                    </div>
+                                )}
+                                {selectedHistoryPayment?.deductionReason && (
+                                    <div className="text-sm text-neutral-600">
+                                        <span className="font-medium">Deduction Reason:</span> {selectedHistoryPayment.deductionReason}
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                                     <span>Final Amount:</span>
                                     <span>₱{Number(selectedHistoryPayment?.finalAmount || 0).toFixed(2)}</span>

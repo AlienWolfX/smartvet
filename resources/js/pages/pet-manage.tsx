@@ -68,6 +68,15 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+const getDateTimestamp = (date: string): number => {
+    const parsed = Date.parse(date);
+    return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+};
+
+function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
+    return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
+}
+
 interface Pet {
     id: string;
     name: string;
@@ -185,6 +194,8 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
     });
     const { success, error } = useToast();
 
+    const sortedMedicalHistory = sortRecordsLatestFirst(pet.medicalHistory || []);
+
     const inventoryMap = useMemo(() => {
         const map = new Map<number, InventoryItemOption>();
         inventoryItems.forEach((item) => map.set(item.id, item));
@@ -204,6 +215,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         // Consultation data
         consultationType: '',
         consultationFee: '',
+        consultationWeight: pet.weight?.toString() || '',
         chiefComplaint: '',
         diagnosis: '',
         treatment: '',
@@ -460,6 +472,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         formData.append('treatment', data.treatment || '');
         formData.append('notes', data.notes || '');
         formData.append('consultation_date', data.consultationDate);
+        formData.append('weight', data.consultationWeight || '0');
         formData.append('consultation_fee', data.consultationFee || '0');
 
         data.consultationFiles.forEach((file, index) => {
@@ -962,6 +975,19 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                                     required
                                                                 />
                                                             </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-sm font-medium">Weight (kg) *</label>
+                                                                <Input
+                                                                    name="consultationWeight"
+                                                                    type="number"
+                                                                    step="0.1"
+                                                                    min="0.1"
+                                                                    value={data.consultationWeight}
+                                                                    onChange={(e) => setData('consultationWeight', e.target.value)}
+                                                                    className={consultationErrors.weight ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
+                                                                    required
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
 
@@ -1185,7 +1211,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        pet.medicalHistory.map((record, index) => (
+                                        sortedMedicalHistory.map((record, index) => (
                                             <TableRow key={index}>
                                                 <TableCell>{formatDate(record.date)}</TableCell>
                                                 <TableCell className="capitalize">{record.type.replace('-', ' ')}</TableCell>
@@ -1230,6 +1256,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                 <div>
                                                     <span className="text-sm font-medium text-neutral-500">Veterinarian</span>
                                                     <p className="text-sm">{selectedConsultation.veterinarian}</p>
+                                                </div>
+                                                <div>
+                                                    <span className="text-sm font-medium text-neutral-500">Weight</span>
+                                                    <p className="text-sm">{selectedConsultation.weight ? `${selectedConsultation.weight} kg` : '—'}</p>
                                                 </div>
                                                 <div>
                                                     <span className="text-sm font-medium text-neutral-500">Payment Status</span>

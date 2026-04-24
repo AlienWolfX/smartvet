@@ -47,6 +47,7 @@ interface Vaccination {
     vaccine: string;
     date: string;
     nextDue: string;
+    clinicName?: string | null;
 }
 
 interface ConsultationFile {
@@ -70,9 +71,11 @@ interface Consultation {
     clinicName: string | null;
     type: string;
     date: string;
+    weight?: number | null;
     complaint: string;
     diagnosis: string;
     treatment?: string;
+    notes?: string | null;
     inventoryItems?: ConsultationInventoryItem[];
     files?: ConsultationFile[];
 }
@@ -488,6 +491,9 @@ export default function MyPets({ pets }: MyPetsProps) {
                                                             <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5">
                                                                 <p className="text-sm font-medium text-neutral-800">{v.vaccine}</p>
                                                                 <p className="text-xs text-neutral-500 mt-0.5">Given: {v.date} · Next due: {v.nextDue}</p>
+                                                                {v.clinicName && (
+                                                                    <p className="text-xs text-neutral-500 mt-1">Clinic: {v.clinicName}</p>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     );
@@ -527,10 +533,12 @@ export default function MyPets({ pets }: MyPetsProps) {
                                                                     <span className="text-xs text-neutral-400">{c.date}</span>
                                                                 </div>
                                                                 {c.clinicName && <p className="text-xs text-neutral-500"><span className="font-medium">Clinic:</span> {c.clinicName}</p>}
+                                                                {c.weight != null && <p className="text-xs text-neutral-500"><span className="font-medium">Weight:</span> {c.weight} kg</p>}
                                                                 {c.complaint && <p className="text-xs text-neutral-600 mt-1"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
                                                                 {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
 
                                                                 {c.treatment && <p className="text-xs text-neutral-600"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
+                                                                <p className="text-xs text-neutral-500 mt-1"><span className="font-medium">Additional Notes:</span> {c.notes ? c.notes : 'N/A'}</p>
 
                                                                 {c.inventoryItems && c.inventoryItems.length > 0 && (
                                                                     <div className="mt-2">

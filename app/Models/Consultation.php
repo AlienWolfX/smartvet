@@ -21,6 +21,7 @@ class Consultation extends Model
         'treatment',
         'notes',
         'consultation_fee',
+        'weight',
         'veterinarian',
         'consultation_date',
         'consultation_time',
@@ -31,6 +32,7 @@ class Consultation extends Model
     protected $casts = [
         'consultation_date' => 'date',
         'consultation_fee' => 'decimal:2',
+        'weight' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

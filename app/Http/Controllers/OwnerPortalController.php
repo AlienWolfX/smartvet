@@ -137,9 +137,11 @@ class OwnerPortalController extends Controller
             'consultations' => $pet->consultations->map(fn ($c) => [
                 'type'           => $c->consultation_type,
                 'date'           => $c->consultation_date->toDateString(),
+                'weight'         => $c->weight,
                 'complaint'      => $c->chief_complaint,
                 'diagnosis'      => $c->diagnosis,
                 'treatment'      => $c->treatment,
+                'notes'          => $c->notes,
                 'clinicName' => $c->clinic_location ?? $clinicName,
                 'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
                     'id'        => $u->id,

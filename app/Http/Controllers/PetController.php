@@ -299,6 +299,7 @@ class PetController extends Controller
                 'id' => $consultation->id,
                 'type' => $consultation->consultation_type,
                 'date' => $consultation->consultation_date->toISOString(),
+                'weight' => $consultation->weight,
                 'complaint' => $consultation->chief_complaint,
                 'diagnosis' => $consultation->diagnosis,
                 'treatment' => $consultation->treatment,

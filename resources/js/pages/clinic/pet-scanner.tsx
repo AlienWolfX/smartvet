@@ -86,6 +86,7 @@ interface PetResult {
         clinicName: string | undefined;
         type: string;
         date: string;
+        weight?: number | null;
         complaint: string | null;
         diagnosis: string | null;
         treatment?: string | null;
@@ -636,6 +637,7 @@ export default function PetScanner() {
                                                             </div>
                                                             <p className="text-xs text-slate-500 mt-0.5"><span className="font-medium">Clinic:</span> {c.clinicName ?? result.clinicName ?? 'SmartVet'}</p>
                                                             {c.complaint && <p className="text-xs text-slate-500 mt-0.5"><span className="font-medium">Complaint:</span> {c.complaint}</p>}
+                                                            {c.weight != null && <p className="text-xs text-slate-500"><span className="font-medium">Weight:</span> {c.weight} kg</p>}
                                                             {c.diagnosis && <p className="text-xs text-slate-500"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
                                                             {c.treatment && <p className="text-xs text-slate-500"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
 

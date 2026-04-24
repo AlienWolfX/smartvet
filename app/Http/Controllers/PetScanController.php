@@ -85,6 +85,7 @@ class PetScanController extends Controller
                 return [
                     'type'       => $c->consultation_type,
                     'date'       => $c->consultation_date->toDateString(),
+                    'weight'     => $c->weight,
                     'complaint'  => $c->chief_complaint,
                     'diagnosis'  => $c->diagnosis,
                     'treatment'  => $c->treatment,
