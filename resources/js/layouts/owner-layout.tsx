@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { logout } from '@/routes';
+import { InactivityWarning } from '@/components/inactivity-warning';
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 import { ChevronDown, Menu, PawPrint, Settings, LogOut } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -38,7 +40,11 @@ export default function OwnerLayout({
         ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR
     );
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [countdownSeconds, setCountdownSeconds] = useState(30);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    // Initialize inactivity timeout hook
+    const { showWarning, dismissWarning, logout: handleInactivityLogout } = useInactivityTimeout({ enabled: true });
 
     // Listen for theme color changes in localStorage and custom events
     useEffect(() => {
@@ -70,6 +76,24 @@ export default function OwnerLayout({
             window.removeEventListener('storage', handleStorageChange);
         };
     }, []);
+
+    // Countdown timer for warning dialog
+    useEffect(() => {
+        if (!showWarning) return;
+
+        setCountdownSeconds(30);
+        const interval = setInterval(() => {
+            setCountdownSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [showWarning]);
 
     const navigation = [
         { name: 'My Pets', href: '/owner/pets', icon: PawPrint },
@@ -119,6 +143,13 @@ export default function OwnerLayout({
     return (
         <>
             <Head title={title} />
+
+            <InactivityWarning
+                open={showWarning}
+                timeoutSeconds={countdownSeconds}
+                onContinue={dismissWarning}
+                onLogout={handleInactivityLogout}
+            />
 
             <div
                 className="h-screen overflow-hidden bg-slate-50 flex flex-col"

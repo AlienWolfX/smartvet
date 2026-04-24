@@ -70,6 +70,9 @@ class BillingController extends Controller
                     'petName' => $payment->pet->name,
                     'ownerName' => $payment->pet->owner->name,
                     'amount' => $payment->total_amount,
+                    'deductionAmount' => $payment->deduction_amount ?? 0,
+                    'deductionReason' => $payment->deduction_reason,
+                    'finalAmount' => $payment->final_amount ?? $payment->total_amount,
                     'method' => $payment->payment_method
                         ? ucfirst($payment->payment_method)
                         : null,
@@ -120,6 +123,9 @@ class BillingController extends Controller
             'payment_method' => 'required|string|in:cash,gcash,maya,credit_card,debit_card,bank_transfer',
             'reference_number' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
+            'deduction_amount' => 'nullable|integer|min:0',
+            'deduction_reason' => 'nullable|string|max:255',
+            'final_amount' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -128,6 +134,9 @@ class BillingController extends Controller
                     'payment_method' => $validated['payment_method'],
                     'reference_number' => $validated['reference_number'],
                     'notes' => $validated['notes'],
+                    'deduction_amount' => $validated['deduction_amount'] ?? 0,
+                    'deduction_reason' => $validated['deduction_reason'],
+                    'final_amount' => $validated['final_amount'] ?? $payment->total_amount,
                     'paid_at' => now(),
                     'recorded_by' => $request->user()->id,
                     'status' => 'paid',

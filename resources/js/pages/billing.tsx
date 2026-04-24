@@ -63,6 +63,9 @@ interface PaymentHistoryItem {
     petName: string;
     ownerName: string;
     amount: number;
+    deductionAmount: number;
+    deductionReason: string | null;
+    finalAmount: number;
     method: string;
     reference: string | null;
     status: string;
@@ -82,8 +85,10 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
     const [referenceNumber, setReferenceNumber] = useState('');
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [deductionReason, setDeductionReason] = useState('');
+    const [deductionAmount, setDeductionAmount] = useState(0);
 
-    const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+    const [billingSlipModalOpen, setBillingSlipModalOpen] = useState(false);
     const [selectedHistoryPayment, setSelectedHistoryPayment] = useState<PaymentHistoryItem | null>(null);
 
     const { auth } = usePage<SharedData>().props;
@@ -106,22 +111,32 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
         setPaymentMethod('');
         setReferenceNumber('');
         setNotes('');
+        setDeductionReason('');
+        setDeductionAmount(0);
         setPaymentModalOpen(true);
     };
 
-    const openReceiptModal = (payment: PaymentHistoryItem) => {
+    const openBillingSlipModal = (payment: PaymentHistoryItem) => {
         setSelectedHistoryPayment(payment);
-        setReceiptModalOpen(true);
+        setBillingSlipModalOpen(true);
     };
 
     const handleProcessPayment = () => {
         if (!selectedPayment || !paymentMethod) return;
 
         setProcessing(true);
+        const finalAmount = Math.max(
+            0,
+            selectedPayment.amount - deductionAmount
+        );
+
         router.post(`/billing/process/${selectedPayment.id}`, {
             payment_method: paymentMethod,
             reference_number: referenceNumber || null,
             notes: notes || null,
+            deduction_amount: deductionAmount,
+            deduction_reason: deductionReason || null,
+            final_amount: finalAmount,
         }, {
             onSuccess: () => {
                 setPaymentModalOpen(false);
@@ -284,7 +299,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                         <TableHead>Reference</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead>Recorded By</TableHead>
-                                        <TableHead className="text-right">Receipt</TableHead>
+                                        <TableHead className="text-right">Billing</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -315,8 +330,8 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                                 </TableCell>
                                                 <TableCell>{payment.recordedBy}</TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button size="sm" variant="outline" onClick={() => openReceiptModal(payment)}>
-                                                        View Receipt
+                                                    <Button size="sm" variant="outline" onClick={() => openBillingSlipModal(payment)}>
+                                                        View Billing Slip
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -358,14 +373,15 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
 
             {/* Payment Processing Modal */}
             <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
                     <DialogHeader>
                         <DialogTitle className="text-xl">Process Payment</DialogTitle>
                         <DialogDescription>
                             Complete the payment for {selectedPayment?.petName} - {selectedPayment?.service}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-5 py-4">
+                    <div className="overflow-y-auto flex-1">
+                        <div className="grid gap-5 py-4 px-6">
                         {selectedPayment?.items?.length > 0 && (
                             <div className="border p-3 rounded-lg bg-muted/30">
                                 <div className="mb-2 text-sm font-semibold">Payment Items</div>
@@ -384,10 +400,50 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                                 </div>
                             </div>
                         )}
-                        <div className="grid gap-2">
-                            <Label>Amount Due</Label>
-                            <div className="text-3xl font-bold text-primary">
-                                ₱{selectedPayment?.amount}
+                        <div className="border-t pt-3">
+                            <div className="text-sm font-semibold mb-3">Adjustments</div>
+                            <div className="grid gap-3">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deduction-reason">Deduction Reason (e.g., 2 tablets not used)</Label>
+                                    <Input
+                                        id="deduction-reason"
+                                        placeholder="Describe what is being deducted (optional)"
+                                        value={deductionReason}
+                                        onChange={(e) => setDeductionReason(e.target.value)}
+                                        className="h-11"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deduction-amount">Deduction Amount (₱)</Label>
+                                    <Input
+                                        id="deduction-amount"
+                                        type="number"
+                                        placeholder="Enter deduction amount (optional)"
+                                        value={deductionAmount || ''}
+                                        onChange={(e) => setDeductionAmount(Math.max(0, parseInt(e.target.value) || 0))}
+                                        className="h-11"
+                                        min="0"
+                                        step="1"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="border-t pt-3 mt-3">
+                            <div className="grid gap-2">
+                                <div className="flex justify-between text-sm">
+                                    <span>Original Amount:</span>
+                                    <span>₱{Number(selectedPayment?.amount || 0).toFixed(2)}</span>
+                                </div>
+                                {deductionAmount > 0 && (
+                                    <div className="flex justify-between text-sm text-red-600">
+                                        <span>Deduction:</span>
+                                        <span>-₱{deductionAmount.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                                    <span>Final Amount:</span>
+                                    <span className="text-primary">₱{Math.max(0, Number(selectedPayment?.amount || 0) - deductionAmount).toFixed(2)}</span>
+                                </div>
                             </div>
                         </div>
                         <div className="grid gap-2">
@@ -430,6 +486,7 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             />
                         </div>
                     </div>
+                    </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
@@ -448,17 +505,17 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                 </DialogContent>
             </Dialog>
 
-            {/* Payment Receipt Modal */}
-            <Dialog open={receiptModalOpen} onOpenChange={setReceiptModalOpen}>
-                <DialogContent className="sm:max-w-lg">
-                    <div className="receipt-paper max-w-[95vw]">
+            <Dialog open={billingSlipModalOpen} onOpenChange={setBillingSlipModalOpen}>
+                <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+                    <div className="billing-slip-paper flex flex-col h-full">
                         <DialogHeader>
                         <DialogTitle className="text-lg font-bold text-center">{clinicName}</DialogTitle>
                         <DialogDescription>
-                            Receipt for {selectedHistoryPayment?.petName} - {selectedHistoryPayment?.date}
+                            Billing Slip for {selectedHistoryPayment?.petName} - {selectedHistoryPayment?.date}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-3 py-4">
+                    <div className="overflow-y-auto flex-1 px-6">
+                        <div className="grid gap-3 py-4">
                         <div className="text-sm">
                             <p><strong>Pet:</strong> {selectedHistoryPayment?.petName}</p>
                             <p><strong>Owner:</strong> {selectedHistoryPayment?.ownerName}</p>
@@ -482,13 +539,28 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
                             </div>
                         </div>
 
-                            <div className="text-lg font-bold text-right">
-                            Total: ₱{selectedHistoryPayment ? Number(selectedHistoryPayment.amount).toFixed(2) : '0.00'}
+                        <div className="border-t pt-3">
+                            <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                    <span>Original Amount:</span>
+                                    <span className="font-semibold">₱{selectedHistoryPayment ? Number(selectedHistoryPayment.amount).toFixed(2) : '0.00'}</span>
+                                </div>
+                                {selectedHistoryPayment?.deductionAmount > 0 && (
+                                    <div className="flex justify-between text-red-600">
+                                        <span>Deduction{selectedHistoryPayment.deductionReason ? ` (${selectedHistoryPayment.deductionReason})` : ''}:</span>
+                                        <span>-₱{Number(selectedHistoryPayment.deductionAmount).toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                                    <span>Final Amount:</span>
+                                    <span>₱{Number(selectedHistoryPayment?.finalAmount || 0).toFixed(2)}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <DialogFooter className="receipt-footer flex gap-2">
-                        <Button variant="outline" onClick={() => window.print()}>Print Receipt</Button>
-                        <Button onClick={() => setReceiptModalOpen(false)}>Close</Button>
+                    </div>
+                    <DialogFooter className="billing-slip-footer flex gap-2 justify-end">
+                        <Button onClick={() => setBillingSlipModalOpen(false)}>Close</Button>
                     </DialogFooter>
                 </div>
                 </DialogContent>

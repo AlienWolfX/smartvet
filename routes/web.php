@@ -135,4 +135,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
     });
 });
 
+// Activity update route (for keeping session alive)
+Route::post('activity/ping', function () {
+    return response()->json(['success' => true]);
+})->middleware('auth')->name('activity.ping');
+
 require __DIR__.'/settings.php';
