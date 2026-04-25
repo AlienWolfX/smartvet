@@ -77,6 +77,15 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
     return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
 }
 
+const canShowConsultationPaymentStatus = (record: any, currentClinicId?: number) => {
+    if (Number.isNaN(currentClinicId) || currentClinicId === undefined) {
+        return false;
+    }
+
+    const createdById = record.createdById !== undefined && record.createdById !== null ? Number(record.createdById) : undefined;
+    return createdById !== undefined && createdById === currentClinicId;
+};
+
 interface Pet {
     id: string;
     name: string;
@@ -94,6 +103,7 @@ interface Pet {
     registrationDate: string;
     qrToken: string | null;
     owner: {
+        userId: number;
         name: string;
         phone: string;
         email: string;
@@ -105,6 +115,7 @@ interface Pet {
         zipCode: string;
         emergencyContact: string;
     };
+    clinicIds: number[];
     medicalHistory: any[];
     vaccinations: any[];
     allergies: string[];
@@ -177,6 +188,7 @@ const getStatusIcon = (status: string) => {
 
 export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) {
     const { auth } = usePage<SharedData>().props;
+    const currentClinicId = Number((auth.user as { id?: number | string })?.id);
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isAddConsultationOpen, setIsAddConsultationOpen] = useState(false);
@@ -194,6 +206,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
     });
     const { success, error } = useToast();
 
+    const normalizedClinicIds = (pet.clinicIds || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    const petBelongsToCurrentClinic = !Number.isNaN(currentClinicId) && (
+        Number(pet.owner.userId) === currentClinicId || normalizedClinicIds.includes(currentClinicId)
+    );
     const sortedMedicalHistory = sortRecordsLatestFirst(pet.medicalHistory || []);
 
     const inventoryMap = useMemo(() => {
@@ -1220,14 +1236,18 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                     {record.diagnosis || '-'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={cn(
-                                                        "capitalize",
-                                                        record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                        record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                        "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                    )}>
-                                                        {record.paymentStatus || 'unknown'}
-                                                    </Badge>
+                                                    {canShowConsultationPaymentStatus(record, currentClinicId) ? (
+                                                        <Badge variant="outline" className={cn(
+                                                            "capitalize",
+                                                            record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
+                                                            record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                            "bg-neutral-50 text-neutral-700 border-neutral-200"
+                                                        )}>
+                                                            {record.paymentStatus}
+                                                        </Badge>
+                                                    ) : (
+                                                        '-'
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="sm" onClick={() => setSelectedConsultation(record)}>
@@ -1264,7 +1284,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                 <div>
                                                     <span className="text-sm font-medium text-neutral-500">Payment Status</span>
                                                     <div className="mt-1">
-                                                        {!pet.qrToken && (
+                                                        {!pet.qrToken && canShowConsultationPaymentStatus(selectedConsultation, currentClinicId) ? (
                                                             <Badge variant="outline" className={cn(
                                                                 "capitalize",
                                                                 selectedConsultation.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
@@ -1273,6 +1293,8 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                             )}>
                                                                 {selectedConsultation.paymentStatus}
                                                             </Badge>
+                                                        ) : (
+                                                            <span className="text-sm text-neutral-500">-</span>
                                                         )}
                                                     </div>
                                                 </div>

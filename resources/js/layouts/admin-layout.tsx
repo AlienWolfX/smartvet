@@ -56,8 +56,16 @@ export default function AdminLayout({
     const [countdownSeconds, setCountdownSeconds] = useState(30);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
+    const userRole = (auth.user as { role?: string })?.role;
+    const logoutUrl = userRole === 'admin' ? '/admin/logout' : '/clinic/logout';
+    const loginUrl = userRole === 'admin' ? '/admin' : '/clinic';
+
     // Initialize inactivity timeout hook
-    const { showWarning, dismissWarning, logout } = useInactivityTimeout({ enabled: true });
+    const { showWarning, dismissWarning, logout } = useInactivityTimeout({
+        enabled: true,
+        logoutUrl,
+        loginUrl,
+    });
 
     // Listen for theme color changes
     useEffect(() => {
