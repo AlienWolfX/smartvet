@@ -74,6 +74,7 @@ class ConsultationController extends Controller
                     'veterinarian' => $currentUser?->name ?? 'Dr. Admin',
                     'status' => 'completed',
                     'payment_status' => 'pending',
+                    'created_by' => $currentUser?->id,
                 ]);
 
                 if (request()->hasFile('consultation_files')) {

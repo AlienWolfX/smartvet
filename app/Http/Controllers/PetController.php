@@ -287,6 +287,7 @@ class PetController extends Controller
                 'consultations.files',
                 'consultations.vaccinations',
                 'consultations.medications',
+                'consultations.payment',
                 'vaccinations.consultation',
                 'medications.consultation',
             ]))
@@ -306,6 +307,8 @@ class PetController extends Controller
                 'notes' => $consultation->notes,
                 'veterinarian' => $consultation->veterinarian,
                 'paymentStatus' => $consultation->payment_status,
+                'paymentRecordedById' => $consultation->payment?->recorded_by,
+                'createdById' => $consultation->created_by,
                 'fee' => $consultation->consultation_fee,
                     'linkedVaccinations' => $consultation->vaccinations->map(function ($vaccination) {
                         return [
@@ -401,6 +404,7 @@ class PetController extends Controller
             'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
             'registrationDate' => $pet->created_at->toISOString(),
             'owner' => [
+                'userId' => $pet->owner->user_id,
                 'name' => $pet->owner->name,
                 'phone' => $pet->owner->phone,
                 'email' => $pet->owner->email ?? '',
@@ -412,6 +416,7 @@ class PetController extends Controller
                 'zipCode' => $pet->owner->zip_code ?? '',
                 'emergencyContact' => $pet->owner->emergency_contact ?? '',
             ],
+            'clinicIds' => $pet->clinic_ids ?? [],
             'medicalHistory' => $consultations,
             'vaccinations' => $vaccinations,
             'allergies' => [],
