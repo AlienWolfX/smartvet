@@ -86,6 +86,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
         Route::delete('inventory-management/{item}', [App\Http\Controllers\InventoryController::class, 'destroy'])->name('inventory-management.destroy');
         Route::get('inventory-management/export', [App\Http\Controllers\InventoryController::class, 'export'])->name('inventory-management.export');
 
+        Route::get('medication-sales', [App\Http\Controllers\MedicationSalesController::class, 'index'])->name('medication-sales');
+        Route::post('medication-sales', [App\Http\Controllers\MedicationSalesController::class, 'store'])->name('medication-sales.store');
+
         Route::get('pet-records', [App\Http\Controllers\PetController::class, 'index'])->name('pet-records');
         Route::get('pet-records/export', [App\Http\Controllers\PetController::class, 'export'])->name('pet-records.export');
         Route::get('pet-records/scan', [App\Http\Controllers\PetController::class, 'scannerPage'])->name('pet-records.scan');

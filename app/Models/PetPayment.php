@@ -16,6 +16,7 @@ class PetPayment extends Model
 
     protected $fillable = [
         'pet_id',
+        'customer_name',
         'consultation_id',
         'vaccination_id',
         'total_amount',

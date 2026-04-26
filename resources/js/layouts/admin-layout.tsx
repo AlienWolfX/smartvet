@@ -25,7 +25,10 @@ import {
     BarChart3,
     Boxes,
     Heart,
-    CreditCard,    PawPrint,    Settings,
+    CreditCard,
+    Pill,
+    PawPrint,
+    Settings,
     QrCode
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
@@ -146,6 +149,13 @@ export default function AdminLayout({
             name: 'Inventory Management',
             href: '/inventory-management',
             icon: Boxes,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Inventory Sales',
+            href: '/medication-sales',
+            icon: Pill,
             adminOnly: false,
             clinicOnly: true
         },
