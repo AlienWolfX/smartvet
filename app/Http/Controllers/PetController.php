@@ -7,10 +7,12 @@ use App\Models\Owner;
 use App\Models\PetSpecies;
 use App\Models\Consultation;
 use App\Models\ConsultationFile;
+use App\Models\ConsultationType;
 use App\Models\InventoryItem;
 use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -441,10 +443,22 @@ class PetController extends Controller
 
         $vaccineItems = $inventoryItems->filter(fn ($item) => in_array($item['categorySlug'], ['vaccines', 'vaccination']))->values();
 
+        $consultationTypes = ConsultationType::where('user_id', Auth::id())
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($type) => [
+                'id' => $type->id,
+                'slug' => $type->slug,
+                'name' => $type->name,
+                'fee' => (float) $type->fee,
+                'description' => $type->description,
+            ]);
+
         return Inertia::render('pet-manage', [
             'pet' => $petData,
             'inventoryItems' => $inventoryItems,
             'vaccineItems' => $vaccineItems,
+            'consultationTypes' => $consultationTypes,
         ]);
     }
 

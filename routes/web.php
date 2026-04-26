@@ -116,6 +116,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
 
         Route::get('billing', [App\Http\Controllers\BillingController::class, 'index'])->name('billing');
         Route::post('billing/process/{payment}', [App\Http\Controllers\BillingController::class, 'processPayment'])->name('billing.process');
+
+        Route::get('consultation-types', [App\Http\Controllers\ConsultationTypeController::class, 'index'])->name('consultation-types.index');
+        Route::post('consultation-types', [App\Http\Controllers\ConsultationTypeController::class, 'store'])->name('consultation-types.store');
+        Route::put('consultation-types/{consultationType}', [App\Http\Controllers\ConsultationTypeController::class, 'update'])->name('consultation-types.update');
+        Route::delete('consultation-types/{consultationType}', [App\Http\Controllers\ConsultationTypeController::class, 'destroy'])->name('consultation-types.destroy');
     });
 
     // Admin-only routes

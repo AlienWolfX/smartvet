@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Consultation;
 use App\Models\ConsultationFile;
+use App\Models\ConsultationType;
 use App\Models\InventoryItem;
 use App\Models\Pet;
 use App\Models\PetPayment;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ConsultationController extends Controller
 {
@@ -28,7 +30,12 @@ class ConsultationController extends Controller
         }
 
         $validated = $request->validate([
-            'consultation_type' => 'required|in:routine-checkup,emergency,vaccination,surgery,follow-up',
+            'consultation_type' => [
+                'required',
+                Rule::exists('consultation_types', 'slug')->where(function ($query) {
+                    $query->where('user_id', Auth::id());
+                }),
+            ],
             'chief_complaint' => 'required|string|max:1000',
             'diagnosis' => 'nullable|string|max:1000',
             'treatment' => 'nullable|string|max:1000',
@@ -200,18 +207,14 @@ class ConsultationController extends Controller
 
     private function resolveConsultationFee(array $validated): float
     {
-        $defaults = [
-            'routine-checkup' => 300,
-            'emergency' => 800,
-            'follow-up' => 150,
-            'surgery' => 500,
-            'vaccination' => 0,
-        ];
+        $consultationType = ConsultationType::where('slug', $validated['consultation_type'])
+            ->where('user_id', Auth::id())
+            ->first();
 
         $fee = $validated['consultation_fee'] ?? null;
 
         if ($fee === null || $fee === '') {
-            return (float) ($defaults[$validated['consultation_type']] ?? 0);
+            return $consultationType ? (float) $consultationType->fee : 0;
         }
 
         return (float) $fee;

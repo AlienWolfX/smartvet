@@ -144,10 +144,19 @@ interface InventoryLine {
     quantity: number;
 }
 
+interface ConsultationTypeOption {
+    id: number;
+    slug: string;
+    name: string;
+    fee: number;
+    description: string | null;
+}
+
 interface Props {
     pet: Pet;
     inventoryItems: InventoryItemOption[];
     vaccineItems: InventoryItemOption[];
+    consultationTypes: ConsultationTypeOption[];
 }
 
 const formatDate = (dateString: string) => {
@@ -186,7 +195,7 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) {
+export default function PetManage({ pet, inventoryItems, vaccineItems, consultationTypes }: Props) {
     const { auth } = usePage<SharedData>().props;
     const currentClinicId = Number((auth.user as { id?: number | string })?.id);
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
@@ -253,12 +262,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         vaccinationReactions: '',
     });
 
-    const consultationTypes = [
-        { id: 'routine-checkup', name: 'General Check-up', price: 300, description: 'Regular visit' },
-        { id: 'emergency', name: 'Emergency', price: 800, description: 'Urgent care' },
-        { id: 'follow-up', name: 'Follow-up', price: 150, description: 'Review visit' },
-        { id: 'surgery', name: 'Surgery Evaluation', price: 500, description: 'Pre-op consult' },
-    ];
+    const availableConsultationTypes: ConsultationTypeOption[] = consultationTypes;
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -302,11 +306,11 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
     };
 
     const handleConsultationTypeChange = (value: string) => {
-        const selectedType = consultationTypes.find(t => t.id === value);
+        const selectedType = availableConsultationTypes.find(t => t.slug === value);
         setData(data => ({
             ...data,
             consultationType: value,
-            consultationFee: selectedType ? selectedType.price.toString() : ''
+            consultationFee: selectedType ? selectedType.fee.toString() : ''
         }));
     };
 
@@ -972,9 +976,9 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                                         <SelectValue placeholder="Select type" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {consultationTypes.map((type) => (
-                                                                            <SelectItem key={type.id} value={type.id}>
-                                                                                {type.name} - ₱{type.price}
+                                                                        {availableConsultationTypes.map((type) => (
+                                                                            <SelectItem key={type.id} value={type.slug}>
+                                                                                {type.name} - ₱{type.fee.toFixed(2)}
                                                                             </SelectItem>
                                                                         ))}
                                                                     </SelectContent>

@@ -29,7 +29,8 @@ import {
     Pill,
     PawPrint,
     Settings,
-    QrCode
+    QrCode,
+    Syringe,
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -149,6 +150,13 @@ export default function AdminLayout({
             name: 'Inventory Management',
             href: '/inventory-management',
             icon: Boxes,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Consultation Types',
+            href: '/consultation-types',
+            icon: Syringe,
             adminOnly: false,
             clinicOnly: true
         },
