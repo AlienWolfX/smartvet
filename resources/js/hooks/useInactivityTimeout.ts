@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePage } from '@inertiajs/react';
 
-const INACTIVITY_TIMEOUT_SECONDS = 30; // Use 30 seconds for testing
-const WARNING_DISPLAY_TIME = 10; // Show warning 10 seconds before logout
-const ACTIVITY_PING_INTERVAL = 15000; // Ping every 15 seconds to keep session alive during quick testing
+const INACTIVITY_TIMEOUT_SECONDS = 30 * 60;
+const WARNING_DISPLAY_TIME = 30;
+const ACTIVITY_PING_INTERVAL = 60000;
 
 interface UseInactivityTimeoutOptions {
     enabled?: boolean;
@@ -11,11 +11,6 @@ interface UseInactivityTimeoutOptions {
     loginUrl?: string;
 }
 
-/**
- * Hook to track user inactivity and automatically log them out after a short timeout.
- * Also shows a warning dialog before logout.
- * Tracks user activity (mouse, keyboard, clicks) to reset the timeout.
- */
 export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) {
     const { enabled = true, logoutUrl = '/logout', loginUrl = '/login' } = options;
     const { props } = usePage();
