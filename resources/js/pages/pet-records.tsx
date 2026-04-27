@@ -998,12 +998,14 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium">Email</label>
+                                                        <label className="text-sm font-medium">Email *</label>
                                                         <Input
                                                             type="email"
                                                             placeholder="owner@email.com"
                                                             value={data.email}
                                                             onChange={(e) => setData('email', e.target.value)}
+                                                            required
+                                                            className={formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                         />
                                                         {formErrors.email && <div className="text-red-500 text-xs">{formErrors.email}</div>}
                                                     </div>

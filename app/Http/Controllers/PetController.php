@@ -114,7 +114,7 @@ class PetController extends Controller
             'petDocuments.*' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240',
             'ownerName' => 'required|string|max:255',
             'phone' => 'required|digits_between:7,15',
-            'email' => 'nullable|email|max:255',
+            'email' => 'required|email|max:255',
             'province' => 'required|string',
             'city' => 'required|string',
             'barangay' => 'required|string',
