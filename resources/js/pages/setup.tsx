@@ -80,15 +80,15 @@ const themePresets: ThemePreset[] = [
 export default function Setup({ user }: SetupProps) {
     const [step, setStep] = useState(1);
     const [logoPreview, setLogoPreview] = useState<string | null>(user.clinic_logo);
-    const [selectedTheme, setSelectedTheme] = useState(user.theme_name || 'default');
-    const [customColor, setCustomColor] = useState(user.theme_color || '#0f172a');
+    const [selectedTheme, setSelectedTheme] = useState(user.theme_name || 'forest');
+    const [customColor, setCustomColor] = useState(user.theme_color || '#14532d');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors } = useForm({
         clinic_name: user.clinic_name || '',
         clinic_logo: null as File | null,
-        theme_name: user.theme_name || 'default',
-        theme_color: user.theme_color || '#0f172a',
+        theme_name: user.theme_name || 'forest',
+        theme_color: user.theme_color || '#14532d',
     });
 
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('clinic_logo')->nullable()->after('clinic_name');
-            $table->string('theme_name')->default('default')->after('clinic_logo');
-            $table->string('theme_color')->default('#0f172a')->after('theme_name');
+            $table->string('theme_name')->default('forest')->after('clinic_logo');
+            $table->string('theme_color')->default('#14532d')->after('theme_name');
             $table->boolean('is_setup_complete')->default(false)->after('theme_color');
         });
     }

@@ -22,8 +22,8 @@ class ClinicSettingsController extends Controller
             'settings' => [
                 'clinic_name' => $user->clinic_name ?? '',
                 'clinic_logo' => $user->clinic_logo ? Storage::url($user->clinic_logo) : null,
-                'theme_name' => $user->theme_name ?? 'default',
-                'theme_color' => $user->theme_color ?? '#0f172a',
+                'theme_name' => $user->theme_name ?? 'forest',
+                'theme_color' => $user->theme_color ?? '#14532d',
             ],
             'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
             'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,

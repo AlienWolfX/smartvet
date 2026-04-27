@@ -54,6 +54,16 @@ class User extends Authenticatable implements MustVerifyEmail
     ];
 
     /**
+     * Default attribute values for new users.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'theme_name' => 'forest',
+        'theme_color' => '#14532d',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
