@@ -55,6 +55,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::defaults()],
             'role' => 'required|in:admin,clinic',
+            'clinic_name' => 'required_if:role,clinic|string|max:255',
         ]);
 
         $userData = [
@@ -63,6 +64,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
             'status' => 'active',
+            'clinic_name' => $validated['role'] === 'clinic' ? $validated['clinic_name'] : null,
         ];
 
         if ($validated['role'] === 'clinic') {
@@ -88,9 +90,18 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'role' => 'required|in:admin,clinic',
             'status' => 'required|in:active,inactive,suspended',
+            'clinic_name' => 'required_if:role,clinic|string|max:255',
         ]);
 
-        $user->update($validated);
+        $userData = [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'status' => $validated['status'],
+            'clinic_name' => $validated['role'] === 'clinic' ? $validated['clinic_name'] : null,
+        ];
+
+        $user->update($userData);
 
         return redirect()->back()->with('success', 'User updated successfully!');
     }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePage } from '@inertiajs/react';
 
-const INACTIVITY_TIMEOUT_MINUTES = 3; // Match backend config
-const WARNING_DISPLAY_TIME = 30; // Show warning 30 seconds before logout
-const ACTIVITY_PING_INTERVAL = 60000; // Ping every 60 seconds to keep session alive
+const INACTIVITY_TIMEOUT_SECONDS = 30; // Use 30 seconds for testing
+const WARNING_DISPLAY_TIME = 10; // Show warning 10 seconds before logout
+const ACTIVITY_PING_INTERVAL = 15000; // Ping every 15 seconds to keep session alive during quick testing
 
 interface UseInactivityTimeoutOptions {
     enabled?: boolean;
@@ -12,9 +12,9 @@ interface UseInactivityTimeoutOptions {
 }
 
 /**
- * Hook to track user inactivity and automatically log them out after 3 minutes
- * Also shows a warning dialog 30 seconds before logout
- * Tracks user activity (mouse, keyboard, clicks) to reset the timeout
+ * Hook to track user inactivity and automatically log them out after a short timeout.
+ * Also shows a warning dialog before logout.
+ * Tracks user activity (mouse, keyboard, clicks) to reset the timeout.
  */
 export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) {
     const { enabled = true, logoutUrl = '/logout', loginUrl = '/login' } = options;
@@ -24,7 +24,7 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
         document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
         '';
     const [showWarning, setShowWarning] = useState(false);
-    const [timeoutMinutes] = useState(INACTIVITY_TIMEOUT_MINUTES);
+    const [timeoutSeconds] = useState(INACTIVITY_TIMEOUT_SECONDS);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
     const activityPingRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,17 +84,17 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
         setShowWarning(false);
 
         // Set warning timer (show warning before logout)
-        const warningTime = (timeoutMinutes * 60 - WARNING_DISPLAY_TIME) * 1000;
+        const warningTime = Math.max((timeoutSeconds - WARNING_DISPLAY_TIME) * 1000, 0);
         warningTimerRef.current = setTimeout(() => {
             setShowWarning(true);
         }, warningTime);
 
         // Set logout timer
-        const logoutTime = timeoutMinutes * 60 * 1000;
+        const logoutTime = timeoutSeconds * 1000;
         inactivityTimerRef.current = setTimeout(() => {
             performLogout();
         }, logoutTime);
-    }, [timeoutMinutes, csrfToken, performLogout]);
+    }, [timeoutSeconds, csrfToken, performLogout]);
 
     // Handle user activity events
     const handleActivity = useCallback(() => {
@@ -148,7 +148,7 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
 
     return {
         showWarning,
-        timeoutMinutes,
+        timeoutSeconds,
         dismissWarning,
         logout,
     };

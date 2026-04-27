@@ -37,7 +37,7 @@ class ClinicSettingsController extends Controller
             'clinic_logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp|max:2048',
             'remove_logo' => 'nullable|boolean',
             'theme_name' => 'required|string|in:default,ocean,forest,sunset,rose,purple,custom',
-            'theme_color' => 'required|string|max:7',
+            'theme_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         /** @var \App\Models\User $user */

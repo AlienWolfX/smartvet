@@ -123,20 +123,6 @@ export default function ConsultationTypes({ types }: ConsultationTypesPageProps)
             description="Create and manage your clinic’s own consultation service types and fees."
             breadcrumbs={breadcrumbs}
         >
-            <Head title="Consultation Types" />
-
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold">Consultation Types</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        Create, edit, and remove clinic-specific consultation types with custom fees.
-                    </p>
-                </div>
-                <Button onClick={openCreateModal} className="inline-flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> Add new type
-                </Button>
-            </div>
-
             <Card>
                 <CardHeader>
                     <CardTitle>Available consultation types</CardTitle>

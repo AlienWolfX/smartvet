@@ -115,6 +115,7 @@ class PetController extends Controller
             'ownerName' => 'required|string|max:255',
             'phone' => 'required|digits_between:7,15',
             'email' => 'required|email|max:255',
+            'region' => 'required|string|max:255',
             'province' => 'required|string',
             'city' => 'required|string',
             'barangay' => 'required|string',
@@ -169,6 +170,7 @@ class PetController extends Controller
                 'province'        => $request->province,
                 'zip_code'        => $request->zipCode,
                 'address'         => implode(', ', array_filter([
+                    $request->region,
                     $request->street,
                     $request->barangay,
                     $request->city,

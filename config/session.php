@@ -34,7 +34,7 @@ return [
 
     'lifetime' => (int) env('SESSION_LIFETIME', 120),
 
-    'inactivity_timeout' => (int) env('SESSION_INACTIVITY_TIMEOUT', 3),
+    'inactivity_timeout' => floatval(env('SESSION_INACTIVITY_TIMEOUT', 0.5)),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
 

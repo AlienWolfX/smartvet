@@ -37,7 +37,7 @@ class SetupController extends Controller
             'clinic_name' => 'required|string|max:255',
             'clinic_logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp|max:2048',
             'theme_name' => 'required|string|in:default,ocean,forest,sunset,rose,purple,custom',
-            'theme_color' => 'required|string|max:7',
+            'theme_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $user = $request->user();

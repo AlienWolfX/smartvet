@@ -14,6 +14,6 @@ class OnboardingController extends Controller
             $user->update(['onboarding_complete' => true]);
         }
 
-        return response()->json(['success' => true]);
+        return redirect()->route('owner.pets')->with('success', 'Onboarding completed successfully.');
     }
 }

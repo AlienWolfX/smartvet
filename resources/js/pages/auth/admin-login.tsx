@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, useForm } from '@inertiajs/react';
 import { LockKeyhole, Sparkles } from 'lucide-react';
-import { FormEvent, useCallback, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface AdminLoginProps {
     status?: string;
@@ -30,6 +30,20 @@ export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) 
         return new URLSearchParams(window.location.search).get('status') ?? '';
     }, []);
     const displayStatus = status || queryStatus;
+
+    useEffect(() => {
+        if (!displayStatus || typeof window === 'undefined') {
+            return;
+        }
+
+        window.history.pushState(null, '', window.location.href);
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [displayStatus]);
 
     const handleCaptchaTokenChange = useCallback((token: string) => {
         setData('captcha_token', token);

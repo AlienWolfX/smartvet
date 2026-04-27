@@ -37,7 +37,7 @@ import {
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard, userManagement } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Users,
@@ -90,8 +90,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function UserManagement({ users, stats }: Props) {
-    const { props } = usePage();
-    const currentUserId = Number((props.auth.user as { id?: number })?.id ?? 0);
+    const { auth } = usePage<SharedData>().props;
+    const currentUserId = Number((auth.user as { id?: number })?.id ?? 0);
     const { success, error } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('all');
@@ -119,6 +119,7 @@ export default function UserManagement({ users, stats }: Props) {
         password_confirmation: '',
         role: 'clinic',
         status: 'active',
+        clinic_name: '',
     });
 
     const filteredUsers = useMemo(() => {
@@ -208,6 +209,7 @@ export default function UserManagement({ users, stats }: Props) {
             password_confirmation: '',
             role: user.role,
             status: user.status,
+            clinic_name: user.clinicName || '',
         });
         setIsEditModalOpen(true);
     };
@@ -418,6 +420,18 @@ export default function UserManagement({ users, stats }: Props) {
                                             />
                                             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                                         </div>
+                                        {data.role === 'clinic' && (
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Clinic Name *</label>
+                                                <Input
+                                                    placeholder="e.g., SmartVet Animal Clinic"
+                                                    value={data.clinic_name}
+                                                    onChange={(e) => setData('clinic_name', e.target.value)}
+                                                    required
+                                                />
+                                                {errors.clinic_name && <p className="text-sm text-red-500">{errors.clinic_name}</p>}
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Password *</label>
@@ -466,7 +480,15 @@ export default function UserManagement({ users, stats }: Props) {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Role *</label>
-                                            <Select value={data.role} onValueChange={(value) => setData('role', value)}>
+                                            <Select
+                                                value={data.role}
+                                                onValueChange={(value) => {
+                                                    setData('role', value);
+                                                    if (value !== 'clinic') {
+                                                        setData('clinic_name', '');
+                                                    }
+                                                }}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select role" />
                                                 </SelectTrigger>
@@ -795,7 +817,19 @@ export default function UserManagement({ users, stats }: Props) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Role *</label>
-                                    <Select value={data.role} onValueChange={(value) => setData('role', value)}>
+                                    <Select
+                                        value={data.role}
+                                        disabled={editingUser?.role === 'clinic'}
+                                        onValueChange={(value) => {
+                                            if (editingUser?.role === 'clinic') {
+                                                return;
+                                            }
+                                            setData('role', value);
+                                            if (value !== 'clinic') {
+                                                setData('clinic_name', '');
+                                            }
+                                        }}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
@@ -819,6 +853,18 @@ export default function UserManagement({ users, stats }: Props) {
                                     </Select>
                                 </div>
                             </div>
+                            {data.role === 'clinic' && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Clinic Name *</label>
+                                    <Input
+                                        placeholder="e.g., SmartVet Animal Clinic"
+                                        value={data.clinic_name}
+                                        onChange={(e) => setData('clinic_name', e.target.value)}
+                                        required
+                                    />
+                                    {errors.clinic_name && <p className="text-sm text-red-500">{errors.clinic_name}</p>}
+                                </div>
+                            )}
                         </div>
                         <ModalFooter>
                             <Button type="button" variant="outline" onClick={() => { setIsEditModalOpen(false); setEditingUser(null); reset(); }}>
