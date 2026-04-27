@@ -11,8 +11,8 @@ import {
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 import {
     ArrowDownRight,
     ArrowUpRight,
@@ -21,6 +21,7 @@ import {
     ShoppingBag,
     Syringe,
 } from 'lucide-react';
+import OnboardingTour, { type OnboardingStep } from '@/components/onboarding-tour';
 import { type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -114,6 +115,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Dashboard({ stats, recentTransactions, serviceHighlights }: DashboardProps) {
+    const { auth } = usePage<SharedData>().props;
+    const [showTour, setShowTour] = useState(!((auth.user as { onboarding_complete?: boolean })?.onboarding_complete));
     const [page, setPage] = useState(0);
     const pageSize = 3;
     const transactionCount = recentTransactions?.length || 0;
@@ -195,12 +198,60 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
               .join(', ')
         : '#d4d4d8 0deg 360deg';
 
+    const clinicOnboardingSteps: OnboardingStep[] = [
+        {
+            title: 'Welcome to your clinic dashboard',
+            description: 'This walkthrough points you to the key pages and actions for running your clinic.',
+            bulletPoints: [
+                'View key clinic metrics like patients, consultations, vaccinations, and inventory status.',
+                'Open the side menu to navigate Pet Records, Inventory, Billing, Reports, and Clinic Settings.',
+            ],
+        },
+        {
+            title: 'Manage pets and consultations',
+            description: 'Use the Pet Records section to track every patient and see their health history.',
+            bulletPoints: [
+                'Register or update pets and link them to their owners.',
+                'Record consultations and vaccinations directly from the pet details page.',
+            ],
+        },
+        {
+            title: 'Configure services and inventory',
+            description: 'Keep your clinic services and stock information up to date.',
+            bulletPoints: [
+                'Create custom consultation types with fees in Consultation Types.',
+                'Track inventory levels, add new stock, and receive low-stock alerts in Inventory Management.',
+            ],
+        },
+        {
+            title: 'Process payments and analyze performance',
+            description: 'Use billing tools and reports to close the loop on clinic operations.',
+            bulletPoints: [
+                'Record payments, generate receipts, and apply deductions in the Billing page.',
+                'Use Reports to review service trends, revenue, and clinic performance over time.',
+            ],
+        },
+    ];
+
+    const handleCompleteTour = () => {
+        setShowTour(false);
+        router.post('/onboarding/complete', {}, { preserveState: true, preserveScroll: true });
+    };
+
     return (
         <AdminLayout
             breadcrumbs={breadcrumbs}
             title="Clinic Dashboard"
             description="Clinic activity overview for patients, vaccinations, and consultations."
         >
+            <OnboardingTour
+                open={showTour}
+                title="Clinic onboarding tour"
+                description="A quick step-by-step guide to your new clinic dashboard."
+                steps={clinicOnboardingSteps}
+                onComplete={handleCompleteTour}
+                onClose={() => setShowTour(false)}
+            />
             <Head title="Dashboard" />
             <div className="flex flex-col gap-3 h-full">
             <div className="grid gap-3 grid-cols-2 xl:grid-cols-4">

@@ -41,6 +41,7 @@ export interface User {
     clinic_name?: string;
     email: string;
     avatar?: string;
+    onboarding_complete?: boolean;
     created_at: string;
     updated_at: string;
     [key: string]: unknown; // This allows for additional properties...

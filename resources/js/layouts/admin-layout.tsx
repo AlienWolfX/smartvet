@@ -82,8 +82,15 @@ export default function AdminLayout({
         window.addEventListener('clinicThemeChange', handleThemeChange);
 
         // Also check localStorage on mount for theme color
+        const serverThemeColor = (auth.user as { theme_color?: string })?.theme_color;
         const storedColor = localStorage.getItem('clinicThemeColor');
-        if (storedColor) {
+
+        if (serverThemeColor) {
+            if (storedColor !== serverThemeColor) {
+                localStorage.setItem('clinicThemeColor', serverThemeColor);
+            }
+            setThemeColor(serverThemeColor);
+        } else if (storedColor) {
             setThemeColor(storedColor);
         }
 

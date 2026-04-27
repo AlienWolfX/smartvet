@@ -30,6 +30,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'theme_name',
         'theme_color',
         'is_setup_complete',
+        'onboarding_complete',
         'email',
         'email_verified_at',
         'email_verification_code',
@@ -63,6 +64,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'password' => 'hashed',
             'last_login_at' => 'datetime',
             'is_setup_complete' => 'boolean',
+            'onboarding_complete' => 'boolean',
             'email_verified_at' => 'datetime',
             'email_verification_expires_at' => 'datetime',
         ];

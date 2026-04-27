@@ -57,8 +57,15 @@ export default function OwnerLayout({
         window.addEventListener('themeChange', handleThemeChange);
 
         // Also check localStorage on mount for theme color
+        const serverThemeColor = ownerThemeColor || clinicSettings?.themeColor;
         const storedColor = localStorage.getItem('ownerThemeColor');
-        if (storedColor) {
+
+        if (serverThemeColor) {
+            if (storedColor !== serverThemeColor) {
+                localStorage.setItem('ownerThemeColor', serverThemeColor);
+            }
+            setThemeColor(serverThemeColor);
+        } else if (storedColor) {
             setThemeColor(storedColor);
         }
 

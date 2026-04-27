@@ -4,7 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import OwnerLayout from '@/layouts/owner-layout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import OnboardingTour, { type OnboardingStep } from '@/components/onboarding-tour';
+import { type SharedData } from '@/types';
 import {
     CalendarDays,
     Ruler,
@@ -214,7 +216,49 @@ function PetCard({ pet, onShowQr, onShowRecord, onEdit }: { pet: Pet; onShowQr: 
 }
 
 export default function MyPets({ pets }: MyPetsProps) {
+    const { auth } = usePage<SharedData>().props;
+    const [showTour, setShowTour] = useState(!((auth.user as { onboarding_complete?: boolean })?.onboarding_complete));
     const hasPets = pets.length > 0;
+
+    const ownerOnboardingSteps: OnboardingStep[] = [
+        {
+            title: 'Welcome to your pet portal',
+            description: 'This tour helps you find every pet record and keep your clinic informed.',
+            bulletPoints: [
+                'View all your registered pets in one place.',
+                'Open a pet’s record to see details, consultations, and vaccination history.',
+            ],
+        },
+        {
+            title: 'Access pet health records',
+            description: 'The pet record lets you review consultations, vaccinations, and shared documents.',
+            bulletPoints: [
+                'See consultation notes, treatment plans, and medical files for each visit.',
+                'Check vaccination dates and next due reminders from your clinic.',
+            ],
+        },
+        {
+            title: 'Use QR codes for faster visits',
+            description: 'QR codes help your clinic quickly access your pet’s profile during appointments.',
+            bulletPoints: [
+                'Generate a pet QR code from the pet card.',
+                'Share the QR code at the clinic for faster check-in and record retrieval.',
+            ],
+        },
+        {
+            title: 'Keep your pet info up to date',
+            description: 'Accurate pet details make each visit smoother and safer.',
+            bulletPoints: [
+                'Edit your pet’s breed, weight, and microchip information as needed.',
+                'Ask your clinic to link new pets to your account if they are not visible yet.',
+            ],
+        },
+    ];
+
+    const handleCompleteTour = () => {
+        setShowTour(false);
+        router.post('/onboarding/complete', {}, { preserveState: true, preserveScroll: true });
+    };
 
     // QR modal
     const [qrPet, setQrPet] = useState<Pet | null>(null);
@@ -302,6 +346,14 @@ export default function MyPets({ pets }: MyPetsProps) {
             description="View your registered pets and their health records."
         >
             <Head title="My Pets" />
+            <OnboardingTour
+                open={showTour}
+                title="Owner onboarding tour"
+                description="Step through the key actions for managing your pets and health records."
+                steps={ownerOnboardingSteps}
+                onComplete={handleCompleteTour}
+                onClose={() => setShowTour(false)}
+            />
 
             {!hasPets && (
                 <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">

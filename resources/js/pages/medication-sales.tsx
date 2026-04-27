@@ -272,10 +272,7 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Available Inventory</CardTitle>
-                        <CardDescription>
-                            All sellable inventory products in stock are available for sale from this page.
-                        </CardDescription>
+                        <CardTitle>Medications/Products</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="grid gap-3">

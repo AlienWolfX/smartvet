@@ -38,7 +38,7 @@ import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard, userManagement } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Users,
     Search,
@@ -54,6 +54,7 @@ import {
     EyeOff,
     Download,
     Loader2,
+    Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +90,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function UserManagement({ users, stats }: Props) {
+    const { props } = usePage();
+    const currentUserId = Number((props.auth.user as { id?: number })?.id ?? 0);
     const { success, error } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('all');
@@ -230,6 +233,26 @@ export default function UserManagement({ users, stats }: Props) {
         router.patch(`/user-management/${user.id}/toggle-status`, {}, {
             onSuccess: () => {
                 success('User status updated!');
+            },
+        });
+    };
+
+    const handleDeleteUser = (user: User) => {
+        if (user.id === currentUserId) {
+            error('You cannot delete your own account.');
+            return;
+        }
+
+        if (!window.confirm(`Delete ${user.name}? This action cannot be undone.`)) {
+            return;
+        }
+
+        router.delete(`/user-management/${user.id}`, {
+            onSuccess: () => {
+                success('User deleted successfully!');
+            },
+            onError: () => {
+                error('Failed to delete user.');
             },
         });
     };
@@ -689,6 +712,17 @@ export default function UserManagement({ users, stats }: Props) {
                                                             Activate
                                                         </>
                                                     )}
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-600 hover:text-red-700"
+                                                    onClick={() => handleDeleteUser(user)}
+                                                    disabled={user.id === currentUserId}
+                                                    title={user.id === currentUserId ? 'Cannot delete your own account' : 'Delete user'}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                    Delete
                                                 </Button>
                                             </div>
                                         </TableCell>

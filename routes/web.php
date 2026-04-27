@@ -75,6 +75,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
     // Setup route (must be before EnsureSetupComplete middleware check)
     Route::get('setup', [App\Http\Controllers\SetupController::class, 'show'])->name('setup');
     Route::post('setup', [App\Http\Controllers\SetupController::class, 'store'])->name('setup.store');
+    Route::post('onboarding/complete', [App\Http\Controllers\OnboardingController::class, 'complete'])->name('onboarding.complete');
 
     // Clinic-only routes
     Route::middleware(['role:clinic', \App\Http\Middleware\EnsureEmailIsVerified::class])->group(function () {
