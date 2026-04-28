@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEvent, useCallback, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface LoginProps {
     status?: string;
@@ -16,6 +16,13 @@ interface LoginProps {
 }
 
 export default function Login({ status, captchaSiteKey }: LoginProps) {
+    const queryStatus = useMemo(() => {
+        return typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('status') ?? ''
+            : '';
+    }, []);
+
+    const displayStatus = status || queryStatus;
     const [captchaRefreshNonce, setCaptchaRefreshNonce] = useState(0);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
@@ -23,6 +30,21 @@ export default function Login({ status, captchaSiteKey }: LoginProps) {
         remember: false,
         captcha_token: '',
     });
+
+    useEffect(() => {
+        if (!displayStatus || typeof window === 'undefined') {
+            return;
+        }
+
+        window.history.pushState(null, '', window.location.href);
+
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [displayStatus]);
 
     const handleCaptchaTokenChange = useCallback((token: string) => {
         setData('captcha_token', token);
@@ -67,9 +89,9 @@ export default function Login({ status, captchaSiteKey }: LoginProps) {
                             </div>
                         </div>
 
-                        {status && (
+                        {displayStatus && (
                             <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-400/50 dark:bg-emerald-500/10 dark:text-emerald-200">
-                                {status}
+                                {displayStatus}
                             </div>
                         )}
 
@@ -142,6 +164,24 @@ export default function Login({ status, captchaSiteKey }: LoginProps) {
                                 Log in
                             </Button>
                         </form>
+
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                            <p className="font-semibold mb-3">Quick access</p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <Link
+                                    href="/clinic"
+                                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                >
+                                    Clinic login
+                                </Link>
+                                <Link
+                                    href="/admin"
+                                    className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                >
+                                    Admin login
+                                </Link>
+                            </div>
+                        </div>
 
                         <div className="text-center text-sm text-slate-500">
                             <p>

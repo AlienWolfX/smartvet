@@ -51,8 +51,8 @@ export default function AdminSettings({
 }: AdminAppearanceSettingsProps) {
     const { auth } = usePage<SharedData>().props;
     const { success, error } = useToast();
-    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'default');
-    const [customColor, setCustomColor] = useState(settings.theme_color || '#0f172a');
+    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'forest');
+    const [customColor, setCustomColor] = useState(settings.theme_color || '#14532d');
     const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState(twoFactorEnabled);
     const [isTwoFactorPending, setIsTwoFactorPending] = useState(twoFactorPending);
     const [setupModalOpen, setSetupModalOpen] = useState(false);
@@ -66,8 +66,8 @@ export default function AdminSettings({
     const [copyingCodes, setCopyingCodes] = useState(false);
 
     const { data, setData, post, processing } = useForm({
-        theme_name: settings.theme_name || 'default',
-        theme_color: settings.theme_color || '#0f172a',
+        theme_name: settings.theme_name || 'forest',
+        theme_color: settings.theme_color || '#14532d',
     });
 
     const handleThemeSelect = (theme: ThemePreset) => {

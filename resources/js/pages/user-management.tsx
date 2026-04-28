@@ -37,8 +37,8 @@ import {
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard, userManagement } from '@/routes';
-import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { type BreadcrumbItem, type SharedData } from '@/types';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {
     Users,
     Search,
@@ -54,6 +54,7 @@ import {
     EyeOff,
     Download,
     Loader2,
+    Trash2,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +90,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function UserManagement({ users, stats }: Props) {
+    const { auth } = usePage<SharedData>().props;
+    const currentUserId = Number((auth.user as { id?: number })?.id ?? 0);
     const { success, error } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRole, setSelectedRole] = useState('all');
@@ -116,6 +119,7 @@ export default function UserManagement({ users, stats }: Props) {
         password_confirmation: '',
         role: 'clinic',
         status: 'active',
+        clinic_name: '',
     });
 
     const filteredUsers = useMemo(() => {
@@ -205,6 +209,7 @@ export default function UserManagement({ users, stats }: Props) {
             password_confirmation: '',
             role: user.role,
             status: user.status,
+            clinic_name: user.clinicName || '',
         });
         setIsEditModalOpen(true);
     };
@@ -230,6 +235,26 @@ export default function UserManagement({ users, stats }: Props) {
         router.patch(`/user-management/${user.id}/toggle-status`, {}, {
             onSuccess: () => {
                 success('User status updated!');
+            },
+        });
+    };
+
+    const handleDeleteUser = (user: User) => {
+        if (user.id === currentUserId) {
+            error('You cannot delete your own account.');
+            return;
+        }
+
+        if (!window.confirm(`Delete ${user.name}? This action cannot be undone.`)) {
+            return;
+        }
+
+        router.delete(`/user-management/${user.id}`, {
+            onSuccess: () => {
+                success('User deleted successfully!');
+            },
+            onError: () => {
+                error('Failed to delete user.');
             },
         });
     };
@@ -395,6 +420,18 @@ export default function UserManagement({ users, stats }: Props) {
                                             />
                                             {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                                         </div>
+                                        {data.role === 'clinic' && (
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Clinic Name *</label>
+                                                <Input
+                                                    placeholder="e.g., SmartVet Animal Clinic"
+                                                    value={data.clinic_name}
+                                                    onChange={(e) => setData('clinic_name', e.target.value)}
+                                                    required
+                                                />
+                                                {errors.clinic_name && <p className="text-sm text-red-500">{errors.clinic_name}</p>}
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">Password *</label>
@@ -443,7 +480,15 @@ export default function UserManagement({ users, stats }: Props) {
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-sm font-medium">Role *</label>
-                                            <Select value={data.role} onValueChange={(value) => setData('role', value)}>
+                                            <Select
+                                                value={data.role}
+                                                onValueChange={(value) => {
+                                                    setData('role', value);
+                                                    if (value !== 'clinic') {
+                                                        setData('clinic_name', '');
+                                                    }
+                                                }}
+                                            >
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select role" />
                                                 </SelectTrigger>
@@ -690,6 +735,17 @@ export default function UserManagement({ users, stats }: Props) {
                                                         </>
                                                     )}
                                                 </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-600 hover:text-red-700"
+                                                    onClick={() => handleDeleteUser(user)}
+                                                    disabled={user.id === currentUserId}
+                                                    title={user.id === currentUserId ? 'Cannot delete your own account' : 'Delete user'}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                    Delete
+                                                </Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -761,7 +817,19 @@ export default function UserManagement({ users, stats }: Props) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">Role *</label>
-                                    <Select value={data.role} onValueChange={(value) => setData('role', value)}>
+                                    <Select
+                                        value={data.role}
+                                        disabled={editingUser?.role === 'clinic'}
+                                        onValueChange={(value) => {
+                                            if (editingUser?.role === 'clinic') {
+                                                return;
+                                            }
+                                            setData('role', value);
+                                            if (value !== 'clinic') {
+                                                setData('clinic_name', '');
+                                            }
+                                        }}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
@@ -785,6 +853,18 @@ export default function UserManagement({ users, stats }: Props) {
                                     </Select>
                                 </div>
                             </div>
+                            {data.role === 'clinic' && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Clinic Name *</label>
+                                    <Input
+                                        placeholder="e.g., SmartVet Animal Clinic"
+                                        value={data.clinic_name}
+                                        onChange={(e) => setData('clinic_name', e.target.value)}
+                                        required
+                                    />
+                                    {errors.clinic_name && <p className="text-sm text-red-500">{errors.clinic_name}</p>}
+                                </div>
+                            )}
                         </div>
                         <ModalFooter>
                             <Button type="button" variant="outline" onClick={() => { setIsEditModalOpen(false); setEditingUser(null); reset(); }}>

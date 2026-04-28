@@ -1,29 +1,56 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePage } from '@inertiajs/react';
 
-const INACTIVITY_TIMEOUT_MINUTES = 3; // Match backend config
-const WARNING_DISPLAY_TIME = 30; // Show warning 30 seconds before logout
-const ACTIVITY_PING_INTERVAL = 60000; // Ping every 60 seconds to keep session alive
+const INACTIVITY_TIMEOUT_SECONDS = 30 * 60;
+const WARNING_DISPLAY_TIME = 30;
+const ACTIVITY_PING_INTERVAL = 60000;
 
 interface UseInactivityTimeoutOptions {
     enabled?: boolean;
+    logoutUrl?: string;
+    loginUrl?: string;
 }
 
-/**
- * Hook to track user inactivity and automatically log them out after 3 minutes
- * Also shows a warning dialog 30 seconds before logout
- * Tracks user activity (mouse, keyboard, clicks) to reset the timeout
- */
 export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) {
-    const { enabled = true } = options;
+    const { enabled = true, logoutUrl = '/logout', loginUrl = '/login' } = options;
     const { props } = usePage();
-    const csrfToken = (props as any).csrf_token || '';
+    const csrfToken =
+        (props as any).csrf_token ||
+        document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+        '';
     const [showWarning, setShowWarning] = useState(false);
-    const [timeoutMinutes, setTimeoutMinutes] = useState(INACTIVITY_TIMEOUT_MINUTES);
+    const [timeoutSeconds] = useState(INACTIVITY_TIMEOUT_SECONDS);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const warningTimerRef = useRef<NodeJS.Timeout | null>(null);
     const activityPingRef = useRef<NodeJS.Timeout | null>(null);
     const lastActivityRef = useRef<number>(Date.now());
+
+    const performLogout = useCallback(async () => {
+        setShowWarning(false);
+
+        try {
+            const response = await fetch(logoutUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                throw new Error('Logout request failed');
+            }
+        } catch (error) {
+            console.warn('Automatic logout failed, redirecting to login:', error);
+        }
+
+        const statusMessage = encodeURIComponent('You have been logged out due to inactivity. Please sign in again.');
+        const separator = loginUrl.includes('?') ? '&' : '?';
+        window.location.href = `${loginUrl}${separator}status=${statusMessage}`;
+    }, [csrfToken, loginUrl, logoutUrl]);
 
     // Ping activity endpoint to update session
     const pingActivity = useCallback(async () => {
@@ -35,6 +62,7 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-Token': csrfToken,
                 },
+                credentials: 'same-origin',
             });
         } catch (error) {
             console.error('Failed to ping activity:', error);
@@ -51,33 +79,22 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
         setShowWarning(false);
 
         // Set warning timer (show warning before logout)
-        const warningTime = (timeoutMinutes * 60 - WARNING_DISPLAY_TIME) * 1000;
+        const warningTime = Math.max((timeoutSeconds - WARNING_DISPLAY_TIME) * 1000, 0);
         warningTimerRef.current = setTimeout(() => {
             setShowWarning(true);
         }, warningTime);
 
         // Set logout timer
-        const logoutTime = timeoutMinutes * 60 * 1000;
+        const logoutTime = timeoutSeconds * 1000;
         inactivityTimerRef.current = setTimeout(() => {
-            // Logout due to inactivity
-            setShowWarning(false);
-            // Post logout request or just redirect
-            fetch('/logout', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-Token': csrfToken,
-                },
-            }).catch(() => {
-                // Fallback to redirect if logout fails
-                window.location.href = '/login';
-            });
+            performLogout();
         }, logoutTime);
-    }, [timeoutMinutes, csrfToken]);
+    }, [timeoutSeconds, csrfToken, performLogout]);
 
     // Handle user activity events
     const handleActivity = useCallback(() => {
         // Only reset if significant time has passed (avoid excessive resets)
-        if (Date.now() - lastActivityRef.current > 5000) {
+        if (Date.now() - lastActivityRef.current > 1000) {
             resetInactivityTimer();
             pingActivity();
         }
@@ -88,7 +105,7 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
         if (!enabled) return;
 
         // User activity events to track
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click'];
 
         // Add event listeners
         events.forEach((event) => {
@@ -121,20 +138,12 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
 
     // Function to manually logout
     const logout = useCallback(() => {
-        setShowWarning(false);
-        fetch('/logout', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-Token': csrfToken,
-            },
-        }).catch(() => {
-            window.location.href = '/login';
-        });
-    }, [csrfToken]);
+        performLogout();
+    }, [performLogout]);
 
     return {
         showWarning,
-        timeoutMinutes,
+        timeoutSeconds,
         dismissWarning,
         logout,
     };

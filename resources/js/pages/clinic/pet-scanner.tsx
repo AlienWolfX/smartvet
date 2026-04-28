@@ -407,8 +407,11 @@ export default function PetScanner() {
                     <p className="text-xs text-slate-400">
                         Enter the pet's token.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2">
+                        <label className="sr-only" htmlFor="manualToken">Pet token</label>
                         <Input
+                            id="manualToken"
+                            name="manualToken"
                             placeholder="Paste token…"
                             value={manualToken}
                             onChange={(e) => setManualToken(e.target.value)}

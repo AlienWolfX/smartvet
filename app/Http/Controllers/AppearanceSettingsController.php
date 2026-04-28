@@ -19,8 +19,8 @@ class AppearanceSettingsController extends Controller
 
         return Inertia::render('admin/settings', [
             'settings' => [
-                'theme_name' => $user->theme_name ?? 'default',
-                'theme_color' => $user->theme_color ?? '#0f172a',
+                'theme_name' => $user->theme_name ?? 'forest',
+                'theme_color' => $user->theme_color ?? '#14532d',
             ],
             'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
             'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,
@@ -48,8 +48,8 @@ class AppearanceSettingsController extends Controller
 
         return Inertia::render('owner/appearance-settings', [
             'settings' => [
-                'theme_name' => $user->theme_name ?? 'default',
-                'theme_color' => $user->theme_color ?? '#0e4d3a',
+                'theme_name' => $user->theme_name ?? 'forest',
+                'theme_color' => $user->theme_color ?? '#14532d',
             ],
         ]);
     }

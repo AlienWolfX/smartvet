@@ -77,6 +77,31 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
     return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
 }
 
+const getConsultationRecordCreatorId = (record: any): number | undefined => {
+    if (record.createdById === undefined || record.createdById === null) {
+        return undefined;
+    }
+
+    const createdById = Number(record.createdById);
+    return Number.isNaN(createdById) ? undefined : createdById;
+};
+
+const canShowConsultationPaymentStatus = (record: any, currentClinicId?: number) => {
+    if (Number.isNaN(currentClinicId) || currentClinicId === undefined) {
+        return false;
+    }
+
+    const createdById = getConsultationRecordCreatorId(record);
+    if (createdById === undefined) {
+        return false;
+    }
+
+    // Only show payment status for consultations created by the current clinic
+    // Completely hide the field for external clinic records
+    const isExternalRecord = createdById !== currentClinicId;
+    return !isExternalRecord;
+};
+
 interface Pet {
     id: string;
     name: string;
@@ -94,6 +119,7 @@ interface Pet {
     registrationDate: string;
     qrToken: string | null;
     owner: {
+        userId: number;
         name: string;
         phone: string;
         email: string;
@@ -105,6 +131,7 @@ interface Pet {
         zipCode: string;
         emergencyContact: string;
     };
+    clinicIds: number[];
     medicalHistory: any[];
     vaccinations: any[];
     allergies: string[];
@@ -133,10 +160,19 @@ interface InventoryLine {
     quantity: number;
 }
 
+interface ConsultationTypeOption {
+    id: number;
+    slug: string;
+    name: string;
+    fee: number;
+    description: string | null;
+}
+
 interface Props {
     pet: Pet;
     inventoryItems: InventoryItemOption[];
     vaccineItems: InventoryItemOption[];
+    consultationTypes: ConsultationTypeOption[];
 }
 
 const formatDate = (dateString: string) => {
@@ -175,8 +211,9 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) {
+export default function PetManage({ pet, inventoryItems, vaccineItems, consultationTypes }: Props) {
     const { auth } = usePage<SharedData>().props;
+    const currentClinicId = Number((auth.user as { id?: number | string })?.id);
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [isAddConsultationOpen, setIsAddConsultationOpen] = useState(false);
@@ -194,6 +231,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
     });
     const { success, error } = useToast();
 
+    const normalizedClinicIds = (pet.clinicIds || []).map((id) => Number(id)).filter((id) => !Number.isNaN(id));
+    const petBelongsToCurrentClinic = !Number.isNaN(currentClinicId) && (
+        Number(pet.owner.userId) === currentClinicId || normalizedClinicIds.includes(currentClinicId)
+    );
     const sortedMedicalHistory = sortRecordsLatestFirst(pet.medicalHistory || []);
 
     const inventoryMap = useMemo(() => {
@@ -237,12 +278,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         vaccinationReactions: '',
     });
 
-    const consultationTypes = [
-        { id: 'routine-checkup', name: 'General Check-up', price: 300, description: 'Regular visit' },
-        { id: 'emergency', name: 'Emergency', price: 800, description: 'Urgent care' },
-        { id: 'follow-up', name: 'Follow-up', price: 150, description: 'Review visit' },
-        { id: 'surgery', name: 'Surgery Evaluation', price: 500, description: 'Pre-op consult' },
-    ];
+    const availableConsultationTypes: ConsultationTypeOption[] = consultationTypes;
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -286,11 +322,11 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
     };
 
     const handleConsultationTypeChange = (value: string) => {
-        const selectedType = consultationTypes.find(t => t.id === value);
+        const selectedType = availableConsultationTypes.find(t => t.slug === value);
         setData(data => ({
             ...data,
             consultationType: value,
-            consultationFee: selectedType ? selectedType.price.toString() : ''
+            consultationFee: selectedType ? selectedType.fee.toString() : ''
         }));
     };
 
@@ -452,6 +488,9 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         if (!data.consultationDate) {
             newErrors.consultationDate = 'Please select a consultation date';
         }
+        if (!data.consultationWeight || parseFloat(data.consultationWeight) < 0.1) {
+            newErrors.consultationWeight = 'Weight must be at least 0.1 kg';
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setConsultationErrors(newErrors);
@@ -472,7 +511,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
         formData.append('treatment', data.treatment || '');
         formData.append('notes', data.notes || '');
         formData.append('consultation_date', data.consultationDate);
-        formData.append('weight', data.consultationWeight || '0');
+        formData.append('weight', data.consultationWeight);
         formData.append('consultation_fee', data.consultationFee || '0');
 
         data.consultationFiles.forEach((file, index) => {
@@ -509,7 +548,13 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                         } else {
                             msg = 'Invalid input.';
                         }
-                        return [key === 'consultation_type' ? 'consultationType' : key === 'chief_complaint' ? 'chiefComplaint' : key === 'consultation_date' ? 'consultationDate' : key, msg];
+                        const keyMap: Record<string, string> = {
+                            'consultation_type': 'consultationType',
+                            'chief_complaint': 'chiefComplaint',
+                            'consultation_date': 'consultationDate',
+                            'weight': 'consultationWeight',
+                        };
+                        return [keyMap[key] || key, msg];
                     })
                 );
 
@@ -956,9 +1001,9 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                                         <SelectValue placeholder="Select type" />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
-                                                                        {consultationTypes.map((type) => (
-                                                                            <SelectItem key={type.id} value={type.id}>
-                                                                                {type.name} - ₱{type.price}
+                                                                        {availableConsultationTypes.map((type) => (
+                                                                            <SelectItem key={type.id} value={type.slug}>
+                                                                                {type.name} - ₱{type.fee.toFixed(2)}
                                                                             </SelectItem>
                                                                         ))}
                                                                     </SelectContent>
@@ -1220,14 +1265,18 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                     {record.diagnosis || '-'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline" className={cn(
-                                                        "capitalize",
-                                                        record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                        record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                        "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                    )}>
-                                                        {record.paymentStatus || 'unknown'}
-                                                    </Badge>
+                                                    {canShowConsultationPaymentStatus(record, currentClinicId) ? (
+                                                        <Badge variant="outline" className={cn(
+                                                            "capitalize",
+                                                            record.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
+                                                            record.paymentStatus === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
+                                                            "bg-neutral-50 text-neutral-700 border-neutral-200"
+                                                        )}>
+                                                            {record.paymentStatus}
+                                                        </Badge>
+                                                    ) : (
+                                                        '-'
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <Button variant="ghost" size="sm" onClick={() => setSelectedConsultation(record)}>
@@ -1264,7 +1313,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                 <div>
                                                     <span className="text-sm font-medium text-neutral-500">Payment Status</span>
                                                     <div className="mt-1">
-                                                        {!pet.qrToken && (
+                                                        {!pet.qrToken && canShowConsultationPaymentStatus(selectedConsultation, currentClinicId) ? (
                                                             <Badge variant="outline" className={cn(
                                                                 "capitalize",
                                                                 selectedConsultation.paymentStatus === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
@@ -1273,6 +1322,8 @@ export default function PetManage({ pet, inventoryItems, vaccineItems }: Props) 
                                                             )}>
                                                                 {selectedConsultation.paymentStatus}
                                                             </Badge>
+                                                        ) : (
+                                                            <span className="text-sm text-neutral-500">-</span>
                                                         )}
                                                     </div>
                                                 </div>

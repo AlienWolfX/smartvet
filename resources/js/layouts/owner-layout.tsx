@@ -40,11 +40,11 @@ export default function OwnerLayout({
         ownerThemeColor || clinicSettings?.themeColor || SIDEBAR_COLOR
     );
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [countdownSeconds, setCountdownSeconds] = useState(30);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
     // Initialize inactivity timeout hook
-    const { showWarning, dismissWarning, logout: handleInactivityLogout } = useInactivityTimeout({ enabled: true });
+    const { showWarning, timeoutSeconds, dismissWarning, logout: handleInactivityLogout } = useInactivityTimeout({ enabled: true });
+    const [countdownSeconds, setCountdownSeconds] = useState(timeoutSeconds);
 
     // Listen for theme color changes in localStorage and custom events
     useEffect(() => {
@@ -56,9 +56,16 @@ export default function OwnerLayout({
         // Listen to custom theme change event
         window.addEventListener('themeChange', handleThemeChange);
 
-        // Also check localStorage on mount for theme color
+        // Also check localStorage and server theme color on mount and when props change
+        const serverThemeColor = ownerThemeColor || clinicSettings?.themeColor;
         const storedColor = localStorage.getItem('ownerThemeColor');
-        if (storedColor) {
+
+        if (serverThemeColor) {
+            if (storedColor !== serverThemeColor) {
+                localStorage.setItem('ownerThemeColor', serverThemeColor);
+            }
+            setThemeColor(serverThemeColor);
+        } else if (storedColor) {
             setThemeColor(storedColor);
         }
 
@@ -75,13 +82,13 @@ export default function OwnerLayout({
             window.removeEventListener('themeChange', handleThemeChange);
             window.removeEventListener('storage', handleStorageChange);
         };
-    }, []);
+    }, [ownerThemeColor, clinicSettings?.themeColor]);
 
     // Countdown timer for warning dialog
     useEffect(() => {
         if (!showWarning) return;
 
-        setCountdownSeconds(30);
+        setCountdownSeconds(timeoutSeconds);
         const interval = setInterval(() => {
             setCountdownSeconds((prev) => {
                 if (prev <= 1) {
@@ -93,7 +100,7 @@ export default function OwnerLayout({
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [showWarning]);
+    }, [showWarning, timeoutSeconds]);
 
     const navigation = [
         { name: 'My Pets', href: '/owner/pets', icon: PawPrint },

@@ -13,17 +13,17 @@ class InactivityTimeout
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \Closure  $next
-     * @param  int|null  $timeoutMinutes
+     * @param  float|null  $timeoutMinutes
      * @return mixed
      */
-    public function handle(Request $request, Closure $next, ?int $timeoutMinutes = null)
+    public function handle(Request $request, Closure $next, ?float $timeoutMinutes = null)
     {
         if (! Auth::check()) {
             return $next($request);
         }
 
-        $timeoutMinutes = $timeoutMinutes ?: (int) config('session.inactivity_timeout', config('session.lifetime', 120));
-        $timeoutSeconds = $timeoutMinutes * 60;
+        $timeoutMinutes = $timeoutMinutes ?: floatval(config('session.inactivity_timeout', config('session.lifetime', 120)));
+        $timeoutSeconds = (int) ($timeoutMinutes * 60);
 
         $lastActivity = (int) $request->session()->get('last_activity', now()->timestamp);
         $currentTime = now()->timestamp;

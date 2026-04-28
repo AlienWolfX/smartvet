@@ -22,8 +22,8 @@ class ClinicSettingsController extends Controller
             'settings' => [
                 'clinic_name' => $user->clinic_name ?? '',
                 'clinic_logo' => $user->clinic_logo ? Storage::url($user->clinic_logo) : null,
-                'theme_name' => $user->theme_name ?? 'default',
-                'theme_color' => $user->theme_color ?? '#0f172a',
+                'theme_name' => $user->theme_name ?? 'forest',
+                'theme_color' => $user->theme_color ?? '#14532d',
             ],
             'twoFactorEnabled' => $hasSecret && (!$requiresConfirmation || $isConfirmed),
             'twoFactorPending' => $hasSecret && $requiresConfirmation && !$isConfirmed,
@@ -37,7 +37,7 @@ class ClinicSettingsController extends Controller
             'clinic_logo' => 'nullable|image|mimes:jpeg,png,jpg,svg,webp|max:2048',
             'remove_logo' => 'nullable|boolean',
             'theme_name' => 'required|string|in:default,ocean,forest,sunset,rose,purple,custom',
-            'theme_color' => 'required|string|max:7',
+            'theme_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         /** @var \App\Models\User $user */

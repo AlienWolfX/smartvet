@@ -33,12 +33,12 @@ const themePresets: ThemePreset[] = [
 
 export default function OwnerAppearanceSettings({ settings }: OwnerAppearanceSettingsProps) {
     const { success } = useToast();
-    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'default');
-    const [customColor, setCustomColor] = useState(settings.theme_color || '#0e4d3a');
+    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'forest');
+    const [customColor, setCustomColor] = useState(settings.theme_color || '#14532d');
 
     const { data, setData, post, processing } = useForm({
-        theme_name: settings.theme_name || 'default',
-        theme_color: settings.theme_color || '#0e4d3a',
+        theme_name: settings.theme_name || 'forest',
+        theme_color: settings.theme_color || '#14532d',
     });
 
     const handleThemeSelect = (theme: ThemePreset) => {

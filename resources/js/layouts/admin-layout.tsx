@@ -25,8 +25,12 @@ import {
     BarChart3,
     Boxes,
     Heart,
-    CreditCard,    PawPrint,    Settings,
-    QrCode
+    CreditCard,
+    Pill,
+    PawPrint,
+    Settings,
+    QrCode,
+    Syringe,
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -56,8 +60,16 @@ export default function AdminLayout({
     const [countdownSeconds, setCountdownSeconds] = useState(30);
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
+    const userRole = (auth.user as { role?: string })?.role;
+    const logoutUrl = userRole === 'admin' ? '/admin/logout' : '/clinic/logout';
+    const loginUrl = userRole === 'admin' ? '/admin' : '/clinic';
+
     // Initialize inactivity timeout hook
-    const { showWarning, dismissWarning, logout } = useInactivityTimeout({ enabled: true });
+    const { showWarning, dismissWarning, logout } = useInactivityTimeout({
+        enabled: true,
+        logoutUrl,
+        loginUrl,
+    });
 
     // Listen for theme color changes
     useEffect(() => {
@@ -70,8 +82,15 @@ export default function AdminLayout({
         window.addEventListener('clinicThemeChange', handleThemeChange);
 
         // Also check localStorage on mount for theme color
+        const serverThemeColor = (auth.user as { theme_color?: string })?.theme_color;
         const storedColor = localStorage.getItem('clinicThemeColor');
-        if (storedColor) {
+
+        if (serverThemeColor) {
+            if (storedColor !== serverThemeColor) {
+                localStorage.setItem('clinicThemeColor', serverThemeColor);
+            }
+            setThemeColor(serverThemeColor);
+        } else if (storedColor) {
             setThemeColor(storedColor);
         }
 
@@ -138,6 +157,20 @@ export default function AdminLayout({
             name: 'Inventory Management',
             href: '/inventory-management',
             icon: Boxes,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Consultation Types',
+            href: '/consultation-types',
+            icon: Syringe,
+            adminOnly: false,
+            clinicOnly: true
+        },
+        {
+            name: 'Inventory Sales',
+            href: '/medication-sales',
+            icon: Pill,
             adminOnly: false,
             clinicOnly: true
         },

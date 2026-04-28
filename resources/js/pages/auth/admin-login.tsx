@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, useForm } from '@inertiajs/react';
 import { LockKeyhole, Sparkles } from 'lucide-react';
-import { FormEvent, useCallback, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface AdminLoginProps {
     status?: string;
@@ -22,6 +22,28 @@ export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) 
         remember: false,
         captcha_token: '',
     });
+
+    const queryStatus = useMemo(() => {
+        if (typeof window === 'undefined') {
+            return '';
+        }
+        return new URLSearchParams(window.location.search).get('status') ?? '';
+    }, []);
+    const displayStatus = status || queryStatus;
+
+    useEffect(() => {
+        if (!displayStatus || typeof window === 'undefined') {
+            return;
+        }
+
+        window.history.pushState(null, '', window.location.href);
+        const handlePopState = () => {
+            window.history.pushState(null, '', window.location.href);
+        };
+        window.addEventListener('popstate', handlePopState);
+
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [displayStatus]);
 
     const handleCaptchaTokenChange = useCallback((token: string) => {
         setData('captcha_token', token);
@@ -65,9 +87,9 @@ export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) 
                     </div>
 
                     <div className="space-y-5 px-8 py-7">
-                        {status && (
+                        {displayStatus && (
                             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800">
-                                {status}
+                                {displayStatus}
                             </div>
                         )}
 

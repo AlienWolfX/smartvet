@@ -4,6 +4,7 @@ namespace App\Http\Traits;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Provides tenant-scoping helper methods for controllers.
@@ -24,7 +25,8 @@ trait ScopesToTenant
      */
     protected function scopeToUser(Builder $query): Builder
     {
-        $user = auth()->user();
+        /** @var User|null $user */
+        $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->where($query->getModel()->getTable() . '.user_id', $user->id);
         }
@@ -36,12 +38,43 @@ trait ScopesToTenant
      */
     protected function scopeThroughPetOwner(Builder $query): Builder
     {
-        $user = auth()->user();
+        /** @var User|null $user */
+        $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->whereHas('pet.owner', function (Builder $q) use ($user) {
                 $q->where('owners.user_id', $user->id);
             });
         }
+        return $query;
+    }
+
+    /**
+     * Scope PetPayment queries for the authenticated user.
+     * Includes payments for owned pets or walk-in payments recorded by the user.
+     * Also includes payments for consultations/vaccinations created by the current user (even on cross-clinic pets).
+     */
+    protected function scopePetPaymentToUser(Builder $query): Builder
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if ($user && !$user->isAdmin()) {
+            return $query->where(function (Builder $q) use ($user) {
+                // Payments for pets owned by this clinic
+                $q->whereHas('pet.owner', function (Builder $subQuery) use ($user) {
+                    $subQuery->where('owners.user_id', $user->id);
+                })
+                // OR walk-in payments recorded by this clinic
+                ->orWhere(function (Builder $subQuery) use ($user) {
+                    $subQuery->whereNull('pet_id')
+                        ->where('recorded_by', $user->id);
+                })
+                // OR payments for consultations created by this clinic (cross-clinic consultations)
+                ->orWhereHas('consultation', function (Builder $subQuery) use ($user) {
+                    $subQuery->where('created_by', $user->id);
+                });
+            });
+        }
+
         return $query;
     }
 
@@ -53,7 +86,8 @@ trait ScopesToTenant
      */
     protected function scopePetToUser(Builder $query): Builder
     {
-        $user = auth()->user();
+        /** @var User|null $user */
+        $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->where(function (Builder $q) use ($user) {
                 // Pets owned by this clinic
@@ -72,6 +106,6 @@ trait ScopesToTenant
      */
     protected function tenantUserId(): ?int
     {
-        return auth()->id();
+        return Auth::id();
     }
 }

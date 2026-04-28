@@ -50,6 +50,17 @@ class ClinicAuthController extends Controller
             ])->onlyInput('email');
         }
 
+        $status = $user->status ?? 'active';
+        if ($status !== 'active') {
+            $message = $status === 'suspended'
+                ? 'This clinic account has been suspended. Please contact support.'
+                : 'This clinic account is inactive. Please contact your administrator.';
+
+            return back()->withErrors([
+                'email' => $message,
+            ])->onlyInput('email');
+        }
+
         if (! $user->hasVerifiedEmail()) {
             Auth::login($user, $request->boolean('remember'));
             return redirect()->route('verification.notice')->with('status', 'Please verify your email before accessing the clinic dashboard.');

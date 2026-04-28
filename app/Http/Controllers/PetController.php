@@ -7,10 +7,12 @@ use App\Models\Owner;
 use App\Models\PetSpecies;
 use App\Models\Consultation;
 use App\Models\ConsultationFile;
+use App\Models\ConsultationType;
 use App\Models\InventoryItem;
 use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -112,7 +114,8 @@ class PetController extends Controller
             'petDocuments.*' => 'sometimes|nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240',
             'ownerName' => 'required|string|max:255',
             'phone' => 'required|digits_between:7,15',
-            'email' => 'nullable|email|max:255',
+            'email' => 'required|email|max:255',
+            'region' => 'required|string|max:255',
             'province' => 'required|string',
             'city' => 'required|string',
             'barangay' => 'required|string',
@@ -167,6 +170,7 @@ class PetController extends Controller
                 'province'        => $request->province,
                 'zip_code'        => $request->zipCode,
                 'address'         => implode(', ', array_filter([
+                    $request->region,
                     $request->street,
                     $request->barangay,
                     $request->city,
@@ -287,6 +291,7 @@ class PetController extends Controller
                 'consultations.files',
                 'consultations.vaccinations',
                 'consultations.medications',
+                'consultations.payment',
                 'vaccinations.consultation',
                 'medications.consultation',
             ]))
@@ -306,6 +311,8 @@ class PetController extends Controller
                 'notes' => $consultation->notes,
                 'veterinarian' => $consultation->veterinarian,
                 'paymentStatus' => $consultation->payment_status,
+                'paymentRecordedById' => $consultation->payment?->recorded_by,
+                'createdById' => $consultation->created_by,
                 'fee' => $consultation->consultation_fee,
                     'linkedVaccinations' => $consultation->vaccinations->map(function ($vaccination) {
                         return [
@@ -401,6 +408,7 @@ class PetController extends Controller
             'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
             'registrationDate' => $pet->created_at->toISOString(),
             'owner' => [
+                'userId' => $pet->owner->user_id,
                 'name' => $pet->owner->name,
                 'phone' => $pet->owner->phone,
                 'email' => $pet->owner->email ?? '',
@@ -412,6 +420,7 @@ class PetController extends Controller
                 'zipCode' => $pet->owner->zip_code ?? '',
                 'emergencyContact' => $pet->owner->emergency_contact ?? '',
             ],
+            'clinicIds' => $pet->clinic_ids ?? [],
             'medicalHistory' => $consultations,
             'vaccinations' => $vaccinations,
             'allergies' => [],
@@ -436,10 +445,22 @@ class PetController extends Controller
 
         $vaccineItems = $inventoryItems->filter(fn ($item) => in_array($item['categorySlug'], ['vaccines', 'vaccination']))->values();
 
+        $consultationTypes = ConsultationType::where('user_id', Auth::id())
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($type) => [
+                'id' => $type->id,
+                'slug' => $type->slug,
+                'name' => $type->name,
+                'fee' => (float) $type->fee,
+                'description' => $type->description,
+            ]);
+
         return Inertia::render('pet-manage', [
             'pet' => $petData,
             'inventoryItems' => $inventoryItems,
             'vaccineItems' => $vaccineItems,
+            'consultationTypes' => $consultationTypes,
         ]);
     }
 

@@ -67,8 +67,8 @@ export default function ClinicSettings({
         ];
 
     const [logoPreview, setLogoPreview] = useState<string | null>(settings.clinic_logo);
-    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'default');
-    const [customColor, setCustomColor] = useState(settings.theme_color || '#0f172a');
+    const [selectedTheme, setSelectedTheme] = useState(settings.theme_name || 'forest');
+    const [customColor, setCustomColor] = useState(settings.theme_color || '#14532d');
     const [removeLogo, setRemoveLogo] = useState(false);
     const [isTwoFactorEnabled, setIsTwoFactorEnabled] = useState(twoFactorEnabled);
     const [isTwoFactorPending, setIsTwoFactorPending] = useState(twoFactorPending);
@@ -87,8 +87,8 @@ export default function ClinicSettings({
         clinic_name: settings.clinic_name || '',
         clinic_logo: null as File | null,
         remove_logo: false,
-        theme_name: settings.theme_name || 'default',
-        theme_color: settings.theme_color || '#0f172a',
+        theme_name: settings.theme_name || 'forest',
+        theme_color: settings.theme_color || '#14532d',
     });
 
     const passwordForm = useForm({

@@ -382,6 +382,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         ownerName: '',
         phone: '',
         email: '',
+        region: '',
         province: '',
         city: '',
         barangay: '',
@@ -421,6 +422,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         fd.append('ownerName', data.ownerName);
         fd.append('phone', data.phone);
         fd.append('email', data.email);
+        fd.append('region', data.region);
         fd.append('province', data.province);
         fd.append('city', data.city);
         fd.append('barangay', data.barangay);
@@ -998,12 +1000,14 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-sm font-medium">Email</label>
+                                                        <label className="text-sm font-medium">Email *</label>
                                                         <Input
                                                             type="email"
                                                             placeholder="owner@email.com"
                                                             value={data.email}
                                                             onChange={(e) => setData('email', e.target.value)}
+                                                            required
+                                                            className={formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
                                                         />
                                                         {formErrors.email && <div className="text-red-500 text-xs">{formErrors.email}</div>}
                                                     </div>
@@ -1012,7 +1016,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                     <label className="text-sm font-medium">Address *</label>
                                                     <AddressSelect
                                                         value={{
-                                                            region: '',
+                                                            region: data.region,
                                                             province: data.province,
                                                             city: data.city,
                                                             barangay: data.barangay,
@@ -1022,6 +1026,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                         onChange={(addr: AddressData) => {
                                                             setData(prev => ({
                                                                 ...prev,
+                                                                region: addr.region,
                                                                 province: addr.province,
                                                                 city: addr.city,
                                                                 barangay: addr.barangay,
@@ -1030,6 +1035,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             }));
                                                         }}
                                                         errors={{
+                                                            region: formErrors.region,
                                                             province: formErrors.province,
                                                             city: formErrors.city,
                                                             barangay: formErrors.barangay,
