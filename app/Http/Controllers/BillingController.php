@@ -123,7 +123,10 @@ class BillingController extends Controller
         if (! $user->isAdmin()) {
             $ownerUserId = $payment->pet?->owner?->user_id;
             $isWalkInSale = $payment->pet_id === null;
-            if (($isWalkInSale && $payment->recorded_by !== $user->id) || (!$isWalkInSale && $ownerUserId !== $user->id)) {
+            $isCreatorOfConsultation = $payment->consultation?->created_by === $user->id;
+
+            if (($isWalkInSale && $payment->recorded_by !== $user->id)
+                || (!$isWalkInSale && $ownerUserId !== $user->id && !$isCreatorOfConsultation)) {
                 abort(403);
             }
         }

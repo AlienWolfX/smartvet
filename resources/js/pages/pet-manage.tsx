@@ -77,13 +77,29 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
     return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
 }
 
+const getConsultationRecordCreatorId = (record: any): number | undefined => {
+    if (record.createdById === undefined || record.createdById === null) {
+        return undefined;
+    }
+
+    const createdById = Number(record.createdById);
+    return Number.isNaN(createdById) ? undefined : createdById;
+};
+
 const canShowConsultationPaymentStatus = (record: any, currentClinicId?: number) => {
     if (Number.isNaN(currentClinicId) || currentClinicId === undefined) {
         return false;
     }
 
-    const createdById = record.createdById !== undefined && record.createdById !== null ? Number(record.createdById) : undefined;
-    return createdById !== undefined && createdById === currentClinicId;
+    const createdById = getConsultationRecordCreatorId(record);
+    if (createdById === undefined) {
+        return false;
+    }
+
+    // Only show payment status for consultations created by the current clinic
+    // Completely hide the field for external clinic records
+    const isExternalRecord = createdById !== currentClinicId;
+    return !isExternalRecord;
 };
 
 interface Pet {
@@ -472,6 +488,9 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
         if (!data.consultationDate) {
             newErrors.consultationDate = 'Please select a consultation date';
         }
+        if (!data.consultationWeight || parseFloat(data.consultationWeight) < 0.1) {
+            newErrors.consultationWeight = 'Weight must be at least 0.1 kg';
+        }
 
         if (Object.keys(newErrors).length > 0) {
             setConsultationErrors(newErrors);
@@ -492,7 +511,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
         formData.append('treatment', data.treatment || '');
         formData.append('notes', data.notes || '');
         formData.append('consultation_date', data.consultationDate);
-        formData.append('weight', data.consultationWeight || '0');
+        formData.append('weight', data.consultationWeight);
         formData.append('consultation_fee', data.consultationFee || '0');
 
         data.consultationFiles.forEach((file, index) => {
@@ -529,7 +548,13 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                         } else {
                             msg = 'Invalid input.';
                         }
-                        return [key === 'consultation_type' ? 'consultationType' : key === 'chief_complaint' ? 'chiefComplaint' : key === 'consultation_date' ? 'consultationDate' : key, msg];
+                        const keyMap: Record<string, string> = {
+                            'consultation_type': 'consultationType',
+                            'chief_complaint': 'chiefComplaint',
+                            'consultation_date': 'consultationDate',
+                            'weight': 'consultationWeight',
+                        };
+                        return [keyMap[key] || key, msg];
                     })
                 );
 

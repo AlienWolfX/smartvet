@@ -169,11 +169,23 @@ class ConsultationController extends Controller
 
             return redirect()->back()->with('success', 'Consultation record added successfully!');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Illuminate\Support\Facades\Log::warning('Consultation validation failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('Consultation validation failed', ['errors' => $e->errors()]);
             return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Illuminate\Support\Facades\Log::error('Database error during consultation creation', [
+                'message' => $e->getMessage(),
+                'sql' => $e->getSql() ?? 'N/A',
+                'bindings' => $e->getBindings() ?? []
+            ]);
+            return redirect()->back()->withErrors(['general' => 'Database error: ' . $e->getMessage()])->withInput();
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Consultation creation failed: ' . $e->getMessage());
-            return redirect()->back()->withErrors(['general' => 'Failed to create consultation. Please try again.']);
+            \Illuminate\Support\Facades\Log::error('Consultation creation failed', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->withErrors(['general' => 'Failed to create consultation: ' . $e->getMessage()])->withInput();
         }
     }
 

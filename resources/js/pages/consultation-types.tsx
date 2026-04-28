@@ -124,11 +124,16 @@ export default function ConsultationTypes({ types }: ConsultationTypesPageProps)
             breadcrumbs={breadcrumbs}
         >
             <Card>
-                <CardHeader>
-                    <CardTitle>Available consultation types</CardTitle>
-                    <CardDescription>
-                        These types are available when recording new consultations in your clinic dashboard.
-                    </CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Available consultation types</CardTitle>
+                        <CardDescription>
+                            These types are available when recording new consultations in your clinic dashboard.
+                        </CardDescription>
+                    </div>
+                    <Button onClick={openCreateModal} className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
+                        <Plus className="mr-2 h-4 w-4" /> Create Type
+                    </Button>
                 </CardHeader>
                 <CardContent>
                     {types.length === 0 ? (

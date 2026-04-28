@@ -51,6 +51,7 @@ trait ScopesToTenant
     /**
      * Scope PetPayment queries for the authenticated user.
      * Includes payments for owned pets or walk-in payments recorded by the user.
+     * Also includes payments for consultations/vaccinations created by the current user (even on cross-clinic pets).
      */
     protected function scopePetPaymentToUser(Builder $query): Builder
     {
@@ -58,12 +59,18 @@ trait ScopesToTenant
         $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->where(function (Builder $q) use ($user) {
+                // Payments for pets owned by this clinic
                 $q->whereHas('pet.owner', function (Builder $subQuery) use ($user) {
                     $subQuery->where('owners.user_id', $user->id);
                 })
+                // OR walk-in payments recorded by this clinic
                 ->orWhere(function (Builder $subQuery) use ($user) {
                     $subQuery->whereNull('pet_id')
                         ->where('recorded_by', $user->id);
+                })
+                // OR payments for consultations created by this clinic (cross-clinic consultations)
+                ->orWhereHas('consultation', function (Builder $subQuery) use ($user) {
+                    $subQuery->where('created_by', $user->id);
                 });
             });
         }
