@@ -71,6 +71,7 @@ interface PetResult {
         phone: string;
         email: string | null;
         address?: string;
+        region?: string;
         street?: string;
         barangay?: string;
         city?: string;
@@ -269,11 +270,21 @@ export default function PetScanner() {
             formData.append('ownerName', result.owner.name);
             formData.append('phone', result.owner.phone);
             formData.append('email', result.owner.email || '');
-            formData.append('street', result.owner.street || '');
-            formData.append('barangay', result.owner.barangay || '');
-            formData.append('city', result.owner.city || '');
-            formData.append('province', result.owner.province || '');
-            formData.append('zipCode', result.owner.zipCode || '');
+
+            const addressParts = (result.owner.address ?? '').split(',').map(part => part.trim()).filter(Boolean);
+            const street = result.owner.street || addressParts[0] || '';
+            const barangay = result.owner.barangay || addressParts[1] || '';
+            const city = result.owner.city || addressParts[2] || '';
+            const province = result.owner.province || addressParts[3] || '';
+            const zipCode = result.owner.zipCode || addressParts[4] || '';
+            const region = result.owner.region || province || city || 'Unknown';
+
+            formData.append('region', region);
+            formData.append('province', province || region);
+            formData.append('city', city || province || region);
+            formData.append('barangay', barangay || city || province || region);
+            formData.append('street', street);
+            formData.append('zipCode', zipCode);
             formData.append('qrToken', scannedToken);
 
             // Download and add pet image if available
