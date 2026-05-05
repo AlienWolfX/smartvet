@@ -30,6 +30,7 @@ class ClinicAuthController extends Controller
         $credentials = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required'],
+            'remember' => ['boolean'],
             'captcha_token' => ['required', 'string'],
         ]);
 

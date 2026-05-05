@@ -49,8 +49,8 @@ class FortifyServiceProvider extends ServiceProvider
             $request->validate([
                 'email' => ['required', 'email'],
                 'password' => ['required', 'string'],
+                'remember' => ['boolean'],
             ]);
-            // Captcha temporarily disabled for pet owner/general login
 
             $user = User::where('email', $request->string('email')->toString())->first();
 
