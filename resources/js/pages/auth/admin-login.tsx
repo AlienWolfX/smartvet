@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Head, useForm } from '@inertiajs/react';
-import { LockKeyhole, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, LockKeyhole, Sparkles } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 interface AdminLoginProps {
@@ -16,6 +16,7 @@ interface AdminLoginProps {
 
 export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) {
     const [captchaRefreshNonce, setCaptchaRefreshNonce] = useState(0);
+    const [showPassword, setShowPassword] = useState(false);
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -114,18 +115,32 @@ export default function AdminLogin({ status, captchaSiteKey }: AdminLoginProps) 
 
                             <div className="grid gap-1.5">
                                 <Label htmlFor="password" className="text-xs font-medium text-slate-600">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="••••••••"
-                                    value={data.password}
-                                    onChange={(event) => setData('password', event.target.value)}
-                                    className="h-9 border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:border-indigo-500/60 focus:ring-indigo-500/20"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        name="password"
+                                        required
+                                        tabIndex={2}
+                                        autoComplete="current-password"
+                                        placeholder="••••••••"
+                                        value={data.password}
+                                        onChange={(event) => setData('password', event.target.value)}
+                                        className="h-9 border-slate-200 bg-white text-sm placeholder:text-slate-400 focus:border-indigo-500/60 focus:ring-indigo-500/20 pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((value) => !value)}
+                                        className="absolute inset-y-0 right-2 flex items-center rounded px-1 text-slate-500 hover:text-slate-900"
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
                                 <InputError message={errors.password} />
                             </div>
 

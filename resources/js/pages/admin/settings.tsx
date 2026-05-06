@@ -159,53 +159,40 @@ export default function AdminSettings({
         setVerificationError(null);
         setConfirmingCode(true);
 
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const response = await fetch('/user/confirmed-two-factor-authentication', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+        router.post(
+            '/user/confirmed-two-factor-authentication',
+            { code: verificationCode.trim(), _token: csrfToken },
+            {
+                preserveScroll: true,
+                onSuccess: async () => {
+                    const codesRes = await fetch('/user/two-factor-recovery-codes', {
+                        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        credentials: 'same-origin',
+                    });
+
+                    if (codesRes.ok) {
+                        const codesData = await codesRes.json();
+                        setRecoveryCodes(Array.isArray(codesData) ? codesData : []);
+                    } else {
+                        setRecoveryCodes([]);
+                    }
+
+                    setSetupCompleted(true);
+                    setIsTwoFactorEnabled(true);
+                    setIsTwoFactorPending(false);
+                    success('Two-factor authentication is now active. Save your backup codes now.');
                 },
-                body: JSON.stringify({ code: verificationCode.trim() }),
-            });
-
-            if (!response.ok) {
-                if (response.status === 422) {
-                    const payload = await response.json();
-                    const message = payload?.errors?.code?.[0] ?? 'The authentication code is invalid.';
+                onError: (errors: any) => {
+                    const message = errors?.code?.[0] ?? 'Unable to verify the authentication code. Please try again.';
                     setVerificationError(message);
-                    return;
-                }
-
-                setVerificationError('Unable to verify the authentication code. Please try again.');
-                return;
+                },
+                onFinish: () => {
+                    setConfirmingCode(false);
+                },
             }
-
-            const codesRes = await fetch('/user/two-factor-recovery-codes', {
-                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                credentials: 'same-origin',
-            });
-
-            if (codesRes.ok) {
-                const codesData = await codesRes.json();
-                setRecoveryCodes(Array.isArray(codesData) ? codesData : []);
-            } else {
-                setRecoveryCodes([]);
-            }
-
-            setSetupCompleted(true);
-            setIsTwoFactorEnabled(true);
-            setIsTwoFactorPending(false);
-            success('Two-factor authentication is now active. Save your backup codes now.');
-        } catch {
-            setVerificationError('Unable to verify the authentication code. Please try again.');
-        } finally {
-            setConfirmingCode(false);
-        }
+        );
     };
 
     const handleDisableTwoFactor = () => {

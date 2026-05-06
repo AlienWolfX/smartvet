@@ -34,7 +34,7 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
                 headers: {
                     Accept: 'application/json',
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken,
+                    'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'same-origin',
@@ -58,9 +58,10 @@ export function useInactivityTimeout(options: UseInactivityTimeoutOptions = {}) 
             await fetch('/activity/ping', {
                 method: 'POST',
                 headers: {
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-Token': csrfToken,
+                    'X-CSRF-TOKEN': csrfToken,
                 },
                 credentials: 'same-origin',
             });
