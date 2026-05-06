@@ -1,6 +1,6 @@
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type SharedData } from '@/types';
 import {
     Card,
@@ -95,6 +95,25 @@ export default function Billing({ pendingPayments, paymentHistory }: Props) {
 
     const { auth } = usePage<SharedData>().props;
     const clinicName = (auth.user as { clinic_name?: string })?.clinic_name || 'SmartVet';
+
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const paymentIdParam = searchParams.get('payment_id');
+        if (!paymentIdParam) {
+            return;
+        }
+
+        const paymentId = Number(paymentIdParam);
+        if (Number.isNaN(paymentId)) {
+            return;
+        }
+
+        const payment = paymentHistory.find((item) => item.id === paymentId);
+        if (payment) {
+            setSelectedHistoryPayment(payment);
+            setBillingSlipModalOpen(true);
+        }
+    }, [paymentHistory]);
 
     // Pagination states
     const [pendingPage, setPendingPage] = useState(1);

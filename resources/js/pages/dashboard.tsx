@@ -8,6 +8,14 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
 import { dashboard } from '@/routes';
@@ -41,12 +49,14 @@ const formatPeso = (value: number) =>
     `₱${value.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`;
 
 interface RecentTransaction {
+    paymentId: number;
     id: string;
     client: string;
     pet: string;
     service: string;
     amount: number;
     status: 'Cleared' | 'Pending' | 'Flagged';
+    date: string;
 }
 
 interface ServiceHighlight {
@@ -117,6 +127,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Dashboard({ stats, recentTransactions, serviceHighlights }: DashboardProps) {
     const { auth } = usePage<SharedData>().props;
     const [showTour, setShowTour] = useState(!((auth.user as { onboarding_complete?: boolean })?.onboarding_complete));
+    const [billingSlipModalOpen, setBillingSlipModalOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<RecentTransaction | null>(null);
     const [page, setPage] = useState(0);
     const pageSize = 3;
     const transactionCount = recentTransactions?.length || 0;
@@ -333,7 +345,15 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
                                             {formatPeso(tx.amount)}
                                         </p>
                                     </div>
-                                    <Button variant="ghost" size="sm" className="ml-auto">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="ml-auto"
+                                        onClick={() => {
+                                            setSelectedTransaction(tx);
+                                            setBillingSlipModalOpen(true);
+                                        }}
+                                    >
                                         View details
                                     </Button>
                                 </div>
@@ -433,6 +453,69 @@ export default function Dashboard({ stats, recentTransactions, serviceHighlights
                 </Card>
             </div>
             </div>
+
+            <Dialog open={billingSlipModalOpen} onOpenChange={setBillingSlipModalOpen}>
+                <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl">Payment Details</DialogTitle>
+                        <DialogDescription>
+                            Transaction details for {selectedTransaction?.pet}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="overflow-y-auto flex-1 px-6">
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-3">
+                                <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Transaction ID</p>
+                                    <p className="text-sm font-semibold">{selectedTransaction?.id}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</p>
+                                    <p className="text-sm">{selectedTransaction?.date}</p>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-3">
+                                <p className="text-sm font-semibold mb-3">Customer & Pet Information</p>
+                                <div className="space-y-2 text-sm">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Owner</p>
+                                        <p className="font-medium">{selectedTransaction?.client}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Pet</p>
+                                        <p className="font-medium">{selectedTransaction?.pet}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-3">
+                                <p className="text-sm font-semibold mb-3">Service Details</p>
+                                <div className="space-y-2 text-sm">
+                                    <div>
+                                        <p className="text-xs text-muted-foreground">Service</p>
+                                        <p className="font-medium">{selectedTransaction?.service}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t">
+                                        <span className="font-medium">Amount</span>
+                                        <span className="text-lg font-bold">{formatPeso(selectedTransaction?.amount || 0)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-3">
+                                <p className="text-sm font-semibold mb-2">Status</p>
+                                <Badge variant="outline" className={selectedTransaction ? statusTone[selectedTransaction.status] : ''}>
+                                    {selectedTransaction?.status}
+                                </Badge>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => setBillingSlipModalOpen(false)}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

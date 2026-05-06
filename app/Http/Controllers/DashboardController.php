@@ -24,65 +24,73 @@ class DashboardController extends Controller
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
         // Daily revenue stats
-        $todayRevenue = $this->scopeThroughPetOwner(PetPayment::where('status', 'paid')
+        $todayRevenue = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'paid')
             ->whereDate('paid_at', $today))
             ->sum('total_amount');
 
-        $yesterdayRevenue = $this->scopeThroughPetOwner(PetPayment::where('status', 'paid')
+        $yesterdayRevenue = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'paid')
             ->whereDate('paid_at', $yesterday))
             ->sum('total_amount');
 
-        $todayInvoices = $this->scopeThroughPetOwner(PetPayment::whereDate('created_at', $today))->count();
+        $todayInvoices = $this->scopePetPaymentToUser(PetPayment::query()->whereDate('created_at', $today))->count();
 
         // Monthly revenue
-        $thisMonthRevenue = $this->scopeThroughPetOwner(PetPayment::where('status', 'paid')
+        $thisMonthRevenue = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'paid')
             ->whereDate('paid_at', '>=', $thisMonth))
             ->sum('total_amount');
 
-        $lastMonthRevenue = $this->scopeThroughPetOwner(PetPayment::where('status', 'paid')
+        $lastMonthRevenue = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'paid')
             ->whereDate('paid_at', '>=', $lastMonth)
             ->whereDate('paid_at', '<=', $lastMonthEnd))
             ->sum('total_amount');
 
         // Pending/Outstanding payments
-        $pendingAmount = $this->scopeThroughPetOwner(PetPayment::where('status', 'pending'))->sum('total_amount');
-        $pendingCount = $this->scopeThroughPetOwner(PetPayment::where('status', 'pending'))->count();
+        $pendingAmount = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'pending'))->sum('total_amount');
+        $pendingCount = $this->scopePetPaymentToUser(PetPayment::query()->where('status', 'pending'))->count();
 
         // Today's patients/consultations
-        $todayConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', $today))->count();
-        $yesterdayConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', $yesterday))->count();
-        $lastMonthConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', '>=', $lastMonth)->whereDate('consultation_date', '<=', $lastMonthEnd))->count();
+        $todayConsultations = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', $today))->count();
+        $yesterdayConsultations = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', $yesterday))->count();
+        $lastMonthConsultations = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', '>=', $lastMonth)->whereDate('consultation_date', '<=', $lastMonthEnd))->count();
 
         // Vaccinations counts
-        $presentMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::whereDate('vaccination_date', '>=', $thisMonth)->whereDate('vaccination_date', '<=', Carbon::now()))->count();
-        $previousMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::whereDate('vaccination_date', '>=', $lastMonth)->whereDate('vaccination_date', '<=', $lastMonthEnd))->count();
+        $presentMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::query()->whereDate('vaccination_date', '>=', $thisMonth)->whereDate('vaccination_date', '<=', Carbon::now()))->count();
+        $previousMonthlyVaccinations = $this->scopeThroughPetOwner(Vaccination::query()->whereDate('vaccination_date', '>=', $lastMonth)->whereDate('vaccination_date', '<=', $lastMonthEnd))->count();
 
         // Present month consultations
-        $presentMonthlyConsultations = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', '>=', $thisMonth)->whereDate('consultation_date', '<=', Carbon::now()))->count();
+        $presentMonthlyConsultations = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', '>=', $thisMonth)->whereDate('consultation_date', '<=', Carbon::now()))->count();
 
         // Total pets and owners
         $totalPets = $this->scopePetToUser(Pet::query())->count();
         $totalOwners = $this->scopeToUser(Owner::query())->count();
-        $activePets = $this->scopePetToUser(Pet::where('status', 'active'))->count();
+        $activePets = $this->scopePetToUser(Pet::query()->where('status', 'active'))->count();
 
         // Recent transactions
-        $recentPayments = $this->scopeThroughPetOwner(PetPayment::with(['pet', 'pet.owner']))
+        $recentPayments = $this->scopePetPaymentToUser(PetPayment::query()->with(['pet', 'pet.owner', 'items']))
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get()
             ->map(function ($payment) {
+                $serviceDescription = $payment->items->count()
+                    ? $payment->items->pluck('description')->join(', ')
+                    : ($payment->customer_name ? 'Walk-in sale' : 'Clinic services');
+
                 return [
+                    'paymentId' => $payment->id,
                     'id' => 'TX-' . str_pad($payment->id, 5, '0', STR_PAD_LEFT),
-                    'client' => $payment->pet?->owner?->name ?? 'Unknown',
-                    'pet' => ($payment->pet?->name ?? 'Unknown') . ' • ' . ($payment->pet?->species?->name ?? 'Pet'),
-                    'service' => $payment->description ?? 'Clinic Services',
+                    'client' => $payment->pet?->owner?->name ?? $payment->customer_name ?? 'Walk-in Customer',
+                    'pet' => $payment->pet
+                        ? ($payment->pet->name . ' • ' . ($payment->pet->species?->name ?? 'Pet'))
+                        : 'Walk-in',
+                    'service' => $serviceDescription,
                     'amount' => (float) $payment->total_amount,
                     'status' => $this->mapPaymentStatus($payment->status),
+                    'date' => $payment->created_at->format('M d, Y • g:i A'),
                 ];
             });
 
         // Service breakdown (by consultation type)
-        $consultationBreakdown = $this->scopeThroughPetOwner(Consultation::whereDate('consultation_date', '>=', $thisMonth))
+        $consultationBreakdown = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', '>=', $thisMonth))
             ->selectRaw('consultation_type, COUNT(*) as cases, SUM(consultation_fee) as revenue')
             ->groupBy('consultation_type')
             ->get()
@@ -98,13 +106,13 @@ class DashboardController extends Controller
             });
 
         // Low stock alerts
-        $lowStockCount = $this->scopeToUser(InventoryItem::where(function ($query) {
+        $lowStockCount = $this->scopeToUser(InventoryItem::query()->where(function ($query) {
             $query->whereColumn('current_stock', '<=', 'min_stock')
                 ->orWhere('current_stock', 0);
         }))->count();
 
         // Upcoming vaccinations
-        $upcomingVaccinations = $this->scopeThroughPetOwner(Vaccination::whereNotNull('next_due_date')
+        $upcomingVaccinations = $this->scopeThroughPetOwner(Vaccination::query()->whereNotNull('next_due_date')
             ->where('next_due_date', '<=', Carbon::now()->addDays(7)))
             ->count();
 

@@ -1,8 +1,9 @@
 import AdminLayout from '@/layouts/admin-layout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type SharedData } from '@/types';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,11 +42,17 @@ interface Props {
 interface PageProps extends SharedData {
     [key: string]: unknown;
     errors?: Record<string, string | string[]>;
+    flash?: {
+        success?: string;
+        error?: string;
+        [key: string]: any;
+    };
 }
 
 export default function MedicationSales({ pets, inventoryItems }: Props) {
     const { props } = usePage<PageProps>();
     const errors = (props.errors ?? {}) as Record<string, string[]>;
+    const { success, error } = useToast();
 
     const [petId, setPetId] = useState<number | 'walkin' | ''>('');
     const [customerName, setCustomerName] = useState('');
@@ -124,6 +131,17 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
             notes,
             inventory_items: filteredItems,
         }, {
+            onSuccess: () => {
+                success('Inventory sale created successfully and inventory stock updated.');
+            },
+            onError: (serverErrors) => {
+                const errorMessage = serverErrors.general
+                    ? Array.isArray(serverErrors.general)
+                        ? serverErrors.general[0]
+                        : serverErrors.general
+                    : 'Please review the form and try again.';
+                error(errorMessage);
+            },
             onFinish: () => setSubmitting(false),
         });
     };
@@ -146,10 +164,21 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {(props.flash?.error || errors.general) && (
+                                <div className="flex w-full justify-end">
+                                    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 max-w-xl">
+                                        {props.flash?.error || (Array.isArray(errors.general) ? errors.general[0] : errors.general)}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
                                     <Label htmlFor="pet">Pet</Label>
-                                    <Select value={petId?.toString() ?? ''} onValueChange={(value) => setPetId(value ? Number(value) : '')}>
+                                    <Select
+                                        value={petId?.toString() ?? ''}
+                                        onValueChange={(value) => setPetId(value === 'walkin' ? 'walkin' : value ? Number(value) : '')}
+                                    >
                                         <SelectTrigger id="pet" className="h-11">
                                             <SelectValue placeholder="Select pet (or choose walk-in)" />
                                         </SelectTrigger>
@@ -175,7 +204,7 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
                                     />
                                     {errors.customer_name && <p className="text-sm text-red-600">{errors.customer_name[0]}</p>}
                                 </div>
-                                <div className="grid gap-2">
+                                <div className="grid gap-2 md:col-span-2">
                                     <Label htmlFor="notes">Sale Notes</Label>
                                     <Textarea
                                         id="notes"
@@ -188,58 +217,71 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                {lineItems.map((lineItem, index) => (
-                                    <div key={index} className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50/80 p-4 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.4fr]">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={`item-${index}`}>Product</Label>
-                                            <Select
-                                                value={lineItem.inventory_item_id?.toString() ?? ''}
-                                                onValueChange={(value) => handleLineChange(index, 'inventory_item_id', value)}
-                                            >
-                                                <SelectTrigger id={`item-${index}`} className="h-11">
-                                                    <SelectValue placeholder="Select product" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {inventoryItems.map((item) => (
-                                                        <SelectItem key={item.id} value={item.id.toString()}>
-                                                            {item.name} {item.brand ? `(${item.brand})` : ''} — {item.categoryName} — {item.currentStock} in stock
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors[`inventory_items.${index}.inventory_item_id`] && (
-                                                <p className="text-sm text-red-600">{errors[`inventory_items.${index}.inventory_item_id`][0]}</p>
-                                            )}
-                                        </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50/90 p-4">
+                                <div className="hidden gap-4 text-xs font-semibold uppercase tracking-[0.24em] text-slate-500 md:grid md:grid-cols-[1.3fr_0.8fr_0.8fr_0.4fr]">
+                                    <span>Product</span>
+                                    <span>Quantity</span>
+                                    <span>Unit Price</span>
+                                    <span className="text-right">Action</span>
+                                </div>
+                                <div className="space-y-4">
+                                    {lineItems.map((lineItem, index) => (
+                                        <div key={index} className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[1.3fr_0.8fr_0.8fr_0.4fr]">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor={`item-${index}`}>Product</Label>
+                                                <Select
+                                                    value={lineItem.inventory_item_id?.toString() ?? ''}
+                                                    onValueChange={(value) => handleLineChange(index, 'inventory_item_id', value)}
+                                                >
+                                                    <SelectTrigger id={`item-${index}`} className="h-11">
+                                                        <SelectValue placeholder="Select product" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="w-[500px] max-h-[400px]">
+                                                        {inventoryItems.map((item) => (
+                                                            <SelectItem key={item.id} value={item.id.toString()}>
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <span className="font-medium">{item.name}</span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {item.brand ? `${item.brand} • ` : ''}{item.categoryName} • {item.currentStock} in stock
+                                                                    </span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                {errors[`inventory_items.${index}.inventory_item_id`] && (
+                                                    <p className="text-sm text-red-600">{errors[`inventory_items.${index}.inventory_item_id`][0]}</p>
+                                                )}
+                                            </div>
 
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={`qty-${index}`}>Quantity</Label>
-                                            <Input
-                                                id={`qty-${index}`}
-                                                type="number"
-                                                min="1"
-                                                value={lineItem.quantity}
-                                                onChange={(event) => handleLineChange(index, 'quantity', Number(event.target.value))}
-                                                className="h-11"
-                                            />
-                                            {errors[`inventory_items.${index}.quantity`] && (
-                                                <p className="text-sm text-red-600">{errors[`inventory_items.${index}.quantity`][0]}</p>
-                                            )}
-                                        </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor={`qty-${index}`}>Quantity</Label>
+                                                <Input
+                                                    id={`qty-${index}`}
+                                                    type="number"
+                                                    min="1"
+                                                    value={lineItem.quantity}
+                                                    onChange={(event) => handleLineChange(index, 'quantity', Number(event.target.value))}
+                                                    className="h-11"
+                                                />
+                                                {errors[`inventory_items.${index}.quantity`] && (
+                                                    <p className="text-sm text-red-600">{errors[`inventory_items.${index}.quantity`][0]}</p>
+                                                )}
+                                            </div>
 
-                                        <div className="grid gap-2">
-                                            <Label>Unit Price</Label>
-                                            <Input value={`₱${lineItem.unit_price.toFixed(2)}`} readOnly className="h-11 bg-white/80" />
-                                        </div>
+                                            <div className="grid gap-2">
+                                                <Label>Unit Price</Label>
+                                                <Input value={`₱${lineItem.unit_price.toFixed(2)}`} readOnly className="h-11 bg-white/80" />
+                                            </div>
 
-                                        <div className="flex items-end justify-end">
-                                            <Button type="button" variant="ghost" onClick={() => removeLineItem(index)} disabled={lineItems.length === 1} className="h-11 w-full">
-                                                <Trash2 className="mr-2 h-4 w-4" /> Remove
-                                            </Button>
+                                            <div className="flex items-end justify-end">
+                                                <Button type="button" variant="ghost" onClick={() => removeLineItem(index)} disabled={lineItems.length === 1} className="h-11 w-full">
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Remove
+                                                </Button>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
