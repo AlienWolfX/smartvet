@@ -37,7 +37,7 @@ class ConsultationFile extends Model
 
     public function getFileUrlAttribute(): string
     {
-        return Storage::disk('public')->url($this->file_path);
+        return asset('storage/' . ltrim(str_replace('\\', '/', $this->file_path), '/'));
     }
 
     public function getFileSizeFormattedAttribute(): string
