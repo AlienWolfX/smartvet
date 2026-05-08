@@ -26,6 +26,6 @@ class PetSpecies extends Model
 
     public function pets(): HasMany
     {
-        return $this->hasMany(Pet::class, 'species_id');
+        return $this->hasMany(Pet::class, 'species_id', 'pet_species_id');
     }
 }

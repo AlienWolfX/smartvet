@@ -44,12 +44,12 @@ class Medication extends Model
 
     public function pet(): BelongsTo
     {
-        return $this->belongsTo(Pet::class);
+        return $this->belongsTo(Pet::class, 'pet_id', 'pet_id');
     }
 
     public function consultation(): BelongsTo
     {
-        return $this->belongsTo(Consultation::class);
+        return $this->belongsTo(Consultation::class, 'consultation_id', 'consultation_id');
     }
 
     public function inventoryUsages(): MorphMany

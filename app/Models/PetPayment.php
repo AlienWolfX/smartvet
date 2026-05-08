@@ -43,26 +43,26 @@ class PetPayment extends Model
 
     public function pet(): BelongsTo
     {
-        return $this->belongsTo(Pet::class);
+        return $this->belongsTo(Pet::class, 'pet_id', 'pet_id');
     }
 
     public function items(): HasMany
     {
-        return $this->hasMany(PetPaymentItem::class);
+        return $this->hasMany(PetPaymentItem::class, 'pet_payment_id', 'pet_payment_id');
     }
 
     public function recordedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(User::class, 'recorded_by', 'user_id');
     }
 
     public function consultation(): BelongsTo
     {
-        return $this->belongsTo(Consultation::class);
+        return $this->belongsTo(Consultation::class, 'consultation_id', 'consultation_id');
     }
 
     public function vaccination(): BelongsTo
     {
-        return $this->belongsTo(Vaccination::class);
+        return $this->belongsTo(Vaccination::class, 'vaccination_id', 'vaccination_id');
     }
 }

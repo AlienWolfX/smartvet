@@ -26,6 +26,6 @@ class PetPaymentItem extends Model
 
     public function payment(): BelongsTo
     {
-        return $this->belongsTo(PetPayment::class, 'pet_payment_id');
+        return $this->belongsTo(PetPayment::class, 'pet_payment_id', 'pet_payment_id');
     }
 }

@@ -51,16 +51,16 @@ class Owner extends Model
 
     public function pets(): HasMany
     {
-        return $this->hasMany(Pet::class);
+        return $this->hasMany(Pet::class, 'owner_id', 'owner_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
     public function accountUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'account_user_id');
+        return $this->belongsTo(User::class, 'account_user_id', 'user_id');
     }
 }

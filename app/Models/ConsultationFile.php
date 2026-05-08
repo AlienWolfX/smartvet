@@ -32,7 +32,7 @@ class ConsultationFile extends Model
 
     public function consultation(): BelongsTo
     {
-        return $this->belongsTo(Consultation::class);
+        return $this->belongsTo(Consultation::class, 'consultation_id', 'consultation_id');
     }
 
     public function getFileUrlAttribute(): string

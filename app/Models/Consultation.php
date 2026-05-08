@@ -44,27 +44,27 @@ class Consultation extends Model
 
     public function pet(): BelongsTo
     {
-        return $this->belongsTo(Pet::class);
+        return $this->belongsTo(Pet::class, 'pet_id', 'pet_id');
     }
 
     public function files(): HasMany
     {
-        return $this->hasMany(ConsultationFile::class);
+        return $this->hasMany(ConsultationFile::class, 'consultation_id', 'consultation_id');
     }
 
     public function medications(): HasMany
     {
-        return $this->hasMany(Medication::class);
+        return $this->hasMany(Medication::class, 'consultation_id', 'consultation_id');
     }
 
     public function vaccinations(): HasMany
     {
-        return $this->hasMany(Vaccination::class);
+        return $this->hasMany(Vaccination::class, 'consultation_id', 'consultation_id');
     }
 
     public function payment(): HasOne
     {
-        return $this->hasOne(PetPayment::class, 'consultation_id');
+        return $this->hasOne(PetPayment::class, 'consultation_id', 'consultation_id');
     }
 
     public function inventoryUsages(): MorphMany

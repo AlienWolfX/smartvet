@@ -41,31 +41,31 @@ class Pet extends Model
 
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(Owner::class);
+        return $this->belongsTo(Owner::class, 'owner_id', 'owner_id');
     }
 
     public function species(): BelongsTo
     {
-        return $this->belongsTo(PetSpecies::class, 'species_id');
+        return $this->belongsTo(PetSpecies::class, 'species_id', 'pet_species_id');
     }
 
     public function consultations(): HasMany
     {
-        return $this->hasMany(Consultation::class);
+        return $this->hasMany(Consultation::class, 'pet_id', 'pet_id');
     }
 
     public function vaccinations(): HasMany
     {
-        return $this->hasMany(Vaccination::class);
+        return $this->hasMany(Vaccination::class, 'pet_id', 'pet_id');
     }
 
     public function medications(): HasMany
     {
-        return $this->hasMany(Medication::class);
+        return $this->hasMany(Medication::class, 'pet_id', 'pet_id');
     }
 
     public function payments(): HasMany
     {
-        return $this->hasMany(PetPayment::class);
+        return $this->hasMany(PetPayment::class, 'pet_id', 'pet_id');
     }
 }

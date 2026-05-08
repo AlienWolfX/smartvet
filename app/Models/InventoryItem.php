@@ -42,16 +42,16 @@ class InventoryItem extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(InventoryCategory::class, 'inventory_category_id');
+        return $this->belongsTo(InventoryCategory::class, 'inventory_category_id', 'inventory_category_id');
     }
 
-    public function usages(): HasMany
+    public function inventoryUsages(): HasMany
     {
-        return $this->hasMany(InventoryUsage::class);
+        return $this->hasMany(InventoryUsage::class, 'inventory_item_id', 'inventory_item_id');
     }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 }

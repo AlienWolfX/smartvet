@@ -23,7 +23,7 @@ class InventoryUsage extends Model
 
     public function inventoryItem(): BelongsTo
     {
-        return $this->belongsTo(InventoryItem::class);
+        return $this->belongsTo(InventoryItem::class, 'inventory_item_id', 'inventory_item_id');
     }
 
     public function usable(): MorphTo
