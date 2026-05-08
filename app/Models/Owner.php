@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Owner extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'owner_id';
 
     protected $fillable = [
         'user_id',

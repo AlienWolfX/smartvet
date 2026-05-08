@@ -12,7 +12,7 @@ return new class extends Migration
             $table->foreignId('account_user_id')
                 ->nullable()
                 ->after('user_id')
-                ->constrained('users')
+                ->constrained('users', 'user_id')
                 ->nullOnDelete();
 
             $table->index('account_user_id');

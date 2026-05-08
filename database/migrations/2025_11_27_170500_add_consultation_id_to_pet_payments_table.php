@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('pet_payments', function (Blueprint $table) {
-            $table->foreignId('consultation_id')->nullable()->after('pet_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('consultation_id')->nullable()->after('pet_id')->constrained('consultations', 'consultation_id')->cascadeOnDelete();
             $table->string('status')->default('pending')->after('total_amount');
         });
     }

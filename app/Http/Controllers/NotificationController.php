@@ -121,7 +121,7 @@ class NotificationController extends Controller
     public function dismiss(Request $request): JsonResponse
     {
         $request->validate([
-            'inventory_item_id' => 'required|integer|exists:inventory_items,id',
+            'inventory_item_id' => 'required|integer|exists:inventory_items,inventory_item_id',
             'notification_type' => 'required|string|in:expired,expiring_soon,out_of_stock,low_stock',
         ]);
 

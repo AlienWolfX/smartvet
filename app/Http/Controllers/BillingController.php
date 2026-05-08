@@ -159,12 +159,12 @@ class BillingController extends Controller
                 ]);
 
                 if ($payment->consultation_id) {
-                    Consultation::where('id', $payment->consultation_id)
+                    Consultation::where('consultation_id', $payment->consultation_id)
                         ->update(['payment_status' => 'paid']);
                 }
 
                 if ($payment->vaccination_id) {
-                    Vaccination::where('id', $payment->vaccination_id)
+                    Vaccination::where('vaccination_id', $payment->vaccination_id)
                         ->update(['payment_status' => 'paid']);
                 }
             });

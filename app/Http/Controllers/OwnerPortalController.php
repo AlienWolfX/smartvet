@@ -80,14 +80,14 @@ class OwnerPortalController extends Controller
 
         $clinicName = $user->clinic_name ?? $ownerClinicName ?? 'SmartVet';
 
-        $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
+        $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('owner_id');
         $pet = \App\Models\Pet::with(['owner', 'vaccinations', 'consultations.files', 'consultations.inventoryUsages.inventoryItem'])
             ->whereIn('owner_id', $owners)
             ->findOrFail($petId);
 
         $firstClinicId = $pet->clinic_ids[0] ?? null;
         $registeredClinicName = $firstClinicId
-            ? \App\Models\User::where('id', $firstClinicId)->value('clinic_name')
+            ? \App\Models\User::where('user_id', $firstClinicId)->value('clinic_name')
             : null;
 
         $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
@@ -167,7 +167,7 @@ class OwnerPortalController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $ownerIds = \App\Models\Owner::where('account_user_id', $user->id)->pluck('id');
+        $ownerIds = \App\Models\Owner::where('account_user_id', $user->id)->pluck('owner_id');
         $pet = \App\Models\Pet::whereIn('owner_id', $ownerIds)->findOrFail($petId);
 
         $validated = $request->validate([

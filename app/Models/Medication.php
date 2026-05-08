@@ -10,7 +10,9 @@ use App\Models\InventoryUsage;
 
 class Medication extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'medication_id';
 
     protected $fillable = [
         'pet_id',

@@ -12,7 +12,9 @@ use App\Models\Vaccination;
 
 class PetPayment extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'pet_payment_id';
 
     protected $fillable = [
         'pet_id',

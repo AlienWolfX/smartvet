@@ -16,7 +16,7 @@ return new class extends Migration
                 $table->foreignId('consultation_id')
                     ->nullable()
                     ->after('pet_id')
-                    ->constrained('consultations')
+                    ->constrained('consultations', 'consultation_id')
                     ->nullOnDelete();
             }
         });

@@ -9,7 +9,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class InventoryUsage extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'inventory_usage_id';
 
     protected $fillable = [
         'inventory_item_id',

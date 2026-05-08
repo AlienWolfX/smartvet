@@ -12,9 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('inventory_items', function (Blueprint $table) {
-            $table->id();
+            $table->id('inventory_item_id');
             $table->string('item_code')->unique();
-            $table->foreignId('inventory_category_id')->constrained('inventory_categories')->cascadeOnDelete();
+            $table->foreignId('inventory_category_id')->constrained('inventory_categories', 'inventory_category_id')->cascadeOnDelete();
             $table->string('name');
             $table->string('brand')->nullable();
             $table->unsignedInteger('current_stock')->default(0);

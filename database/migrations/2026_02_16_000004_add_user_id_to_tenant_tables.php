@@ -16,17 +16,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('owners', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->after('id')->constrained('users', 'user_id')->nullOnDelete();
             $table->index('user_id');
         });
 
         Schema::table('inventory_items', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->after('id')->constrained('users', 'user_id')->nullOnDelete();
             $table->index('user_id');
         });
 
         // Backfill: assign existing records to the first admin user
-        $adminId = DB::table('users')->where('role', 'admin')->value('id');
+        $adminId = DB::table('users')->where('role', 'admin')->value('user_id');
         if ($adminId) {
             DB::table('owners')->whereNull('user_id')->update(['user_id' => $adminId]);
             DB::table('inventory_items')->whereNull('user_id')->update(['user_id' => $adminId]);

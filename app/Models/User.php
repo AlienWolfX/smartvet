@@ -12,7 +12,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, \Illuminate\Auth\MustVerifyEmail;
+    use HasFactory, HasAliasedPrimaryKey, Notifiable, TwoFactorAuthenticatable, \Illuminate\Auth\MustVerifyEmail;
+
+    protected $primaryKey = 'user_id';
 
     const ROLE_ADMIN = 'admin';
     const ROLE_CLINIC = 'clinic';

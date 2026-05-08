@@ -15,7 +15,7 @@ class OwnerManagementController extends Controller
         $owners = User::where('role', User::ROLE_OWNER)
             ->withCount([
                 'ownersAsAccount as pets_count' => function ($q) {
-                    $q->join('pets', 'pets.owner_id', '=', 'owners.id');
+                    $q->join('pets', 'pets.owner_id', '=', 'owners.owner_id');
                 },
             ])
             ->orderByDesc('created_at')

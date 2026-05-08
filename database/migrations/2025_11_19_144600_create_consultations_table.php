@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('consultations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('pet_id')->constrained()->onDelete('cascade');
+            $table->id('consultation_id');
+            $table->foreignId('pet_id')->constrained('pets', 'pet_id')->onDelete('cascade');
             $table->enum('consultation_type', ['routine-checkup', 'emergency', 'vaccination', 'surgery', 'follow-up']);
             $table->text('chief_complaint');
             $table->text('diagnosis')->nullable();

@@ -8,8 +8,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('pet_payment_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('pet_payment_id')->constrained()->cascadeOnDelete();
+            $table->id('pet_payment_item_id');
+            $table->foreignId('pet_payment_id')->constrained('pet_payments', 'pet_payment_id')->cascadeOnDelete();
             $table->string('service_type');
             $table->unsignedBigInteger('service_id')->nullable();
             $table->string('description');

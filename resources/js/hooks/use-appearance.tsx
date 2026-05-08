@@ -41,13 +41,22 @@ const handleSystemThemeChange = () => {
 };
 
 export function initializeTheme() {
-    // Always use light mode
-    document.documentElement.classList.remove('dark');
-    document.documentElement.style.colorScheme = 'light';
+    const savedAppearance =
+        typeof window !== 'undefined'
+            ? (localStorage.getItem('appearance') as Appearance | null)
+            : null;
+
+    applyTheme(savedAppearance || 'system');
 }
 
 export function useAppearance() {
-    const [appearance, setAppearance] = useState<Appearance>('system');
+    const [appearance, setAppearance] = useState<Appearance>(() => {
+        if (typeof window === 'undefined') {
+            return 'system';
+        }
+
+        return (localStorage.getItem('appearance') as Appearance) || 'system';
+    });
 
     const updateAppearance = useCallback((mode: Appearance) => {
         setAppearance(mode);
@@ -62,19 +71,15 @@ export function useAppearance() {
     }, []);
 
     useEffect(() => {
-        const savedAppearance = localStorage.getItem(
-            'appearance',
-        ) as Appearance | null;
+        // Initialize theme on mount, using saved preference if present.
+        updateAppearance(appearance);
 
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        updateAppearance(savedAppearance || 'system');
+        const mq = mediaQuery();
+        mq?.addEventListener('change', handleSystemThemeChange);
 
         return () =>
-            mediaQuery()?.removeEventListener(
-                'change',
-                handleSystemThemeChange,
-            );
-    }, [updateAppearance]);
+            mq?.removeEventListener('change', handleSystemThemeChange);
+    }, [appearance, updateAppearance]);
 
     return { appearance, updateAppearance } as const;
 }

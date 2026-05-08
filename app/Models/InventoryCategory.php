@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryCategory extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'inventory_category_id';
 
     protected $fillable = [
         'name',

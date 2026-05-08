@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Add vaccination_id to pet_payments
         Schema::table('pet_payments', function (Blueprint $table) {
-            $table->foreignId('vaccination_id')->nullable()->after('consultation_id')->constrained()->onDelete('cascade');
+            $table->foreignId('vaccination_id')->nullable()->after('consultation_id')->constrained('vaccinations', 'vaccination_id')->onDelete('cascade');
         });
 
         // Remove cost column from vaccinations

@@ -17,14 +17,14 @@ return new class extends Migration
                 $table->foreignId('created_by')
                     ->nullable()
                     ->after('veterinarian')
-                    ->constrained('users')
+                    ->constrained('users', 'user_id')
                     ->nullOnDelete();
             }
         });
 
         if (Schema::hasColumn('consultations', 'created_by')) {
             DB::table('consultations')
-                ->leftJoin('pet_payments', 'pet_payments.consultation_id', '=', 'consultations.id')
+                ->leftJoin('pet_payments', 'pet_payments.consultation_id', '=', 'consultations.consultation_id')
                 ->whereNull('consultations.created_by')
                 ->update(['consultations.created_by' => DB::raw('pet_payments.recorded_by')]);
         }

@@ -24,7 +24,7 @@ class ConsultationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('pet_id', $numericId))->first();
         if (!$pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
@@ -45,7 +45,7 @@ class ConsultationController extends Controller
             'consultation_fee' => 'nullable|numeric|min:0',
             'consultation_files.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,pdf,doc,docx|max:10240', // 10MB max
             'inventory_items' => 'nullable|array',
-            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,inventory_item_id',
             'inventory_items.*.quantity' => 'required|integer|min:1',
         ], [
             'consultation_type.required' => 'Please select a consultation type',
@@ -138,7 +138,7 @@ class ConsultationController extends Controller
                     ->unique()
                     ->values();
 
-                $inventoryModelMap = InventoryItem::whereIn('id', $inventoryItemIds)
+                $inventoryModelMap = InventoryItem::whereIn('inventory_item_id', $inventoryItemIds)
                     ->get()
                     ->keyBy('id');
 
@@ -248,7 +248,7 @@ class ConsultationController extends Controller
             return 0;
         }
 
-        $prices = InventoryItem::whereIn('id', $itemIds)->pluck('unit_price', 'id');
+        $prices = InventoryItem::whereIn('inventory_item_id', $itemIds)->pluck('unit_price', 'inventory_item_id');
 
         return collect($items)->reduce(function ($sum, $item) use ($prices) {
             $id = $item['inventory_item_id'] ?? null;

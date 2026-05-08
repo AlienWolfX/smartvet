@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vaccinations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('pet_id')->constrained()->onDelete('cascade');
+            $table->id('vaccination_id');
+            $table->foreignId('pet_id')->constrained('pets', 'pet_id')->onDelete('cascade');
             $table->string('vaccine_name');
             $table->string('vaccine_type')->nullable(); // Core, Non-core, etc.
             $table->date('vaccination_date');

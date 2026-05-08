@@ -13,7 +13,9 @@ use App\Models\PetPayment;
 
 class Consultation extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'consultation_id';
 
     protected $fillable = [
         'pet_id',

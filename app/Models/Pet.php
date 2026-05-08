@@ -10,7 +10,9 @@ use App\Models\PetPayment;
 
 class Pet extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'pet_id';
 
     protected $fillable = [
         'name',

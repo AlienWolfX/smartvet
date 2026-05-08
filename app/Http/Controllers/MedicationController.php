@@ -19,13 +19,13 @@ class MedicationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::where('pet_id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
 
         $validated = $request->validate([
-            'consultation_id' => 'nullable|exists:consultations,id',
+            'consultation_id' => 'nullable|exists:consultations,consultation_id',
             'medication_name' => 'required|string|max:255',
             'generic_name' => 'nullable|string|max:255',
             'dosage' => 'required|string|max:255',
@@ -41,7 +41,7 @@ class MedicationController extends Controller
             'notes' => 'nullable|string|max:1000',
             'status' => 'nullable|in:active,completed,discontinued,on-hold',
             'inventory_items' => 'nullable|array',
-            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,inventory_item_id',
             'inventory_items.*.quantity' => 'required|integer|min:1',
         ], [
             'medication_name.required' => 'Medication name is required',
@@ -54,7 +54,7 @@ class MedicationController extends Controller
         ]);
 
         if (! empty($validated['consultation_id'])) {
-            $consultationExists = Consultation::where('id', $validated['consultation_id'])
+            $consultationExists = Consultation::where('consultation_id', $validated['consultation_id'])
                 ->where('pet_id', $numericId)
                 ->exists();
 

@@ -9,7 +9,9 @@ use Illuminate\Support\Str;
 
 class ConsultationType extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'consultation_type_id';
 
     protected $fillable = [
         'user_id',

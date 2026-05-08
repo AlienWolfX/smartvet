@@ -16,8 +16,8 @@ return new class extends Migration
             $table->uuid('qr_token')->unique()->nullable()->after('microchip_id');
         });
 
-        DB::table('pets')->whereNull('qr_token')->orderBy('id')->each(function ($pet) {
-            DB::table('pets')->where('id', $pet->id)->update(['qr_token' => \Illuminate\Support\Str::uuid()]);
+        DB::table('pets')->whereNull('qr_token')->orderBy('pet_id')->each(function ($pet) {
+            DB::table('pets')->where('pet_id', $pet->pet_id)->update(['qr_token' => \Illuminate\Support\Str::uuid()]);
         });
     }
 

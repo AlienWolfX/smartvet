@@ -22,13 +22,13 @@ class VaccinationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('pet_id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }
 
         $validated = $request->validate([
-            'consultation_id' => 'nullable|exists:consultations,id',
+            'consultation_id' => 'nullable|exists:consultations,consultation_id',
             'vaccine_name' => 'required|string|max:255',
             'vaccine_type' => 'nullable|string|max:255',
             'vaccination_date' => 'required|date',
@@ -41,7 +41,7 @@ class VaccinationController extends Controller
             'notes' => 'nullable|string|max:1000',
             'adverse_reactions' => 'nullable|string|max:1000',
             'inventory_items' => 'nullable|array',
-            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,id',
+            'inventory_items.*.inventory_item_id' => 'required|exists:inventory_items,inventory_item_id',
             'inventory_items.*.quantity' => 'required|integer|min:1',
         ], [
             'vaccine_name.required' => 'Please provide a vaccine name',
@@ -51,7 +51,7 @@ class VaccinationController extends Controller
         ]);
 
         if (! empty($validated['consultation_id'])) {
-            $consultationExists = Consultation::where('id', $validated['consultation_id'])
+            $consultationExists = Consultation::where('consultation_id', $validated['consultation_id'])
                 ->where('pet_id', $numericId)
                 ->exists();
 
@@ -116,7 +116,7 @@ class VaccinationController extends Controller
     {
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::query()->where('id', $numericId))->first();
+        $pet = $this->scopePetToUser(Pet::query()->where('pet_id', $numericId))->first();
         if (! $pet) {
             return redirect()->back()->withErrors(['pet' => 'Pet not found']);
         }

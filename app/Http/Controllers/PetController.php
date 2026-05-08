@@ -251,7 +251,7 @@ class PetController extends Controller
         $numericId = (int) str_replace('PET-', '', $petId);
 
         $pet = $this->scopePetToUser(Pet::with('owner', 'species'))
-            ->where('id', $numericId)
+            ->where('pet_id', $numericId)
             ->firstOrFail();
 
         $request->validate([
@@ -295,7 +295,7 @@ class PetController extends Controller
                 'vaccinations.consultation',
                 'medications.consultation',
             ]))
-            ->where('id', $numericId)
+            ->where('pet_id', $numericId)
             ->firstOrFail();
 
         // Format consultation data
@@ -519,7 +519,7 @@ class PetController extends Controller
 
             // Filter by specific pet ID for individual export
             if ($petId) {
-                $petsQuery->where('id', $petId);
+                $petsQuery->where('pet_id', $petId);
             }
         } else {
             // Apply filters only for "all" export type
@@ -740,7 +740,7 @@ class PetController extends Controller
         // Extract numeric ID from PET-XXX format
         $numericId = (int) str_replace('PET-', '', $petId);
 
-        $pet = $this->scopePetToUser(Pet::where('id', $numericId))->firstOrFail();
+        $pet = $this->scopePetToUser(Pet::where('pet_id', $numericId))->firstOrFail();
 
         $currentClinicId = $this->tenantUserId();
         $petName = $pet->name;

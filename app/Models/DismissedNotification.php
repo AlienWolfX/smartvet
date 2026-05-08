@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DismissedNotification extends Model
 {
+    use HasAliasedPrimaryKey;
+
     public $timestamps = false;
+
+    protected $primaryKey = 'dismissed_notification_id';
 
     protected $fillable = [
         'user_id',

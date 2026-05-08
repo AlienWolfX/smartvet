@@ -55,7 +55,7 @@ class MedicationSalesController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'pet_id' => 'nullable|integer|exists:pets,id',
+            'pet_id' => 'nullable|integer|exists:pets,pet_id',
             'customer_name' => 'required_without:pet_id|string|max:255',
             'notes' => 'nullable|string|max:1000',
             'inventory_items' => 'required|array|min:1',
@@ -65,7 +65,7 @@ class MedicationSalesController extends Controller
 
         $pet = null;
         if (! empty($validated['pet_id'])) {
-            $pet = $this->scopePetToUser(Pet::where('id', $validated['pet_id']))->first();
+            $pet = $this->scopePetToUser(Pet::where('pet_id', $validated['pet_id']))->first();
             if (! $pet) {
                 return back()->withErrors(['pet_id' => 'Selected pet not found or not accessible.']);
             }
@@ -75,7 +75,7 @@ class MedicationSalesController extends Controller
         $inventoryItemIds = collect($inventoryItemsInput)->pluck('inventory_item_id')->all();
 
         $inventoryItems = InventoryItem::with('category')
-            ->whereIn('id', $inventoryItemIds)
+            ->whereIn('inventory_item_id', $inventoryItemIds)
             ->get()
             ->keyBy('id');
 

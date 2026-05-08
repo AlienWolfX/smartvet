@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Storage;
 
 class ConsultationFile extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'consultation_file_id';
 
     protected $fillable = [
         'consultation_id',

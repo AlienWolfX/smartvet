@@ -11,7 +11,9 @@ use App\Models\InventoryUsage;
 
 class Vaccination extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAliasedPrimaryKey;
+
+    protected $primaryKey = 'vaccination_id';
 
     protected $fillable = [
         'pet_id',
