@@ -19,9 +19,8 @@ return new class extends Migration
 
             DB::statement('
                 UPDATE pets
-                SET clinic_ids = JSON_ARRAY(owners.user_id)
-                FROM owners
-                WHERE pets.owner_id = owners.owner_id
+                INNER JOIN owners ON pets.owner_id = owners.owner_id
+                SET pets.clinic_ids = JSON_ARRAY(owners.user_id)
             ');
         }
     }

@@ -16,12 +16,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('owners', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users', 'user_id')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->after('owner_id')->constrained('users', 'user_id')->nullOnDelete();
             $table->index('user_id');
         });
 
         Schema::table('inventory_items', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->after('id')->constrained('users', 'user_id')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->after('inventory_item_id')->constrained('users', 'user_id')->nullOnDelete();
             $table->index('user_id');
         });
 
