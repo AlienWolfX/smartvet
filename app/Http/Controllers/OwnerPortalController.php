@@ -24,7 +24,7 @@ class OwnerPortalController extends Controller
                     'id'          => $pet->id,
                     'name'        => $pet->name,
                     'species'     => $pet->species?->name ?? 'Unknown',
-                    'speciesId'   => $pet->species_id,
+                    'speciesId'   => $pet->pet_species_id,
                     'speciesIcon' => $pet->species?->icon ?? '🐾',
                     'breed'       => $pet->breed ?? '—',
                     'age'         => $pet->age,

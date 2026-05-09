@@ -17,7 +17,7 @@ class Pet extends Model
     protected $fillable = [
         'name',
         'owner_id',
-        'species_id',
+        'pet_species_id',
         'breed',
         'age',
         'weight',
@@ -46,7 +46,7 @@ class Pet extends Model
 
     public function species(): BelongsTo
     {
-        return $this->belongsTo(PetSpecies::class, 'species_id', 'pet_species_id');
+        return $this->belongsTo(PetSpecies::class, 'pet_species_id', 'pet_species_id');
     }
 
     public function consultations(): HasMany

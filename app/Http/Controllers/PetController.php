@@ -183,7 +183,7 @@ class PetController extends Controller
             $pet = Pet::create([
                 'name' => $request->petName,
                 'owner_id' => $owner->id,
-                'species_id' => $species->id,
+                'pet_species_id' => $species->id,
                 'breed' => $request->breed,
                 'age' => $request->age,
                 'weight' => $request->weight,
