@@ -24,7 +24,7 @@ class UserController extends Controller
             ->get()
             ->map(function ($user) {
                 return [
-                    'id' => $user->id,
+                    'id' => $user->getKey(),
                     'name' => $user->name,
                     'clinicName' => $user->clinic_name ?? '',
                     'email' => $user->email,
@@ -87,7 +87,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users,email,' . $user->getKey(),
             'role' => 'required|in:admin,clinic',
             'status' => 'required|in:active,inactive,suspended',
             'clinic_name' => 'required_if:role,clinic|string|max:255',
@@ -116,7 +116,7 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->id === Auth::id()) {
+        if ($user->getKey() === Auth::id()) {
             return redirect()->back()->withErrors(['general' => 'You cannot delete your own account.']);
         }
 
@@ -177,7 +177,7 @@ class UserController extends Controller
 
         $row = 2;
         foreach ($users as $user) {
-            $sheet->setCellValue("A{$row}", $user->id);
+            $sheet->setCellValue("A{$row}", $user->getKey());
             $sheet->setCellValue("B{$row}", $user->name);
             $sheet->setCellValue("C{$row}", $user->email);
             $sheet->setCellValue("D{$row}", ucfirst($user->role ?? 'clinic'));

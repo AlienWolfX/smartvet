@@ -76,8 +76,8 @@ class DashboardController extends Controller
                     : ($payment->customer_name ? 'Walk-in sale' : 'Clinic services');
 
                 return [
-                    'paymentId' => $payment->id,
-                    'id' => 'TX-' . str_pad($payment->id, 5, '0', STR_PAD_LEFT),
+                    'paymentId' => $payment->getKey(),
+                    'id' => 'TX-' . str_pad($payment->getKey(), 5, '0', STR_PAD_LEFT),
                     'client' => $payment->pet?->owner?->name ?? $payment->customer_name ?? 'Walk-in Customer',
                     'pet' => $payment->pet
                         ? ($payment->pet->name . ' • ' . ($payment->pet->species?->name ?? 'Pet'))

@@ -21,7 +21,7 @@ class ConsultationTypeController extends Controller
 
         return Inertia::render('consultation-types', [
             'types' => $types->map(fn (ConsultationType $type) => [
-                'id' => $type->id,
+                'id' => $type->getKey(),
                 'slug' => $type->slug,
                 'name' => $type->name,
                 'fee' => (float) $type->fee,
@@ -53,7 +53,7 @@ class ConsultationTypeController extends Controller
 
     public function update(Request $request, ConsultationType $consultationType)
     {
-        if (! $request->user()?->isAdmin() && $consultationType->user_id !== $request->user()->id) {
+        if (! $request->user()?->isAdmin() && $consultationType->user_id !== $request->user()->getKey()) {
             abort(403);
         }
 
@@ -65,7 +65,7 @@ class ConsultationTypeController extends Controller
 
         $slug = $consultationType->slug;
         if ($validated['name'] !== $consultationType->name) {
-            $slug = ConsultationType::generateUniqueSlug($validated['name'], $request->user()->id);
+            $slug = ConsultationType::generateUniqueSlug($validated['name'], $request->user()->getKey());
         }
 
         $consultationType->update([
@@ -80,7 +80,7 @@ class ConsultationTypeController extends Controller
 
     public function destroy(Request $request, ConsultationType $consultationType)
     {
-        if (! $request->user()?->isAdmin() && $consultationType->user_id !== $request->user()->id) {
+        if (! $request->user()?->isAdmin() && $consultationType->user_id !== $request->user()->getKey()) {
             abort(403);
         }
 

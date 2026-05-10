@@ -54,7 +54,7 @@ class OwnerRegisterController extends Controller
         // Retroactively link any clinic-created owner records that share this email
         Owner::where('email', $data['email'])
             ->whereNull('account_user_id')
-            ->update(['account_user_id' => $user->id]);
+            ->update(['account_user_id' => $user->getKey()]);
 
         Mail::to($user->email)->send(new EmailVerificationCode($user, $verificationCode));
 

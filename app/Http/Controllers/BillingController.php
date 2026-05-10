@@ -26,7 +26,7 @@ class BillingController extends Controller
                 $hasInventorySale = $payment->items->contains(fn ($item) => $item->service_type === 'inventory_item');
 
                 return [
-                    'id' => $payment->id,
+                    'id' => $payment->getKey(),
                     'type' => $isVaccination ? 'vaccination' : ($isConsultation ? 'consultation' : 'inventory_sale'),
                     'date' => $payment->created_at->format('F j, Y h:i A'),
                     'createdAt' => $payment->created_at->toDateTimeString(),
@@ -67,7 +67,7 @@ class BillingController extends Controller
                 $hasInventorySale = $payment->items->contains(fn($item) => $item->service_type === 'inventory_item');
 
                 return [
-                    'id' => $payment->id,
+                    'id' => $payment->getKey(),
                     'date' => optional($payment->paid_at)->format('F j, Y h:i A'),
                     'paidAt' => optional($payment->paid_at)->toDateTimeString(),
                     'petName' => optional($payment->pet)->name ?? ($payment->customer_name ? 'Walk-in' : 'Unknown'),
@@ -123,10 +123,10 @@ class BillingController extends Controller
         if (! $user->isAdmin()) {
             $ownerUserId = $payment->pet?->owner?->user_id;
             $isWalkInSale = $payment->pet_id === null;
-            $isCreatorOfConsultation = $payment->consultation?->created_by === $user->id;
+            $isCreatorOfConsultation = $payment->consultation?->created_by === $user->getKey();
 
-            if (($isWalkInSale && $payment->recorded_by !== $user->id)
-                || (!$isWalkInSale && $ownerUserId !== $user->id && !$isCreatorOfConsultation)) {
+            if (($isWalkInSale && $payment->recorded_by !== $user->getKey())
+                || (!$isWalkInSale && $ownerUserId !== $user->getKey() && !$isCreatorOfConsultation)) {
                 abort(403);
             }
         }
@@ -154,7 +154,7 @@ class BillingController extends Controller
                     'deduction_type' => $validated['deduction_type'] ?? null,
                     'final_amount' => $validated['final_amount'] ?? $payment->total_amount,
                     'paid_at' => now(),
-                    'recorded_by' => $request->user()->id,
+                    'recorded_by' => $request->user()->getKey(),
                     'status' => 'paid',
                 ]);
 

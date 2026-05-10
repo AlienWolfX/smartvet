@@ -28,7 +28,7 @@ trait ScopesToTenant
         /** @var User|null $user */
         $user = Auth::user();
         if ($user && !$user->isAdmin()) {
-            return $query->where($query->getModel()->getTable() . '.user_id', $user->id);
+            return $query->where($query->getModel()->getTable() . '.user_id', $user->getKey());
         }
         return $query;
     }
@@ -42,7 +42,7 @@ trait ScopesToTenant
         $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->whereHas('pet.owner', function (Builder $q) use ($user) {
-                $q->where('owners.user_id', $user->id);
+                $q->where('owners.user_id', $user->getKey());
             });
         }
         return $query;
@@ -61,16 +61,16 @@ trait ScopesToTenant
             return $query->where(function (Builder $q) use ($user) {
                 // Payments for pets owned by this clinic
                 $q->whereHas('pet.owner', function (Builder $subQuery) use ($user) {
-                    $subQuery->where('owners.user_id', $user->id);
+                    $subQuery->where('owners.user_id', $user->getKey());
                 })
                 // OR walk-in payments recorded by this clinic
                 ->orWhere(function (Builder $subQuery) use ($user) {
                     $subQuery->whereNull('pet_id')
-                        ->where('recorded_by', $user->id);
+                        ->where('recorded_by', $user->getKey());
                 })
                 // OR payments for consultations created by this clinic (cross-clinic consultations)
                 ->orWhereHas('consultation', function (Builder $subQuery) use ($user) {
-                    $subQuery->where('created_by', $user->id);
+                    $subQuery->where('created_by', $user->getKey());
                 });
             });
         }
@@ -92,10 +92,10 @@ trait ScopesToTenant
             return $query->where(function (Builder $q) use ($user) {
                 // Pets owned by this clinic
                 $q->whereHas('owner', function (Builder $subQ) use ($user) {
-                    $subQ->where('owners.user_id', $user->id);
+                    $subQ->where('owners.user_id', $user->getKey());
                 })
                     // OR pets imported from other clinics (clinic_id in clinic_ids array)
-                    ->orWhereJsonContains('clinic_ids', $user->id);
+                    ->orWhereJsonContains('clinic_ids', $user->getKey());
             });
         }
         return $query;

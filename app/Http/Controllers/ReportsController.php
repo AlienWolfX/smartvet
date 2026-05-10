@@ -209,7 +209,7 @@ class ReportsController extends Controller
         $row = 2;
         foreach ($payments as $payment) {
             $transSheet->setCellValue("A{$row}", $payment->created_at->format('M d, Y'));
-            $transSheet->setCellValue("B{$row}", 'TXN-' . str_pad($payment->id, 4, '0', STR_PAD_LEFT));
+            $transSheet->setCellValue("B{$row}", 'TXN-' . str_pad($payment->getKey(), 4, '0', STR_PAD_LEFT));
             $transSheet->setCellValue("C{$row}", $payment->consultation?->pet?->name ?? 'N/A');
             $transSheet->setCellValue("D{$row}", $payment->consultation?->consultation_type ?? 'Consultation');
             $transSheet->setCellValue("E{$row}", $this->formatPeso($payment->total_amount));

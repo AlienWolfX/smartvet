@@ -81,18 +81,18 @@ class ConsultationController extends Controller
                     'veterinarian' => $currentUser?->name ?? 'Dr. Admin',
                     'status' => 'completed',
                     'payment_status' => 'pending',
-                    'created_by' => $currentUser?->id,
+                    'created_by' => $currentUser?->getKey(),
                 ]);
 
                 if (request()->hasFile('consultation_files')) {
                     foreach (request()->file('consultation_files') as $file) {
                         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                        $filePath = $file->storeAs('consultations/' . $consultation->id, $filename, 'public');
+                        $filePath = $file->storeAs('consultations/' . $consultation->getKey(), $filename, 'public');
 
                         $fileType = $this->determineFileType($file->getMimeType());
 
                         ConsultationFile::create([
-                            'consultation_id' => $consultation->id,
+                            'consultation_id' => $consultation->getKey(),
                             'file_name' => $filename,
                             'original_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
@@ -112,21 +112,21 @@ class ConsultationController extends Controller
 
                 $payment = PetPayment::create([
                     'pet_id' => $numericId,
-                    'consultation_id' => $consultation->id,
+                    'consultation_id' => $consultation->getKey(),
                     'total_amount' => $consultationFee + $inventoryTotal,
                     'payment_method' => null,
                     'reference_number' => null,
                     'notes' => null,
                     'paid_at' => null,
-                    'recorded_by' => $currentUser?->id ?? null,
+                    'recorded_by' => $currentUser?->getKey() ?? null,
                     'status' => 'pending',
                 ]);
 
                 $paymentItems = [
                     [
-                        'pet_payment_id' => $payment->id,
+                        'pet_payment_id' => $payment->getKey(),
                         'service_type' => 'consultation',
-                        'service_id' => $consultation->id,
+                        'service_id' => $consultation->getKey(),
                         'description' => 'Consultation: ' . ucfirst(str_replace('-', ' ', $consultation->consultation_type)),
                         'amount' => $consultationFee,
                     ],
@@ -140,7 +140,7 @@ class ConsultationController extends Controller
 
                 $inventoryModelMap = InventoryItem::whereIn('inventory_item_id', $inventoryItemIds)
                     ->get()
-                    ->keyBy('id');
+                    ->keyBy(fn ($item) => $item->getKey());
 
                 foreach ($inventoryItems as $item) {
                     $itemId = $item['inventory_item_id'] ?? null;
@@ -154,9 +154,9 @@ class ConsultationController extends Controller
                     $lineTotal = $inventoryModel->unit_price * $quantity;
 
                     $paymentItems[] = [
-                        'pet_payment_id' => $payment->id,
+                        'pet_payment_id' => $payment->getKey(),
                         'service_type' => 'inventory_item',
-                        'service_id' => $inventoryModel->id,
+                        'service_id' => $inventoryModel->getKey(),
                         'description' => $inventoryModel->name . ' x' . $quantity,
                         'amount' => $lineTotal,
                     ];

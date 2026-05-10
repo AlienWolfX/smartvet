@@ -27,7 +27,7 @@ class PetController extends Controller
             ->get()
             ->map(function ($pet) {
                 return [
-                    'id' => 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT),
+                    'id' => 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT),
                     'name' => $pet->name,
                     'species' => $pet->species->name,
                     'speciesIcon' => $pet->species->icon,
@@ -160,7 +160,7 @@ class PetController extends Controller
 
             $owner = Owner::create([
                 'user_id'         => $currentClinicId,
-                'account_user_id' => $accountUser?->id,
+                'account_user_id' => $accountUser?->getKey(),
                 'name'            => $request->ownerName,
                 'phone'           => $request->phone,
                 'email'           => $request->email,
@@ -182,8 +182,8 @@ class PetController extends Controller
 
             $pet = Pet::create([
                 'name' => $request->petName,
-                'owner_id' => $owner->id,
-                'pet_species_id' => $species->id,
+                'owner_id' => $owner->getKey(),
+                'pet_species_id' => $species->getKey(),
                 'breed' => $request->breed,
                 'age' => $request->age,
                 'weight' => $request->weight,
@@ -199,7 +199,7 @@ class PetController extends Controller
 
             if ($request->hasFile('petDocuments')) {
                 $consultation = Consultation::create([
-                    'pet_id' => $pet->id,
+                    'pet_id' => $pet->getKey(),
                     'consultation_type' => 'routine-checkup',
                     'chief_complaint' => 'Initial uploaded documents from pet registration.',
                     'diagnosis' => null,
@@ -220,7 +220,7 @@ class PetController extends Controller
                     $filePath = $file->storeAs('docs', $filename, 'public');
 
                     ConsultationFile::create([
-                        'consultation_id' => $consultation->id,
+                        'consultation_id' => $consultation->getKey(),
                         'file_name' => $filename,
                         'original_name' => $file->getClientOriginalName(),
                         'file_path' => $filePath,
@@ -234,7 +234,7 @@ class PetController extends Controller
 
             session([
                 'newPetQr' => [
-                    'petId'   => 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT),
+                    'petId'   => 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT),
                     'name'    => $pet->name,
                     'species' => $species->name,
                     'breed'   => $pet->breed ?? 'Mixed',
@@ -260,7 +260,7 @@ class PetController extends Controller
             'age' => 'nullable|integer|min:0|max:50',
             'weight' => 'nullable|numeric|min:0|max:500',
             'color' => 'nullable|string|max:255',
-            'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id,' . $pet->id,
+            'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id,' . $pet->getKey(),
         ]);
 
         $pet->update([
@@ -301,7 +301,7 @@ class PetController extends Controller
         // Format consultation data
         $consultations = $pet->consultations->map(function ($consultation) {
             return [
-                'id' => $consultation->id,
+                'id' => $consultation->getKey(),
                 'type' => $consultation->consultation_type,
                 'date' => $consultation->consultation_date->toISOString(),
                 'weight' => $consultation->weight,
@@ -316,20 +316,20 @@ class PetController extends Controller
                 'fee' => $consultation->consultation_fee,
                     'linkedVaccinations' => $consultation->vaccinations->map(function ($vaccination) {
                         return [
-                            'id' => $vaccination->id,
+                            'id' => $vaccination->getKey(),
                             'vaccine' => $vaccination->vaccine_name,
                             'date' => $vaccination->vaccination_date->toISOString(),
                         ];
                     }),
                     'linkedMedications' => $consultation->medications->map(function ($medication) {
                         return [
-                            'id' => $medication->id,
+                            'id' => $medication->getKey(),
                             'name' => $medication->medication_name,
                         ];
                     }),
                 'files' => $consultation->files->map(function ($file) {
                     return [
-                        'id' => $file->id,
+                        'id' => $file->getKey(),
                         'name' => $file->original_name,
                         'url' => asset('storage/' . $file->file_path),
                         'type' => $file->file_type,
@@ -343,7 +343,7 @@ class PetController extends Controller
         // Format vaccination data
         $vaccinations = $pet->vaccinations->map(function ($vaccination) {
             return [
-                'id' => $vaccination->id,
+                'id' => $vaccination->getKey(),
                 'vaccine' => $vaccination->vaccine_name,
                 'lastDate' => $vaccination->vaccination_date->toISOString(),
                 'nextDue' => $vaccination->next_due_date->toISOString(),
@@ -352,7 +352,7 @@ class PetController extends Controller
                 'administeredBy' => $vaccination->administered_by,
                 'notes' => $vaccination->notes,
                     'consultation' => $vaccination->consultation ? [
-                        'id' => $vaccination->consultation->id,
+                        'id' => $vaccination->consultation->getKey(),
                         'type' => $vaccination->consultation->consultation_type,
                         'date' => $vaccination->consultation->consultation_date->toISOString(),
                     ] : null,
@@ -362,7 +362,7 @@ class PetController extends Controller
         // Format medication data
         $medications = $pet->medications->where('status', 'active')->map(function ($medication) {
             return [
-                'id' => $medication->id,
+                'id' => $medication->getKey(),
                 'name' => $medication->medication_name,
                 'dosage' => $medication->dosage,
                 'frequency' => $medication->frequency,
@@ -371,7 +371,7 @@ class PetController extends Controller
                 'startDate' => $medication->start_date->toISOString(),
                 'endDate' => $medication->end_date ? $medication->end_date->toISOString() : null,
                     'consultation' => $medication->consultation ? [
-                        'id' => $medication->consultation->id,
+                        'id' => $medication->consultation->getKey(),
                         'type' => $medication->consultation->consultation_type,
                         'date' => $medication->consultation->consultation_date->toISOString(),
                     ] : null,
@@ -380,7 +380,7 @@ class PetController extends Controller
 
         $consultationOptions = $pet->consultations->map(function ($consultation) {
             return [
-                'id' => $consultation->id,
+                'id' => $consultation->getKey(),
                 'label' => sprintf(
                     '%s • %s',
                     Str::headline(str_replace('-', ' ', $consultation->consultation_type)),
@@ -393,7 +393,7 @@ class PetController extends Controller
 
         // Format pet data for frontend
         $petData = [
-            'id' => 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT),
+            'id' => 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT),
             'name' => $pet->name,
             'species' => $pet->species->name,
             'speciesIcon' => $pet->species->icon,
@@ -433,7 +433,7 @@ class PetController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'code' => $item->item_code,
                 'name' => $item->name,
                 'brand' => $item->brand,
@@ -449,7 +449,7 @@ class PetController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($type) => [
-                'id' => $type->id,
+                'id' => $type->getKey(),
                 'slug' => $type->slug,
                 'name' => $type->name,
                 'fee' => (float) $type->fee,
@@ -596,7 +596,7 @@ class PetController extends Controller
 
         $row = 2;
         foreach ($pets as $pet) {
-            $sheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT));
+            $sheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT));
             $sheet->setCellValue("B{$row}", $pet->name);
             $sheet->setCellValue("C{$row}", $pet->species?->name ?? 'Unknown');
             $sheet->setCellValue("D{$row}", $pet->breed ?? 'Mixed');
@@ -640,7 +640,7 @@ class PetController extends Controller
         $row = 2;
         foreach ($pets as $pet) {
             $col = 1;
-            $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT));
+            $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT));
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->name);
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->species?->name ?? 'Unknown');
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->breed ?? 'Mixed');
@@ -680,7 +680,7 @@ class PetController extends Controller
             $row = 2;
             foreach ($pets as $pet) {
                 foreach ($pet->consultations as $consultation) {
-                    $consultSheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT));
+                    $consultSheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT));
                     $consultSheet->setCellValue("B{$row}", $pet->name);
                     $consultSheet->setCellValue("C{$row}", optional($consultation->consultation_date)->toDateString() ?? '');
                     $consultSheet->setCellValue("D{$row}", $consultation->consultation_type ?? '');
@@ -714,7 +714,7 @@ class PetController extends Controller
             $row = 2;
             foreach ($pets as $pet) {
                 foreach ($pet->vaccinations as $vaccination) {
-                    $vaccSheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT));
+                    $vaccSheet->setCellValue("A{$row}", 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT));
                     $vaccSheet->setCellValue("B{$row}", $pet->name);
                     $vaccSheet->setCellValue("C{$row}", $vaccination->vaccine_name ?? '');
                     $vaccSheet->setCellValue("D{$row}", optional($vaccination->vaccination_date)->toDateString() ?? '');
@@ -776,7 +776,7 @@ class PetController extends Controller
                 'emergency_contact' => $pet->owner->emergency_contact,
             ]);
 
-            $pet->update(['owner_id' => $newOwner->id]);
+            $pet->update(['owner_id' => $newOwner->getKey()]);
 
             $remainingClinicIds = array_filter($clinicIds, fn($id) => $id !== $currentClinicId);
             $pet->update(['clinic_ids' => array_values($remainingClinicIds)]);

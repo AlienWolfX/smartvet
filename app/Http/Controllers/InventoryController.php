@@ -37,18 +37,18 @@ class InventoryController extends Controller
 
         return Inertia::render('inventory-management', [
             'categories' => $categories->map(fn ($category) => [
-                'id' => $category->id,
+                'id' => $category->getKey(),
                 'name' => $category->name,
                 'slug' => $category->slug,
                 'icon' => $category->icon,
             ]),
             'items' => $items->map(fn ($item) => [
-                'dbId' => $item->id,
+                'dbId' => $item->getKey(),
                 'id' => $item->item_code,
                 'name' => $item->name,
                 'brand' => $item->brand ?? '',
                 'batchNumber' => $item->batch_number ?? '',
-                'categoryId' => $item->category?->id ?? 0,
+                'categoryId' => $item->category?->getKey() ?? 0,
                 'categorySlug' => $item->category?->slug ?? '',
                 'categoryName' => $item->category?->name ?? 'Uncategorized',
                 'currentStock' => (int) $item->current_stock,
@@ -72,7 +72,7 @@ class InventoryController extends Controller
             'batch_number' => 'nullable|string|max:255',
             'inventory_category_id' => [
                 'required',
-                Rule::exists('inventory_categories', 'id')->where(function ($query) {
+                Rule::exists('inventory_categories', 'inventory_category_id')->where(function ($query) {
                     $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
                 }),
             ],
@@ -91,7 +91,7 @@ class InventoryController extends Controller
         }
 
         DB::transaction(function () use ($validated) {
-            $nextNumber = (InventoryItem::max('id') ?? 0) + 1;
+            $nextNumber = (InventoryItem::max('inventory_item_id') ?? 0) + 1;
             $code = 'INV-' . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
 
             InventoryItem::create([
@@ -120,7 +120,7 @@ class InventoryController extends Controller
     {
         // Verify ownership
         $user = $request->user();
-        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->getKey())) {
             abort(403);
         }
 
@@ -134,7 +134,7 @@ class InventoryController extends Controller
             'batch_number' => 'nullable|string|max:255',
             'inventory_category_id' => [
                 'required',
-                Rule::exists('inventory_categories', 'id')->where(function ($query) {
+                Rule::exists('inventory_categories', 'inventory_category_id')->where(function ($query) {
                     $query->whereNotIn('slug', self::HIDDEN_CATEGORY_SLUGS);
                 }),
             ],
@@ -174,7 +174,7 @@ class InventoryController extends Controller
     {
         // Verify ownership
         $user = $request->user();
-        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->getKey())) {
             abort(403);
         }
 
@@ -212,7 +212,7 @@ class InventoryController extends Controller
     {
         // Verify ownership
         $user = request()->user();
-        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->id)) {
+        if (!$user || (!$user->isAdmin() && $item->user_id !== $user->getKey())) {
             abort(403);
         }
 

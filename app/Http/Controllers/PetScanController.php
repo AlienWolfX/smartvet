@@ -31,7 +31,7 @@ class PetScanController extends Controller
         ])->where('qr_token', $token)->firstOrFail();
 
         $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
-            'id'            => $f->id,
+            'id'            => $f->getKey(),
             'name'          => $f->original_name ?? $f->file_name,
             'url'           => $f->file_url,
             'mimeType'      => $f->mime_type,
@@ -55,7 +55,7 @@ class PetScanController extends Controller
                 'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
                 'status'      => $pet->status,
                 'publicUrl'   => route('pet-records.scan'),
-                'manageUrl'   => url('/pet-records/PET-' . str_pad($pet->id, 3, '0', STR_PAD_LEFT) . '/manage'),
+                'manageUrl'   => url('/pet-records/PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT) . '/manage'),
             ],
             'owner' => [
                 'name'             => $pet->owner->name,
@@ -91,13 +91,13 @@ class PetScanController extends Controller
                     'treatment'  => $c->treatment,
                     'clinicName' => $ownerClinicName,
                     'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
-                        'id'        => $u->id,
+                        'id'        => $u->getKey(),
                         'name'      => $u->inventoryItem?->name ?? 'Item',
                         'quantity'  => $u->quantity,
                         'unitPrice' => $u->unit_price,
                     ]),
                     'files' => $c->files->map(fn ($f) => [
-                        'id'            => $f->id,
+                        'id'            => $f->getKey(),
                         'name'          => $f->original_name ?? $f->file_name,
                         'url'           => $f->file_url,
                         'mimeType'      => $f->mime_type,

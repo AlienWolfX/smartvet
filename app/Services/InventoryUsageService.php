@@ -45,9 +45,9 @@ class InventoryUsageService
             $inventoryItem->decrement('current_stock', $quantity);
 
             InventoryUsage::create([
-                'inventory_item_id' => $inventoryItem->id,
+                'inventory_item_id' => $inventoryItem->getKey(),
                 'usable_type' => $usable::class,
-                'usable_id' => $usable->id,
+                'usable_id' => $usable->getKey(),
                 'quantity' => $quantity,
                 'unit_price' => $item['unit_price'] ?? $inventoryItem->unit_price,
             ]);

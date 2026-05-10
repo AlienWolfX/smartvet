@@ -43,7 +43,7 @@ class HandleInertiaRequests extends Middleware
         $clinicLogo = null;
 
         if ($request->user()?->isOwner()) {
-            $owner = \App\Models\Owner::where('account_user_id', $request->user()->id)
+            $owner = \App\Models\Owner::where('account_user_id', $request->user()->getKey())
                 ->with('user')
                 ->first();
             if ($owner?->user) {

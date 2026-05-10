@@ -14,14 +14,14 @@ class OwnerPortalController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $owners = \App\Models\Owner::where('account_user_id', $user->id)
+        $owners = \App\Models\Owner::where('account_user_id', $user->getKey())
             ->with(['pets.species'])
             ->get();
 
         $pets = $owners->flatMap(function ($owner) {
             return $owner->pets->map(function ($pet) {
                 return [
-                    'id'          => $pet->id,
+                    'id'          => $pet->getKey(),
                     'name'        => $pet->name,
                     'species'     => $pet->species?->name ?? 'Unknown',
                     'speciesId'   => $pet->pet_species_id,
@@ -41,7 +41,7 @@ class OwnerPortalController extends Controller
         })->values()->all();
 
         $speciesList = \App\Models\PetSpecies::orderBy('name')->get()->map(fn ($s) => [
-            'id'   => $s->id,
+            'id'   => $s->getKey(),
             'name' => $s->name,
             'icon' => $s->icon,
         ])->all();
@@ -75,12 +75,12 @@ class OwnerPortalController extends Controller
             abort(401, 'Unauthenticated.');
         }
 
-        $owner = \App\Models\Owner::where('account_user_id', $user->id)->first();
+        $owner = \App\Models\Owner::where('account_user_id', $user->getKey())->first();
         $ownerClinicName = $owner?->user?->clinic_name;
 
         $clinicName = $user->clinic_name ?? $ownerClinicName ?? 'SmartVet';
 
-        $owners = \App\Models\Owner::where('account_user_id', $user->id)->pluck('owner_id');
+        $owners = \App\Models\Owner::where('account_user_id', $user->getKey())->pluck('owner_id');
         $pet = \App\Models\Pet::with(['owner', 'vaccinations', 'consultations.files', 'consultations.inventoryUsages.inventoryItem'])
             ->whereIn('owner_id', $owners)
             ->findOrFail($petId);
@@ -91,7 +91,7 @@ class OwnerPortalController extends Controller
             : null;
 
         $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
-            'id'            => $f->id,
+            'id'            => $f->getKey(),
             'name'          => $f->original_name ?? $f->file_name,
             'url'           => $f->file_url,
             'mimeType'      => $f->mime_type,
@@ -103,7 +103,7 @@ class OwnerPortalController extends Controller
         return response()->json([
             'clinicName' => $registeredClinicName ?? $user->clinic_name ?? $pet->owner?->clinic_name ?? 'SmartVet',
             'pet' => [
-                'id'          => $pet->id,
+                'id'          => $pet->getKey(),
                 'name'        => $pet->name,
                 'species'     => $pet->species?->name ?? 'Unknown',
                 'breed'       => $pet->breed ?? '—',
@@ -144,13 +144,13 @@ class OwnerPortalController extends Controller
                 'notes'          => $c->notes,
                 'clinicName' => $c->clinic_location ?? $clinicName,
                 'inventoryItems' => $c->inventoryUsages->map(fn ($u) => [
-                    'id'        => $u->id,
+                    'id'        => $u->getKey(),
                     'name'      => $u->inventoryItem?->name ?? 'Item',
                     'quantity'  => $u->quantity,
                     'unitPrice' => $u->unit_price,
                 ]),
                 'files'          => $c->files->map(fn ($f) => [
-                    'id'            => $f->id,
+                    'id'            => $f->getKey(),
                     'name'          => $f->original_name ?? $f->file_name,
                     'url'           => $f->file_url,
                     'mimeType'      => $f->mime_type,
@@ -167,7 +167,7 @@ class OwnerPortalController extends Controller
         /** @var \App\Models\User $user */
         $user = $request->user();
 
-        $ownerIds = \App\Models\Owner::where('account_user_id', $user->id)->pluck('owner_id');
+        $ownerIds = \App\Models\Owner::where('account_user_id', $user->getKey())->pluck('owner_id');
         $pet = \App\Models\Pet::whereIn('owner_id', $ownerIds)->findOrFail($petId);
 
         $validated = $request->validate([

@@ -21,7 +21,7 @@ class OwnerManagementController extends Controller
             ->orderByDesc('created_at')
             ->get()
             ->map(fn($user) => [
-                'id'         => $user->id,
+                'id'         => $user->getKey(),
                 'name'       => $user->name,
                 'email'      => $user->email,
                 'status'     => $user->status ?? 'active',
@@ -48,19 +48,19 @@ class OwnerManagementController extends Controller
 
         $validated = $request->validate([
             'name'   => ['required', 'string', 'max:255'],
-            'email'  => ['required', 'email', 'unique:users,email,' . $owner->id],
+            'email'  => ['required', 'email', 'unique:users,email,' . $owner->getKey()],
             'status' => ['required', 'in:active,inactive,suspended'],
         ]);
 
         // If email changed, re-link owner records
         if ($validated['email'] !== $owner->email) {
             // Unlink from old email
-            Owner::where('account_user_id', $owner->id)->update(['account_user_id' => null]);
+            Owner::where('account_user_id', $owner->getKey())->update(['account_user_id' => null]);
 
             // Link to new email matches
             Owner::where('email', $validated['email'])
                 ->whereNull('account_user_id')
-                ->update(['account_user_id' => $owner->id]);
+                ->update(['account_user_id' => $owner->getKey()]);
         }
 
         $owner->update($validated);
@@ -85,7 +85,7 @@ class OwnerManagementController extends Controller
 
         DB::transaction(function () use ($owner) {
             // Unlink owner records before deleting the user
-            Owner::where('account_user_id', $owner->id)->update(['account_user_id' => null]);
+            Owner::where('account_user_id', $owner->getKey())->update(['account_user_id' => null]);
             $owner->delete();
         });
 

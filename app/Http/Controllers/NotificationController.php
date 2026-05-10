@@ -17,7 +17,7 @@ class NotificationController extends Controller
     {
         $today = Carbon::today();
         $thirtyDaysFromNow = Carbon::today()->addDays(30);
-        $userId = $request->user()->id;
+        $userId = $request->user()->getKey();
 
         // Get dismissed notification keys for this user
         $dismissed = DismissedNotification::where('user_id', $userId)
@@ -34,7 +34,7 @@ class NotificationController extends Controller
             ->orderBy('expiry_date')
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'type' => 'expired',
                 'name' => $item->name,
                 'brand' => $item->brand,
@@ -43,7 +43,7 @@ class NotificationController extends Controller
                 'expiryDate' => $item->expiry_date->format('M d, Y'),
                 'daysAgo' => $today->diffInDays($item->expiry_date),
                 'message' => 'Expired ' . $today->diffInDays($item->expiry_date) . ' day(s) ago',
-                'dismissed' => $isDismissed($item->id, 'expired'),
+                'dismissed' => $isDismissed($item->getKey(), 'expired'),
             ]);
 
         // Expiring soon (within 30 days)
@@ -54,7 +54,7 @@ class NotificationController extends Controller
             ->orderBy('expiry_date')
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'type' => 'expiring_soon',
                 'name' => $item->name,
                 'brand' => $item->brand,
@@ -63,7 +63,7 @@ class NotificationController extends Controller
                 'expiryDate' => $item->expiry_date->format('M d, Y'),
                 'daysLeft' => $today->diffInDays($item->expiry_date),
                 'message' => 'Expires in ' . $today->diffInDays($item->expiry_date) . ' day(s)',
-                'dismissed' => $isDismissed($item->id, 'expiring_soon'),
+                'dismissed' => $isDismissed($item->getKey(), 'expiring_soon'),
             ]);
 
         // Out of stock
@@ -72,7 +72,7 @@ class NotificationController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'type' => 'out_of_stock',
                 'name' => $item->name,
                 'brand' => $item->brand,
@@ -81,7 +81,7 @@ class NotificationController extends Controller
                 'currentStock' => 0,
                 'minStock' => $item->min_stock,
                 'message' => 'Out of stock',
-                'dismissed' => $isDismissed($item->id, 'out_of_stock'),
+                'dismissed' => $isDismissed($item->getKey(), 'out_of_stock'),
             ]);
 
         // Low stock (at or below min_stock, but not zero)
@@ -91,7 +91,7 @@ class NotificationController extends Controller
             ->orderByRaw('current_stock / min_stock ASC')
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'type' => 'low_stock',
                 'name' => $item->name,
                 'brand' => $item->brand,
@@ -100,7 +100,7 @@ class NotificationController extends Controller
                 'currentStock' => $item->current_stock,
                 'minStock' => $item->min_stock,
                 'message' => "Only {$item->current_stock} left (min: {$item->min_stock})",
-                'dismissed' => $isDismissed($item->id, 'low_stock'),
+                'dismissed' => $isDismissed($item->getKey(), 'low_stock'),
             ]);
 
         // Only count non-dismissed notifications
@@ -127,7 +127,7 @@ class NotificationController extends Controller
 
         DismissedNotification::updateOrCreate(
             [
-                'user_id' => $request->user()->id,
+                'user_id' => $request->user()->getKey(),
                 'inventory_item_id' => $request->inventory_item_id,
                 'notification_type' => $request->notification_type,
             ],
@@ -141,7 +141,7 @@ class NotificationController extends Controller
     {
         $today = Carbon::today();
         $thirtyDaysFromNow = Carbon::today()->addDays(30);
-        $userId = $request->user()->id;
+        $userId = $request->user()->getKey();
 
         // Gather all current notification items with their types
         $notifications = collect();
@@ -149,22 +149,22 @@ class NotificationController extends Controller
         $this->scopeToUser(InventoryItem::whereNotNull('expiry_date')
             ->where('expiry_date', '<', $today))
             ->get()
-            ->each(fn ($item) => $notifications->push(['id' => $item->id, 'type' => 'expired']));
+            ->each(fn ($item) => $notifications->push(['id' => $item->getKey(), 'type' => 'expired']));
 
         $this->scopeToUser(InventoryItem::whereNotNull('expiry_date')
             ->where('expiry_date', '>=', $today)
             ->where('expiry_date', '<=', $thirtyDaysFromNow))
             ->get()
-            ->each(fn ($item) => $notifications->push(['id' => $item->id, 'type' => 'expiring_soon']));
+            ->each(fn ($item) => $notifications->push(['id' => $item->getKey(), 'type' => 'expiring_soon']));
 
         $this->scopeToUser(InventoryItem::where('current_stock', 0))
             ->get()
-            ->each(fn ($item) => $notifications->push(['id' => $item->id, 'type' => 'out_of_stock']));
+            ->each(fn ($item) => $notifications->push(['id' => $item->getKey(), 'type' => 'out_of_stock']));
 
         $this->scopeToUser(InventoryItem::where('current_stock', '>', 0)
             ->whereColumn('current_stock', '<=', 'min_stock'))
             ->get()
-            ->each(fn ($item) => $notifications->push(['id' => $item->id, 'type' => 'low_stock']));
+            ->each(fn ($item) => $notifications->push(['id' => $item->getKey(), 'type' => 'low_stock']));
 
         foreach ($notifications as $notification) {
             DismissedNotification::updateOrCreate(

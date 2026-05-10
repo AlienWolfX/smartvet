@@ -74,7 +74,7 @@ class VaccinationController extends Controller
 
             $payment = PetPayment::create([
                 'pet_id' => $numericId,
-                'vaccination_id' => $vaccination->id,
+                'vaccination_id' => $vaccination->getKey(),
                 'total_amount' => $vaccinationFee,
                 'status' => 'pending',
                 'recorded_by' => Auth::id(),
@@ -82,9 +82,9 @@ class VaccinationController extends Controller
             ]);
 
             PetPaymentItem::create([
-                'pet_payment_id' => $payment->id,
+                'pet_payment_id' => $payment->getKey(),
                 'service_type' => 'vaccination',
-                'service_id' => $vaccination->id,
+                'service_id' => $vaccination->getKey(),
                 'description' => 'Vaccine: ' . $validated['vaccine_name'],
                 'amount' => $vaccinationFee,
             ]);
@@ -99,9 +99,9 @@ class VaccinationController extends Controller
                     }
 
                     PetPaymentItem::create([
-                        'pet_payment_id' => $payment->id,
+                        'pet_payment_id' => $payment->getKey(),
                         'service_type' => 'inventory_item',
-                        'service_id' => $inventoryModel->id,
+                        'service_id' => $inventoryModel->getKey(),
                         'description' => $inventoryModel->name . ' x' . $item['quantity'],
                         'amount' => $inventoryModel->unit_price * $item['quantity'],
                     ]);

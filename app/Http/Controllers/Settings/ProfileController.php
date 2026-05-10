@@ -37,14 +37,14 @@ class ProfileController extends Controller
 
         if ($newEmail !== $oldEmail) {
             // Update the email on all clinic Owner records already linked to this account
-            Owner::where('account_user_id', $user->id)
+            Owner::where('account_user_id', $user->getKey())
                 ->update(['email' => $newEmail]);
 
             // Retroactively link any clinic Owner records that carry the new email
             // but aren't linked yet (e.g. clinic added them before they registered)
             Owner::where('email', $newEmail)
                 ->whereNull('account_user_id')
-                ->update(['account_user_id' => $user->id]);
+                ->update(['account_user_id' => $user->getKey()]);
         }
 
         return to_route('profile.edit');

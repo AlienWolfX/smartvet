@@ -23,7 +23,7 @@ class MedicationSalesController extends Controller
             ->orderBy('name')
             ->get()
             ->map(fn ($pet) => [
-                'id' => $pet->id,
+                'id' => $pet->getKey(),
                 'name' => $pet->name,
                 'ownerName' => $pet->owner?->name ?? 'Unknown',
             ]);
@@ -36,7 +36,7 @@ class MedicationSalesController extends Controller
         )
             ->get()
             ->map(fn ($item) => [
-                'id' => $item->id,
+                'id' => $item->getKey(),
                 'name' => $item->name,
                 'brand' => $item->brand ?? '',
                 'batchNumber' => $item->batch_number ?? '',
@@ -77,7 +77,7 @@ class MedicationSalesController extends Controller
         $inventoryItems = InventoryItem::with('category')
             ->whereIn('inventory_item_id', $inventoryItemIds)
             ->get()
-            ->keyBy('id');
+            ->keyBy(fn ($item) => $item->getKey());
 
         $saleItems = [];
         $totalAmount = 0;
@@ -92,7 +92,7 @@ class MedicationSalesController extends Controller
             }
 
             $saleItems[] = [
-                'inventory_item_id' => $inventoryItem->id,
+                'inventory_item_id' => $inventoryItem->getKey(),
                 'quantity' => $quantity,
                 'unit_price' => $inventoryItem->unit_price,
             ];
@@ -106,21 +106,21 @@ class MedicationSalesController extends Controller
 
         DB::transaction(function () use ($pet, $saleItems, $totalAmount, $validated) {
             $payment = PetPayment::create([
-                'pet_id' => $pet?->id,
+                'pet_id' => $pet?->getKey(),
                 'customer_name' => $validated['customer_name'] ?? null,
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
-                'recorded_by' => auth()->id(),
+                'recorded_by' => auth()->getKey()(),
             ]);
 
             foreach ($saleItems as $saleItem) {
                 $inventoryItem = InventoryItem::find($saleItem['inventory_item_id']);
 
                 PetPaymentItem::create([
-                    'pet_payment_id' => $payment->id,
+                    'pet_payment_id' => $payment->getKey(),
                     'service_type' => 'inventory_item',
-                    'service_id' => $inventoryItem->id,
+                    'service_id' => $inventoryItem->getKey(),
                     'description' => $inventoryItem->name . ' x' . $saleItem['quantity'],
                     'amount' => $inventoryItem->unit_price * $saleItem['quantity'],
                 ]);
