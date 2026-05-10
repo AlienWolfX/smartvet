@@ -351,6 +351,7 @@ class PetController extends Controller
                 'paymentStatus' => $vaccination->payment_status,
                 'administeredBy' => $vaccination->administered_by,
                 'notes' => $vaccination->notes,
+                'createdById' => $vaccination->consultation?->created_by,
                     'consultation' => $vaccination->consultation ? [
                         'id' => $vaccination->consultation->getKey(),
                         'type' => $vaccination->consultation->consultation_type,
