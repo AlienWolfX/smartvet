@@ -111,7 +111,7 @@ class MedicationSalesController extends Controller
                 'total_amount' => $totalAmount,
                 'status' => 'pending',
                 'notes' => $validated['notes'] ?? null,
-                'recorded_by' => auth()->getKey()(),
+                'recorded_by' => auth()->id(),
             ]);
 
             foreach ($saleItems as $saleItem) {
@@ -129,6 +129,6 @@ class MedicationSalesController extends Controller
             app(InventoryUsageService::class)->attach($payment, $saleItems);
         });
 
-        return redirect()->route('medication-sales')->with('success', 'Inventory sale created successfully and inventory stock updated.');
+        return redirect()->route('medication-sales')->with('success', 'Success');
     }
 }

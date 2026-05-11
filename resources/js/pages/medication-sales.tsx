@@ -132,7 +132,7 @@ export default function MedicationSales({ pets, inventoryItems }: Props) {
             inventory_items: filteredItems,
         }, {
             onSuccess: () => {
-                success('Inventory sale created successfully and inventory stock updated.');
+                success('Success');
             },
             onError: (serverErrors) => {
                 const errorMessage = serverErrors.general

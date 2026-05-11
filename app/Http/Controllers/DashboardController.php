@@ -89,7 +89,7 @@ class DashboardController extends Controller
                 ];
             });
 
-        // Service breakdown (by consultation type)
+        // Service breakdown (by consultation type + walk-in sales)
         $consultationBreakdown = $this->scopeThroughPetOwner(Consultation::query()->whereDate('consultation_date', '>=', $thisMonth))
             ->selectRaw('consultation_type, COUNT(*) as cases, SUM(consultation_fee) as revenue')
             ->groupBy('consultation_type')
@@ -104,6 +104,22 @@ class DashboardController extends Controller
                     'color' => $colors[$index % count($colors)],
                 ];
             });
+
+        $walkInRevenue = $this->scopePetPaymentToUser(PetPayment::query()
+            ->whereNull('pet_id')
+            ->where('status', 'paid')
+            ->whereDate('created_at', '>=', $thisMonth)
+        )->sum('total_amount');
+
+        if ($walkInRevenue > 0) {
+            $consultationBreakdown->push([
+                'name' => 'Walk-in Sales',
+                'cases' => 'Walk-in',
+                'revenue' => (float) $walkInRevenue,
+                'trend' => 'This month',
+                'color' => '#f59e0b',
+            ]);
+        }
 
         // Low stock alerts
         $lowStockCount = $this->scopeToUser(InventoryItem::query()->where(function ($query) {
