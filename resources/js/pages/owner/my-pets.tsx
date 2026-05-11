@@ -617,7 +617,6 @@ export default function MyPets({ pets }: MyPetsProps) {
                                                                 {c.diagnosis && <p className="text-xs text-neutral-600"><span className="font-medium">Diagnosis:</span> {c.diagnosis}</p>}
 
                                                                 {c.treatment && <p className="text-xs text-neutral-600"><span className="font-medium">Treatment:</span> {c.treatment}</p>}
-                                                                <p className="text-xs text-neutral-500 mt-1"><span className="font-medium">Additional Notes:</span> {c.notes ? c.notes : 'N/A'}</p>
 
                                                                 {c.inventoryItems && c.inventoryItems.length > 0 && (
                                                                     <div className="mt-2">

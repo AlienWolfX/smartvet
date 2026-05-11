@@ -1058,9 +1058,9 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                                             </div>
 
                                                             <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Additional Notes</label>
+                                                                <label className="text-sm font-medium">Clinical Evaluation During Phyiscal Examination (visible to veterinarian only)</label>
                                                                 <Textarea
-                                                                    placeholder="Any additional observations or notes..."
+                                                                    placeholder="Professional observations during the physical examination (visible to veterinarian only)..."
                                                                     value={data.notes}
                                                                     onChange={(e) => setData('notes', e.target.value)}
                                                                     rows={2}
