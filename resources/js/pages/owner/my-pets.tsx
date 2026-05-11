@@ -42,7 +42,6 @@ interface Pet {
     lastVisit: string | null;
     imageUrl: string | null;
     qrToken: string | null;
-    microchipId?: string;
 }
 
 interface Vaccination {
@@ -261,7 +260,7 @@ export default function MyPets({ pets }: MyPetsProps) {
             title: 'Keep your pet info up to date',
             description: 'Accurate pet details make each visit smoother and safer.',
             bulletPoints: [
-                'Edit your pet’s breed, weight, and microchip information as needed.',
+                'Edit your pet’s breed and weight information as needed.',
                 'Ask your clinic to link new pets to your account if they are not visible yet.',
             ],
         },
@@ -338,7 +337,6 @@ export default function MyPets({ pets }: MyPetsProps) {
         age: string;
         weight: string;
         gender: string;
-        microchipId: string;
     }>({
         petImage: null,
         _method: 'PUT',
@@ -348,7 +346,6 @@ export default function MyPets({ pets }: MyPetsProps) {
         age: '',
         weight: '',
         gender: '',
-        microchipId: '',
     });
 
     const openEdit = (pet: Pet) => {
@@ -364,7 +361,6 @@ export default function MyPets({ pets }: MyPetsProps) {
             age: pet.age != null ? String(pet.age) : '',
             weight: pet.weight != null ? String(pet.weight) : '',
             gender: pet.gender ?? '',
-            microchipId: pet.microchipId ?? '',
         });
     };
 
@@ -473,12 +469,6 @@ export default function MyPets({ pets }: MyPetsProps) {
                                             <p className="font-semibold text-neutral-800">{recordPet?.name ?? '-'}</p>
                                             <p className="text-xs text-neutral-500">{recordPet?.species} · {recordPet?.breed}</p>
                                             <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-neutral-600">
-                                                {recordPetDetails?.microchipId && (
-                                                    <div className="rounded-lg bg-white px-2 py-1">
-                                                        <p className="font-medium">Microchip</p>
-                                                        <p className="truncate">{recordPetDetails.microchipId}</p>
-                                                    </div>
-                                                )}
                                                 {recordPet?.age != null && (
                                                     <div className="rounded-lg bg-white px-2 py-1">
                                                         <p className="font-medium">Age</p>
@@ -741,16 +731,6 @@ export default function MyPets({ pets }: MyPetsProps) {
                                         disabled={processing}
                                     />
                                     {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="pet-microchip">Microchip ID</Label>
-                                    <Input
-                                        id="pet-microchip"
-                                        value={data.microchipId}
-                                        onChange={(e) => setData('microchipId', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.microchipId && <p className="text-xs text-red-500">{errors.microchipId}</p>}
                                 </div>
                                 <div className="col-span-2 space-y-1">
                                     <Label htmlFor="edit-photo">Photo</Label>

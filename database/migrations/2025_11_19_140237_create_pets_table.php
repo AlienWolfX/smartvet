@@ -21,7 +21,6 @@ return new class extends Migration
             $table->decimal('weight', 5, 2)->nullable();
             $table->enum('gender', ['male', 'female']);
             $table->string('color')->nullable();
-            $table->string('microchip_id')->nullable()->unique();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamp('last_visit')->nullable();
             $table->timestamps();

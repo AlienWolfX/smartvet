@@ -79,7 +79,6 @@ interface Pet {
     weight: number;
     gender: string;
     color: string;
-    microchipId: string;
     imageUrl: string | null;
     qrUrl: string | null;
     status: string;
@@ -377,7 +376,6 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         weight: '',
         gender: '',
         color: '',
-        microchipId: '',
         petImage: null as File | null,
         ownerName: '',
         phone: '',
@@ -418,7 +416,6 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
         fd.append('weight', data.weight);
         fd.append('gender', data.gender);
         fd.append('color', data.color);
-        fd.append('microchipId', data.microchipId);
         fd.append('ownerName', data.ownerName);
         fd.append('phone', data.phone);
         fd.append('email', data.email);
@@ -845,15 +842,6 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                             value={data.color}
                                                             onChange={(e) => setData('color', e.target.value)}
                                                         />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-sm font-medium">Microchip ID</label>
-                                                        <Input
-                                                            placeholder="e.g., 982000123456789"
-                                                            value={data.microchipId}
-                                                            onChange={(e) => setData('microchipId', e.target.value)}
-                                                        />
-                                                        {formErrors.microchipId && <div className="text-red-500 text-xs">{formErrors.microchipId}</div>}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-2">
@@ -1659,7 +1647,6 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                         <p><span className="font-medium">Age:</span> {selectedPet.age} years</p>
                                         <p><span className="font-medium">Weight:</span> {selectedPet.weight}kg</p>
                                         <p><span className="font-medium">Color:</span> {selectedPet.color}</p>
-                                        <p><span className="font-medium">Microchip:</span> {selectedPet.microchipId}</p>
                                     </div>
                                 </div>
 

@@ -14,7 +14,7 @@ return new class extends Migration
     {
         if (!Schema::hasColumn('pets', 'clinic_ids')) {
             Schema::table('pets', function (Blueprint $table) {
-                $table->json('clinic_ids')->nullable()->after('microchip_id');
+                $table->json('clinic_ids')->nullable();
             });
 
             DB::statement('

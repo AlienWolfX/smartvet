@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pets', function (Blueprint $table) {
-            $table->uuid('qr_token')->unique()->nullable()->after('microchip_id');
+            $table->uuid('qr_token')->unique()->nullable();
         });
 
         DB::table('pets')->whereNull('qr_token')->orderBy('pet_id')->each(function ($pet) {

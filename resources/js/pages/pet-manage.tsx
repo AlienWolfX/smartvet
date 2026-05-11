@@ -96,7 +96,6 @@ interface Pet {
     weight: number;
     gender: string;
     color: string;
-    microchipId: string;
     imageUrl: string | null;
     status: string;
     lastVisit: string;
@@ -244,7 +243,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
         age: pet.age.toString(),
         weight: pet.weight.toString(),
         color: pet.color,
-        microchipId: pet.microchipId || '',
         // Consultation data
         consultationType: '',
         consultationFee: '',
@@ -294,7 +292,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
             age: data.age ? Number(data.age) : null,
             weight: data.weight ? Number(data.weight) : null,
             color: data.color || null,
-            microchipId: data.microchipId || null,
         };
 
         router.put(`/pet-records/${pet.id}`, payload, {
@@ -754,7 +751,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                         {pet.breed} • {pet.age} years old • {pet.gender}
                                     </p>
                                     <p className="text-sm text-neutral-500">
-                                        ID: {pet.id} • Microchip: {pet.microchipId}
+                                        ID: {pet.id}
                                     </p>
                                 </div>
                                 <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
@@ -886,14 +883,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                                 <Input
                                                     value={data.color}
                                                     onChange={(e) => setData('color', e.target.value)}
-                                                    disabled={!isEditingProfile}
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Microchip ID</label>
-                                                <Input
-                                                    value={data.microchipId}
-                                                    onChange={(e) => setData('microchipId', e.target.value)}
                                                     disabled={!isEditingProfile}
                                                 />
                                             </div>

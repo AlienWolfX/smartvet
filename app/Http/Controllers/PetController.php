@@ -36,7 +36,6 @@ class PetController extends Controller
                     'weight' => $pet->weight ?? 0,
                     'gender' => $pet->gender,
                     'color' => $pet->color ?? 'Unknown',
-                    'microchipId' => $pet->microchip_id ?? 'Not assigned',
                     'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
                     'qrUrl' => $pet->qr_token ? url('/scan/' . $pet->qr_token) : null,
                     'status' => $pet->status,
@@ -89,13 +88,8 @@ class PetController extends Controller
             $existingPetByQrToken = Pet::where('qr_token', $request->qrToken)->first();
         }
 
-        $existingPetByMicrochip = null;
-        if ($request->microchipId) {
-            $existingPetByMicrochip = Pet::where('microchip_id', $request->microchipId)->first();
-        }
-
         $qrTokenRule = 'nullable|uuid';
-        if (!$existingPetByQrToken && !$existingPetByMicrochip) {
+        if (!$existingPetByQrToken) {
             $qrTokenRule .= '|unique:pets,qr_token';
         }
 
@@ -107,7 +101,6 @@ class PetController extends Controller
             'weight' => 'nullable|numeric|min:0|max:500',
             'gender' => 'required|in:male,female',
             'color' => 'nullable|string|max:255',
-            'microchipId' => 'nullable|string|max:255',
             'qrToken' => $qrTokenRule,
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
             'petDocuments' => 'sometimes|nullable|array|max:3',
@@ -123,10 +116,10 @@ class PetController extends Controller
             'zipCode' => 'nullable|string|max:10',
         ]);
 
-        DB::transaction(function () use ($request, $actorName, $existingPetByMicrochip, $existingPetByQrToken) {
+        DB::transaction(function () use ($request, $actorName, $existingPetByQrToken) {
             $currentClinicId = $this->tenantUserId();
 
-            $existingPet = $existingPetByQrToken ?? $existingPetByMicrochip;
+            $existingPet = $existingPetByQrToken;
 
             if ($existingPet) {
                 $clinicIds = $existingPet->clinic_ids ?? [];
@@ -189,7 +182,6 @@ class PetController extends Controller
                 'weight' => $request->weight,
                 'gender' => $request->gender,
                 'color' => $request->color,
-                'microchip_id' => $request->microchipId,
                 'clinic_ids' => [$currentClinicId],
                 'qr_token' => $request->qrToken ?: (string) Str::uuid(),
                 'image_path' => $imagePath,
@@ -260,7 +252,6 @@ class PetController extends Controller
             'age' => 'nullable|integer|min:0|max:50',
             'weight' => 'nullable|numeric|min:0|max:500',
             'color' => 'nullable|string|max:255',
-            'microchipId' => 'nullable|string|max:255|unique:pets,microchip_id,' . $pet->getKey(),
         ]);
 
         $pet->update([
@@ -269,7 +260,6 @@ class PetController extends Controller
             'age' => $request->input('age'),
             'weight' => $request->input('weight'),
             'color' => $request->input('color'),
-            'microchip_id' => $request->input('microchipId'),
         ]);
 
         return redirect()->route('pet-records.manage', ['pet' => $petId])->with('success', 'Pet profile updated successfully!');
@@ -403,7 +393,6 @@ class PetController extends Controller
             'weight' => $pet->weight ?? 0,
             'gender' => $pet->gender,
             'color' => $pet->color ?? 'Unknown',
-            'microchipId' => $pet->microchip_id ?? '',
             'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
             'status' => $pet->status,
             'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
@@ -580,7 +569,6 @@ class PetController extends Controller
             'Weight (kg)',
             'Gender',
             'Color',
-            'Microchip ID',
             'Status',
             'Owner Name',
             'Owner Phone',
@@ -605,18 +593,17 @@ class PetController extends Controller
             $sheet->setCellValue("F{$row}", $pet->weight ?? 0);
             $sheet->setCellValue("G{$row}", ucfirst($pet->gender));
             $sheet->setCellValue("H{$row}", $pet->color ?? 'Unknown');
-            $sheet->setCellValue("I{$row}", $pet->microchip_id ?? 'Not assigned');
-            $sheet->setCellValue("J{$row}", ucfirst($pet->status));
-            $sheet->setCellValue("K{$row}", $pet->owner?->name ?? '');
-            $sheet->setCellValue("L{$row}", $pet->owner?->phone ?? '');
-            $sheet->setCellValue("M{$row}", $pet->owner?->email ?? '');
-            $sheet->setCellValue("N{$row}", $pet->owner?->address ?? '');
-            $sheet->setCellValue("O{$row}", optional($pet->last_visit)->toDateString() ?? '');
-            $sheet->setCellValue("P{$row}", $pet->created_at->toDateString());
+            $sheet->setCellValue("I{$row}", ucfirst($pet->status));
+            $sheet->setCellValue("J{$row}", $pet->owner?->name ?? '');
+            $sheet->setCellValue("K{$row}", $pet->owner?->phone ?? '');
+            $sheet->setCellValue("L{$row}", $pet->owner?->email ?? '');
+            $sheet->setCellValue("M{$row}", $pet->owner?->address ?? '');
+            $sheet->setCellValue("N{$row}", optional($pet->last_visit)->toDateString() ?? '');
+            $sheet->setCellValue("O{$row}", $pet->created_at->toDateString());
             $row++;
         }
 
-        foreach (range('A', 'P') as $column) {
+        foreach (range('A', 'O') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
     }
@@ -627,7 +614,7 @@ class PetController extends Controller
         $petsSheet = $spreadsheet->getActiveSheet();
         $petsSheet->setTitle('Pets');
 
-        $headers = ['Pet ID', 'Pet Name', 'Species', 'Breed', 'Age', 'Weight (kg)', 'Gender', 'Color', 'Microchip ID', 'Status', 'Registration Date'];
+        $headers = ['Pet ID', 'Pet Name', 'Species', 'Breed', 'Age', 'Weight (kg)', 'Gender', 'Color', 'Status', 'Registration Date'];
 
         if ($includeOwnerInfo) {
             $headers = array_merge($headers, ['Owner Name', 'Owner Phone', 'Owner Email', 'Owner Address']);
@@ -649,7 +636,6 @@ class PetController extends Controller
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->weight ?? 0);
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, ucfirst($pet->gender));
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->color ?? 'Unknown');
-            $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->microchip_id ?? 'Not assigned');
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, ucfirst($pet->status));
             $petsSheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $row, $pet->created_at->toDateString());
 
@@ -662,7 +648,7 @@ class PetController extends Controller
             $row++;
         }
 
-        $lastCol = $includeOwnerInfo ? 'O' : 'K';
+        $lastCol = $includeOwnerInfo ? 'N' : 'J';
         foreach (range('A', $lastCol) as $column) {
             $petsSheet->getColumnDimension($column)->setAutoSize(true);
         }

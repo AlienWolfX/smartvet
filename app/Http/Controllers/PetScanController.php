@@ -50,7 +50,6 @@ class PetScanController extends Controller
                 'weight'      => $pet->weight,
                 'gender'      => $pet->gender,
                 'color'       => $pet->color,
-                'microchipId' => $pet->microchip_id,
                 'clinicIds'   => $pet->clinic_ids ?? [],
                 'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
                 'status'      => $pet->status,

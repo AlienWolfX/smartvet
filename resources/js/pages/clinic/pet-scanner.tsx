@@ -59,7 +59,6 @@ interface PetResult {
         weight: number | null;
         gender: string;
         color: string | null;
-        microchipId: string | null;
         clinicIds?: number[];
         imageUrl: string | null;
         status: string;
@@ -266,7 +265,6 @@ export default function PetScanner() {
             formData.append('weight', result.pet.weight?.toString() || '');
             formData.append('gender', result.pet.gender);
             formData.append('color', result.pet.color || '');
-            formData.append('microchipId', result.pet.microchipId || '');
             formData.append('ownerName', result.owner.name);
             formData.append('phone', result.owner.phone);
             formData.append('email', result.owner.email || '');
@@ -517,12 +515,6 @@ export default function PetScanner() {
                                                         <span className="text-sm font-semibold text-slate-800">{result.pet.weight} kg</span>
                                                     </div>
                                                 )}
-                                                {result.pet.microchipId && (
-                                                    <div className="flex justify-between items-start py-1.5">
-                                                        <span className="text-xs font-medium text-slate-500">Microchip</span>
-                                                        <span className="text-sm font-mono text-slate-800 text-right">{result.pet.microchipId}</span>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
 
@@ -677,7 +669,7 @@ export default function PetScanner() {
 
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-3 border-t border-slate-100">
-                                        {result && result.owner.clinicUserId !== currentUserId && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
+                                        {result && currentUserId != null && result.owner.clinicUserId !== currentUserId && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
                                             <Button
                                                 className="gap-2 text-white flex-1"
                                                 style={{ backgroundColor: themeColor, borderColor: themeColor }}

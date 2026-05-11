@@ -31,7 +31,6 @@ class OwnerPortalController extends Controller
                     'weight'      => $pet->weight,
                     'gender'      => $pet->gender ?: '—',
                     'color'       => $pet->color ?: '—',
-                    'microchipId' => $pet->microchip_id ?? '',
                     'status'      => $pet->status ?? 'Healthy',
                     'lastVisit'   => $pet->last_visit?->format('M d, Y'),
                     'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
@@ -111,7 +110,6 @@ class OwnerPortalController extends Controller
                 'weight'      => $pet->weight,
                 'gender'      => $pet->gender ?: '—',
                 'color'       => $pet->color ?: '—',
-                'microchipId' => $pet->microchip_id,
                 'imageUrl'    => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
                 'status'      => $pet->status ?? 'Healthy',
             ],
@@ -177,7 +175,6 @@ class OwnerPortalController extends Controller
             'age' => 'nullable|numeric|min:0',
             'weight' => 'nullable|numeric|min:0',
             'gender' => 'nullable|string|max:50',
-            'microchipId' => 'nullable|string|max:255',
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
@@ -188,7 +185,6 @@ class OwnerPortalController extends Controller
             'age' => $validated['age'] !== null ? $validated['age'] : null,
             'weight' => $validated['weight'] !== null ? $validated['weight'] : null,
             'gender' => $validated['gender'] ?? null,
-            'microchip_id' => $validated['microchipId'] ?? null,
         ]);
 
         if ($request->hasFile('petImage')) {
