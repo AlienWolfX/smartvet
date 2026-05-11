@@ -331,21 +331,11 @@ export default function MyPets({ pets }: MyPetsProps) {
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<{
         petImage: File | null;
         _method: string;
-        name: string;
-        breed: string;
-        color: string;
         age: string;
-        weight: string;
-        gender: string;
     }>({
         petImage: null,
         _method: 'PUT',
-        name: '',
-        breed: '',
-        color: '',
         age: '',
-        weight: '',
-        gender: '',
     });
 
     const openEdit = (pet: Pet) => {
@@ -355,12 +345,7 @@ export default function MyPets({ pets }: MyPetsProps) {
         setData({
             petImage: null,
             _method: 'PUT',
-            name: pet.name,
-            breed: pet.breed ?? '',
-            color: pet.color ?? '',
             age: pet.age != null ? String(pet.age) : '',
-            weight: pet.weight != null ? String(pet.weight) : '',
-            gender: pet.gender ?? '',
         });
     };
 
@@ -660,40 +645,35 @@ export default function MyPets({ pets }: MyPetsProps) {
                             </button>
                         </div>
                         <form onSubmit={handleEditSubmit} className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="col-span-1 sm:col-span-2 space-y-1">
-                                    <Label htmlFor="pet-name">Pet Name</Label>
-                                    <Input
-                                        id="pet-name"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
-                                </div>
-                                <div className="col-span-1 sm:col-span-2 space-y-1">
-                                    <Label>Species</Label>
-                                    <Input value={editPet?.species ?? ''} disabled />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="pet-breed">Breed</Label>
-                                    <Input
-                                        id="pet-breed"
-                                        value={data.breed}
-                                        onChange={(e) => setData('breed', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.breed && <p className="text-xs text-red-500">{errors.breed}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="pet-color">Color</Label>
-                                    <Input
-                                        id="pet-color"
-                                        value={data.color}
-                                        onChange={(e) => setData('color', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.color && <p className="text-xs text-red-500">{errors.color}</p>}
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Pet Details</p>
+                                    <div className="mt-3 grid gap-3 text-sm text-neutral-700">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Name</span>
+                                            <span>{editPet?.name ?? '—'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Species</span>
+                                            <span>{editPet?.species ?? '—'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Breed</span>
+                                            <span>{editPet?.breed || '—'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Color</span>
+                                            <span>{editPet?.color || '—'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Gender</span>
+                                            <span>{editPet?.gender || '—'}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <span className="font-medium">Weight</span>
+                                            <span>{editPet?.weight ? `${editPet.weight} kg` : '—'}</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="pet-age">Age (years)</Label>
@@ -709,29 +689,6 @@ export default function MyPets({ pets }: MyPetsProps) {
                                     {errors.age && <p className="text-xs text-red-500">{errors.age}</p>}
                                 </div>
                                 <div className="space-y-1">
-                                    <Label htmlFor="pet-weight">Weight (kg)</Label>
-                                    <Input
-                                        id="pet-weight"
-                                        type="number"
-                                        min="0"
-                                        step="0.1"
-                                        value={data.weight}
-                                        onChange={(e) => setData('weight', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.weight && <p className="text-xs text-red-500">{errors.weight}</p>}
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="pet-gender">Gender</Label>
-                                    <Input
-                                        id="pet-gender"
-                                        value={data.gender}
-                                        onChange={(e) => setData('gender', e.target.value)}
-                                        disabled={processing}
-                                    />
-                                    {errors.gender && <p className="text-xs text-red-500">{errors.gender}</p>}
-                                </div>
-                                <div className="col-span-2 space-y-1">
                                     <Label htmlFor="edit-photo">Photo</Label>
                                     <Input
                                         id="edit-photo"

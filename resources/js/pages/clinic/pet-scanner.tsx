@@ -110,7 +110,7 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
 export default function PetScanner() {
     const { auth } = usePage<SharedData>().props;
     const themeColor = (auth.user as { theme_color?: string })?.theme_color || '#0f172a';
-    const currentUserId = (auth.user as { id?: number })?.id;
+    const currentUserId = (auth.user as { id?: number; user_id?: number })?.id ?? (auth.user as { user_id?: number })?.user_id;
 
     const [scanning, setScanning] = useState(false);
     const [scanError, setScanError] = useState<string | null>(null);
@@ -300,6 +300,8 @@ export default function PetScanner() {
             }
 
             router.post('/pet-records', formData, {
+                preserveState: true,
+                preserveScroll: true,
                 onSuccess: () => {
                     success('Pet imported successfully!');
                     setResult(null);
@@ -669,7 +671,7 @@ export default function PetScanner() {
 
                                     {/* Actions */}
                                     <div className="flex gap-2 pt-3 border-t border-slate-100">
-                                        {result && currentUserId != null && result.owner.clinicUserId !== currentUserId && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
+                                        {result && currentUserId != null && scannedToken && !result.pet.clinicIds?.includes(currentUserId) && (
                                             <Button
                                                 className="gap-2 text-white flex-1"
                                                 style={{ backgroundColor: themeColor, borderColor: themeColor }}

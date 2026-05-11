@@ -235,7 +235,7 @@ class PetController extends Controller
             ]);
         });
 
-        return redirect()->back()->with('success', 'Pet registered successfully!');
+        return redirect()->route('pet-records')->with('success', 'Pet registered successfully!');
     }
 
     public function update(Request $request, $petId)

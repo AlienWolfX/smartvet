@@ -169,22 +169,12 @@ class OwnerPortalController extends Controller
         $pet = \App\Models\Pet::whereIn('owner_id', $ownerIds)->findOrFail($petId);
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'breed' => 'nullable|string|max:255',
-            'color' => 'nullable|string|max:255',
             'age' => 'nullable|numeric|min:0',
-            'weight' => 'nullable|numeric|min:0',
-            'gender' => 'nullable|string|max:50',
             'petImage' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         $pet->update([
-            'name' => $validated['name'],
-            'breed' => $validated['breed'] ?? null,
-            'color' => $validated['color'] ?? null,
             'age' => $validated['age'] !== null ? $validated['age'] : null,
-            'weight' => $validated['weight'] !== null ? $validated['weight'] : null,
-            'gender' => $validated['gender'] ?? null,
         ]);
 
         if ($request->hasFile('petImage')) {
