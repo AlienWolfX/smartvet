@@ -717,7 +717,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
             description="Comprehensive pet health management and medical records."
         >
             <Head title={`${pet.name} - Pet Management`} />
-            <div className="h-[calc(100vh-12rem)] flex flex-col overflow-hidden">
+            <div className="h-[calc(100vh-12rem)] flex flex-col overflow-y-auto">
 
             {/* Back Button */}
             <div className="mb-4 shrink-0">
