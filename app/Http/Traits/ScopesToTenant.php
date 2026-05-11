@@ -64,21 +64,28 @@ trait ScopesToTenant
         $user = Auth::user();
         if ($user && !$user->isAdmin()) {
             return $query->where(function (Builder $q) use ($user) {
-                // Payments for pets owned by this clinic or imported pets accessible via clinic_ids
+                // Payments for pets owned by this clinic
                 $q->whereHas('pet', function (Builder $petQuery) use ($user) {
-                    $petQuery->where(function (Builder $petSubQuery) use ($user) {
-                        $petSubQuery->whereHas('owner', function (Builder $subQuery) use ($user) {
-                            $subQuery->where('owners.user_id', $user->getKey());
-                        })
-                        ->orWhereJsonContains('clinic_ids', $user->getKey());
+                    $petQuery->whereHas('owner', function (Builder $subQuery) use ($user) {
+                        $subQuery->where('owners.user_id', $user->getKey());
                     });
                 })
-                // OR walk-in payments recorded by this clinic
+                // OR payments recorded by this clinic for imported pets / walk-in sales
                 ->orWhere(function (Builder $subQuery) use ($user) {
-                    $subQuery->whereNull('pet_id')
-                        ->where('recorded_by', $user->getKey());
+                    $subQuery->where('recorded_by', $user->getKey())
+                        ->where(function (Builder $nestedQuery) use ($user) {
+                            $nestedQuery->whereNull('pet_id')
+                                ->orWhereHas('pet', function (Builder $petQuery) use ($user) {
+                                    $petQuery->where(function (Builder $petSubQuery) use ($user) {
+                                        $petSubQuery->whereHas('owner', function (Builder $ownerQuery) use ($user) {
+                                            $ownerQuery->where('owners.user_id', $user->getKey());
+                                        })
+                                        ->orWhereJsonContains('clinic_ids', $user->getKey());
+                                    });
+                                });
+                        });
                 })
-                // OR payments for consultations created by this clinic (cross-clinic consultations)
+                // OR payments for consultations created by this clinic (including imported pets)
                 ->orWhereHas('consultation', function (Builder $subQuery) use ($user) {
                     $subQuery->where('created_by', $user->getKey());
                 });

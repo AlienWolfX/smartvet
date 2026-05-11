@@ -283,6 +283,7 @@ class PetController extends Controller
                 'consultations.medications',
                 'consultations.payment',
                 'vaccinations.consultation',
+                'vaccinations.payment',
                 'medications.consultation',
             ]))
             ->where('pet_id', $numericId)
@@ -339,6 +340,7 @@ class PetController extends Controller
                 'nextDue' => $vaccination->next_due_date->toISOString(),
                 'status' => $this->getVaccinationStatus($vaccination->next_due_date),
                 'paymentStatus' => $vaccination->payment_status,
+                'paymentRecordedById' => $vaccination->payment?->recorded_by,
                 'administeredBy' => $vaccination->administered_by,
                 'notes' => $vaccination->notes,
                 'createdById' => $vaccination->consultation?->created_by,

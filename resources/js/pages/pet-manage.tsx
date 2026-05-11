@@ -77,10 +77,12 @@ function sortRecordsLatestFirst<T extends { date: string }>(records: T[]): T[] {
     return [...records].sort((a, b) => getDateTimestamp(b.date) - getDateTimestamp(a.date));
 }
 
-const getPaymentStatusDisplay = (paymentStatus: string | null | undefined, isImported: boolean) => {
-    // Hide payment if definitely imported by current clinic
-    // Show payment in all other cases (owner or first time viewing)
-    if (isImported) {
+const getPaymentStatusDisplay = (
+    paymentStatus: string | null | undefined,
+    isImported: boolean,
+    isOwnRecord: boolean,
+) => {
+    if (isImported && !isOwnRecord) {
         return '-';
     }
     return paymentStatus || 'pending';
@@ -1247,7 +1249,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                                 </TableCell>
                                                 <TableCell>
                                                     {(() => {
-                                                        const status = getPaymentStatusDisplay(record.paymentStatus, isImportedByCurrentClinic);
+                                                        const isOwnRecord = !isImportedByCurrentClinic ||
+                                                            record.createdById === currentClinicId ||
+                                                            record.paymentRecordedById === currentClinicId;
+                                                        const status = getPaymentStatusDisplay(record.paymentStatus, isImportedByCurrentClinic, isOwnRecord);
                                                         return status === '-' ? (
                                                             <span className="text-neutral-500">-</span>
                                                         ) : (
@@ -1298,7 +1303,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                                     <span className="text-sm font-medium text-neutral-500">Payment Status</span>
                                                     <div className="mt-1">
                                                         {(() => {
-                                                            const status = getPaymentStatusDisplay(selectedConsultation.paymentStatus, isImportedByCurrentClinic);
+                                                            const isOwnRecord = !isImportedByCurrentClinic ||
+                                                                selectedConsultation.createdById === currentClinicId ||
+                                                                selectedConsultation.paymentRecordedById === currentClinicId;
+                                                            const status = getPaymentStatusDisplay(selectedConsultation.paymentStatus, isImportedByCurrentClinic, isOwnRecord);
                                                             return status === '-' ? (
                                                                 <span className="text-sm text-neutral-500">-</span>
                                                             ) : (
@@ -1602,7 +1610,10 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                                 </TableCell>
                                                 <TableCell>
                                                     {(() => {
-                                                        const status = getPaymentStatusDisplay(vaccination.paymentStatus, isImportedByCurrentClinic);
+                                                        const isOwnRecord = !isImportedByCurrentClinic ||
+                                                            vaccination.createdById === currentClinicId ||
+                                                            vaccination.paymentRecordedById === currentClinicId;
+                                                        const status = getPaymentStatusDisplay(vaccination.paymentStatus, isImportedByCurrentClinic, isOwnRecord);
                                                         return status === '-' ? (
                                                             <span className="text-sm text-neutral-500">-</span>
                                                         ) : (
