@@ -1366,7 +1366,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
             <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
                 <CardContent className="p-6">
                     {/* Table Headers */}
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border-b border-neutral-300 dark:border-neutral-700 mb-4">
                         <div className="md:col-span-2">
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Pet Information
@@ -1379,15 +1379,10 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                         </div>
                         <div>
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-                                Health Status
-                            </h3>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Last Visit
                             </h3>
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                                 Actions
                             </h3>
@@ -1399,7 +1394,7 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                             const overdueVaccinations = pet.vaccinations.filter(v => v.status === 'overdue' || v.status === 'due-soon').length;
 
                             return (
-                                <div key={pet.id} className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
+                                <div key={pet.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border border-neutral-200 rounded-lg dark:border-neutral-800 hover:shadow-md transition-shadow">
                                     <div className="md:col-span-2">
                                         <div className="flex items-start gap-3">
                                             <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
@@ -1442,27 +1437,6 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                                                 {pet.owner.city || pet.owner.address}
                                             </span>
                                         </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {overdueVaccinations > 0 && (
-                                            <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
-                                                <Syringe className="h-3 w-3 mr-1" />
-                                                {overdueVaccinations} vaccines due
-                                            </Badge>
-                                        )}
-                                        {pet.currentMedications.length > 0 && (
-                                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                                                <Pill className="h-3 w-3 mr-1" />
-                                                On medication
-                                            </Badge>
-                                        )}
-                                        {pet.allergies.length > 0 && (
-                                            <Badge variant="outline" className="text-xs bg-rose-50 text-rose-700 border-rose-200">
-                                                <AlertCircle className="h-3 w-3 mr-1" />
-                                                {pet.allergies.length} allergies
-                                            </Badge>
-                                        )}
                                     </div>
 
                                     <div>
