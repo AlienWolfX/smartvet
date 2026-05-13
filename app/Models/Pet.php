@@ -28,6 +28,7 @@ class Pet extends Model
         'image_path',
         'status',
         'last_visit',
+        'history_visibility',
     ];
 
     protected $casts = [
@@ -36,6 +37,7 @@ class Pet extends Model
         'updated_at' => 'datetime',
         'weight' => 'decimal:2',
         'clinic_ids' => 'array',
+        'history_visibility' => 'string',
     ];
 
     public function owner(): BelongsTo

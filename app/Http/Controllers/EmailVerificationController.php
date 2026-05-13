@@ -38,7 +38,7 @@ class EmailVerificationController extends Controller
                 return redirect()->route($user->is_setup_complete ? 'dashboard' : 'setup');
             }
             if ($user->isAdmin()) {
-                return redirect()->route('user-management');
+                return redirect()->route('admin.user-management');
             }
             return redirect()->route('owner.pets');
         }
@@ -62,7 +62,7 @@ class EmailVerificationController extends Controller
         }
 
         if ($user->isAdmin()) {
-            return redirect()->route('user-management')->with('status', 'Email verified successfully.');
+            return redirect()->route('admin.user-management')->with('status', 'Email verified successfully.');
         }
 
         return redirect()->route('owner.pets')->with('status', 'Email verified successfully.');
@@ -81,7 +81,7 @@ class EmailVerificationController extends Controller
                 return redirect()->route($user->is_setup_complete ? 'dashboard' : 'setup');
             }
             if ($user->isAdmin()) {
-                return redirect()->route('user-management');
+                return redirect()->route('admin.user-management');
             }
             return redirect()->route('owner.pets');
         }

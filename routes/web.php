@@ -10,7 +10,7 @@ Route::get('/', function () {
         $user = Auth::user();
         if ($user->isOwner())  return redirect()->route('owner.pets');
         if ($user->isClinic()) return redirect()->route('dashboard');
-        if ($user->isAdmin())  return redirect()->route('user-management');
+        if ($user->isAdmin())  return redirect()->route('admin.user-management');
     }
     return redirect()->route('login');
 })->name('home');
@@ -22,7 +22,7 @@ Route::get('portal-home', function () {
         $user = Auth::user();
         if ($user->isOwner())  return redirect()->route('owner.pets');
         if ($user->isClinic()) return redirect()->route('dashboard');
-        if ($user->isAdmin())  return redirect()->route('user-management');
+        if ($user->isAdmin())  return redirect()->route('admin.user-management');
     }
     return redirect()->route('login');
 })->name('portal.home');
@@ -126,21 +126,25 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
 
     // Admin-only routes
     Route::middleware(['role:admin'])->group(function () {
-        Route::get('user-management', [App\Http\Controllers\UserController::class, 'index'])->name('user-management');
-        Route::get('user-management/export', [App\Http\Controllers\UserController::class, 'export'])->name('user-management.export');
-        Route::post('user-management', [App\Http\Controllers\UserController::class, 'store'])->name('user-management.store');
-        Route::put('user-management/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('user-management.update');
-        Route::patch('user-management/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('user-management.toggle-status');
-        Route::delete('user-management/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('user-management.destroy');
+        Route::get('user-management', [App\Http\Controllers\UserController::class, 'index'])->name('admin.user-management');
+        Route::get('user-management/export', [App\Http\Controllers\UserController::class, 'export'])->name('admin.user-management.export');
+        Route::post('user-management', [App\Http\Controllers\UserController::class, 'store'])->name('admin.user-management.store');
+        Route::put('user-management/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('admin.user-management.update');
+        Route::patch('user-management/{user}/toggle-status', [App\Http\Controllers\UserController::class, 'toggleStatus'])->name('admin.user-management.toggle-status');
+        Route::delete('user-management/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('admin.user-management.destroy');
 
         // Owner account management
-        Route::get('owner-management', [App\Http\Controllers\OwnerManagementController::class, 'index'])->name('owner-management');
-        Route::put('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'update'])->name('owner-management.update');
-        Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('owner-management.toggle-status');
-        Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('owner-management.destroy');
+        Route::get('owner-management', [App\Http\Controllers\OwnerManagementController::class, 'index'])->name('admin.owner-management');
+        Route::put('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'update'])->name('admin.owner-management.update');
+        Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('admin.owner-management.toggle-status');
+        Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('admin.owner-management.destroy');
 
-        Route::get('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminEdit'])->name('admin.settings');
-        Route::post('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminUpdate'])->name('admin.settings.update');
+        // Pet visibility settings
+        Route::get('pet-records/visibility', [App\Http\Controllers\PetController::class, 'visibilitySettings'])->name('pet-records.visibility');
+        Route::patch('pet-records/{pet}/visibility', [App\Http\Controllers\PetController::class, 'updateVisibility'])->name('pet-records.update-visibility');
+
+        Route::get('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminEdit'])->name('admin.admin-settings');
+        Route::post('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminUpdate'])->name('admin.admin-settings.update');
     });
 });
 

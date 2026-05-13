@@ -36,7 +36,8 @@ import {
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import AdminLayout from '@/layouts/admin-layout';
-import { dashboard, userManagement } from '@/routes';
+import { dashboard } from '@/routes';
+import { userManagement } from '@/routes/admin';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import {

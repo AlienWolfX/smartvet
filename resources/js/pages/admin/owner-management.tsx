@@ -34,7 +34,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import AdminLayout from '@/layouts/admin-layout';
 import { cn } from '@/lib/utils';
-import { ownerManagement } from '@/routes';
+import { ownerManagement } from '@/routes/admin';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import {

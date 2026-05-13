@@ -70,6 +70,7 @@ class VaccinationController extends Controller
                 'pet_id' => $numericId,
                 'payment_status' => 'pending',
                 'administered_by' => Auth::user()->name,
+                'created_by' => Auth::id(),
             ]));
 
             $payment = PetPayment::create([

@@ -35,7 +35,7 @@ class CheckRole
                 return redirect()->route('owner.pets')->with('error', 'You do not have permission to access this page.');
             }
             if ($user->isAdmin()) {
-                return redirect()->route('user-management')->with('error', 'You do not have permission to access this page.');
+                return redirect()->route('admin.user-management')->with('error', 'You do not have permission to access this page.');
             }
 
             return redirect()->route('dashboard')->with('error', 'You do not have permission to access this page.');

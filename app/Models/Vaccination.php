@@ -29,6 +29,7 @@ class Vaccination extends Model
         'notes',
         'adverse_reactions',
         'payment_status',
+        'created_by',
     ];
 
     protected $casts = [

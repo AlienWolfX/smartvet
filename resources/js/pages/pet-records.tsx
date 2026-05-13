@@ -673,6 +673,14 @@ export default function PetRecords({ pets, species, newPetQr }: Props) {
                             </CardDescription>
                         </div>
                         <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.visit('/pet-records/visibility')}
+                            >
+                                <FileText className="h-4 w-4 mr-2" />
+                                History Visibility
+                            </Button>
                             <Button variant="outline" size="sm" onClick={openExportModal}>
                                 <Download className="h-4 w-4 mr-2" />
                                 Export

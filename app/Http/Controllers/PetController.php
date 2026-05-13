@@ -265,6 +265,74 @@ class PetController extends Controller
         return redirect()->route('pet-records.manage', ['pet' => $petId])->with('success', 'Pet profile updated successfully!');
     }
 
+    public function updateVisibility(Request $request, $petId)
+    {
+        $numericId = (int) str_replace('PET-', '', $petId);
+
+        $pet = $this->scopePetToUser(Pet::query())
+            ->where('pet_id', $numericId)
+            ->firstOrFail();
+
+        $request->validate([
+            'history_visibility' => 'required|in:public,private',
+        ]);
+
+        $pet->update([
+            'history_visibility' => $request->input('history_visibility'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'History visibility updated successfully!',
+            'history_visibility' => $pet->history_visibility,
+        ]);
+    }
+
+    public function visibilitySettings(Request $request)
+    {
+        $search = $request->query('search', '');
+        $visibility = $request->query('visibility', '');
+        $page = $request->query('page', 1);
+
+        $query = $this->scopePetToUser(Pet::with(['owner', 'species']))
+            ->orderBy('created_at', 'desc');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('owner', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($visibility && in_array($visibility, ['public', 'private'])) {
+            $query->where('history_visibility', $visibility);
+        }
+
+        $pets = $query->paginate(20)->through(function ($pet) {
+            return [
+                'id' => 'PET-' . str_pad($pet->getKey(), 3, '0', STR_PAD_LEFT),
+                'numericId' => $pet->getKey(),
+                'name' => $pet->name,
+                'species' => $pet->species?->name ?? 'Unknown',
+                'speciesIcon' => $pet->species?->icon ?? '🐾',
+                'owner' => [
+                    'name' => $pet->owner?->name ?? 'Unknown',
+                    'phone' => $pet->owner?->phone ?? 'N/A',
+                ],
+                'historyVisibility' => $pet->history_visibility ?? 'public',
+                'registrationDate' => $pet->created_at->toISOString(),
+            ];
+        });
+
+        return Inertia::render('admin/pet-visibility-settings', [
+            'pets' => $pets,
+            'search' => $search,
+            'visibility' => $visibility,
+        ]);
+    }
+
     public function scannerPage()
     {
         return Inertia::render('clinic/pet-scanner');
@@ -397,6 +465,7 @@ class PetController extends Controller
             'color' => $pet->color ?? 'Unknown',
             'imageUrl' => $pet->image_path ? asset('storage/' . $pet->image_path) : null,
             'status' => $pet->status,
+            'historyVisibility' => $pet->history_visibility ?? 'public',
             'lastVisit' => $pet->last_visit ? $pet->last_visit->toISOString() : $pet->created_at->toISOString(),
             'registrationDate' => $pet->created_at->toISOString(),
             'owner' => [

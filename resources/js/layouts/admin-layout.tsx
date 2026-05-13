@@ -31,6 +31,7 @@ import {
     Settings,
     QrCode,
     Syringe,
+    Globe,
 } from 'lucide-react';
 import { type SharedData, type BreadcrumbItem } from '@/types';
 
@@ -145,6 +146,13 @@ export default function AdminLayout({
             icon: Heart,
             adminOnly: false,
             clinicOnly: true
+        },
+        {
+            name: 'History Visibility',
+            href: '/pet-records/visibility',
+            icon: Globe,
+            adminOnly: true,
+            clinicOnly: false
         },
         {
             name: 'Scan Pet QR',

@@ -42,7 +42,7 @@ class UserController extends Controller
             'adminUsers' => User::where('role', 'admin')->count(),
         ];
 
-        return Inertia::render('user-management', [
+        return Inertia::render('admin/user-management', [
             'users' => $users,
             'stats' => $stats,
         ]);

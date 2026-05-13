@@ -21,6 +21,7 @@ class PetScanController extends Controller
     {
         $user = Auth::user();
         $clinicName = $user?->clinic_name ?? 'SmartVet';
+        $currentUserId = $user?->getKey();
 
         $pet = Pet::with([
             'owner.user',
@@ -30,7 +31,28 @@ class PetScanController extends Controller
             'consultations.inventoryUsages.inventoryItem',
         ])->where('qr_token', $token)->firstOrFail();
 
-        $documents = $pet->consultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
+        // Filter consultations based on visibility
+        $visibleConsultations = $pet->consultations->filter(function ($consultation) use ($pet, $currentUserId, $user) {
+            // If history is public, show all consultations
+            if ($pet->history_visibility === 'public') {
+                return true;
+            }
+
+            // If history is private, only show if:
+            // 1. Created by current user, OR
+            // 2. Current user is from the same clinic as the pet owner
+            if ($consultation->created_by === $currentUserId) {
+                return true;
+            }
+
+            // Check if current user is from the same clinic as pet owner
+            $petOwnerClinic = $pet->owner?->user?->clinic_name;
+            $currentUserClinic = $user?->clinic_name;
+
+            return $petOwnerClinic && $currentUserClinic && $petOwnerClinic === $currentUserClinic;
+        });
+
+        $documents = $visibleConsultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
             'id'            => $f->getKey(),
             'name'          => $f->original_name ?? $f->file_name,
             'url'           => $f->file_url,
@@ -70,7 +92,25 @@ class PetScanController extends Controller
                 'clinicUserId'     => $pet->owner->user_id,
             ],
             'documents'      => $documents,
-            'vaccinations'   => $pet->vaccinations->map(function ($v) use ($pet, $clinicName) {
+            'vaccinations'   => $pet->vaccinations->filter(function ($vaccination) use ($pet, $currentUserId, $user) {
+                // If history is public, show all vaccinations
+                if ($pet->history_visibility === 'public') {
+                    return true;
+                }
+
+                // If history is private, only show if:
+                // 1. Created by current user, OR
+                // 2. Current user is from the same clinic as the pet owner
+                if ($vaccination->created_by === $currentUserId) {
+                    return true;
+                }
+
+                // Check if current user is from the same clinic as pet owner
+                $petOwnerClinic = $pet->owner?->user?->clinic_name;
+                $currentUserClinic = $user?->clinic_name;
+
+                return $petOwnerClinic && $currentUserClinic && $petOwnerClinic === $currentUserClinic;
+            })->map(function ($v) use ($pet, $clinicName) {
                 $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
                 return [
                     'vaccine'    => $v->vaccine_name,
@@ -78,8 +118,8 @@ class PetScanController extends Controller
                     'nextDue'    => $v->next_due_date->toDateString(),
                     'clinicName' => $ownerClinicName,
                 ];
-            }),
-            'consultations' => $pet->consultations->map(function ($c) use ($pet, $clinicName) {
+            })->values(),
+            'consultations' => $visibleConsultations->map(function ($c) use ($pet, $clinicName) {
                 $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
                 return [
                     'type'       => $c->consultation_type,
@@ -105,7 +145,7 @@ class PetScanController extends Controller
                         'isImage'       => $f->isImage(),
                     ]),
                 ];
-            }),
+            })->values(),
         ]);
     }
 }

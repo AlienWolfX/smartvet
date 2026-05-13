@@ -12,13 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::table('inventory_categories')->insert([
-            'name' => 'Vaccines',
-            'slug' => 'vaccines',
-            'icon' => '💉',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        DB::table('inventory_categories')->updateOrInsert(
+            ['slug' => 'vaccines'],
+            [
+                'name' => 'Vaccines',
+                'icon' => '💉',
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
     }
 
     /**
