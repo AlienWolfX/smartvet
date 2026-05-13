@@ -32,6 +32,7 @@ export interface SharedData {
         clinicName: string | null;
         clinicLogo: string | null;
     };
+    alwaysShowOwnerOnboarding?: boolean;
     [key: string]: unknown;
 }
 

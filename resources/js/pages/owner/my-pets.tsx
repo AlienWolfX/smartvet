@@ -227,8 +227,10 @@ function PetCard({ pet, onShowQr, onShowRecord, onEdit }: { pet: Pet; onShowQr: 
 }
 
 export default function MyPets({ pets }: MyPetsProps) {
-    const { auth } = usePage<SharedData>().props;
-    const [showTour, setShowTour] = useState(!((auth.user as { onboarding_complete?: boolean })?.onboarding_complete));
+    const { auth, alwaysShowOwnerOnboarding } = usePage<SharedData>().props;
+    const [showTour, setShowTour] = useState(
+        Boolean(alwaysShowOwnerOnboarding) || !((auth.user as { onboarding_complete?: boolean })?.onboarding_complete)
+    );
     const hasPets = pets.length > 0;
 
     const ownerOnboardingSteps: OnboardingStep[] = [

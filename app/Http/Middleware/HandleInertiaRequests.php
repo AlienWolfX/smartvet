@@ -68,6 +68,7 @@ class HandleInertiaRequests extends Middleware
                 'clinicName' => $clinicName,
                 'clinicLogo' => $clinicLogo,
             ],
+            'alwaysShowOwnerOnboarding' => config('app.always_show_owner_onboarding'),
         ];
     }
 }

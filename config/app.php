@@ -17,6 +17,7 @@ return [
 
     'admin_email' => env('ADMIN_EMAIL', 'admin@smartvet.local'),
     'admin_password' => env('ADMIN_PASSWORD', 'admin123'),
+    'always_show_owner_onboarding' => (bool) env('ALWAYS_SHOW_OWNER_ONBOARDING', false),
 
     /*
     |--------------------------------------------------------------------------
