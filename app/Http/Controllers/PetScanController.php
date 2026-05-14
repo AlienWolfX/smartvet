@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Pet;
+use App\Models\User;
+use App\Models\ClinicVisibilityPermission;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -15,13 +17,29 @@ class PetScanController extends Controller
     }
 
     /**
+     * Check if a clinic has permission to view another clinic's history.
+     */
+    private function canViewClinicHistory($currentClinicId, $targetClinicId): bool
+    {
+        // Own clinic can always view its own history
+        if ($currentClinicId === $targetClinicId) {
+            return true;
+        }
+
+        // Check if there's an explicit permission
+        return ClinicVisibilityPermission::where('granting_clinic_id', $targetClinicId)
+            ->where('receiving_clinic_id', $currentClinicId)
+            ->exists();
+    }
+
+    /**
      * Authenticated JSON endpoint — used by the clinic scanner modal.
      */
     public function clinicScan(string $token): JsonResponse
     {
         $user = Auth::user();
-        $clinicName = $user?->clinic_name ?? 'SmartVet';
         $currentUserId = $user?->getKey();
+        $currentClinicId = $user?->getKey();
 
         $pet = Pet::with([
             'owner.user',
@@ -31,26 +49,24 @@ class PetScanController extends Controller
             'consultations.inventoryUsages.inventoryItem',
         ])->where('qr_token', $token)->firstOrFail();
 
-        // Filter consultations based on visibility
-        $visibleConsultations = $pet->consultations->filter(function ($consultation) use ($pet, $currentUserId, $user) {
-            // If history is public, show all consultations
-            if ($pet->history_visibility === 'public') {
-                return true;
-            }
+        $registeredClinicId = $pet->clinic_ids[0] ?? null;
+        $registeredClinicName = $registeredClinicId
+            ? User::where('user_id', $registeredClinicId)->value('clinic_name')
+            : null;
 
-            // If history is private, only show if:
-            // 1. Created by current user, OR
-            // 2. Current user is from the same clinic as the pet owner
-            if ($consultation->created_by === $currentUserId) {
-                return true;
-            }
+        $clinicName = $registeredClinicName
+            ?? $pet->owner?->user?->clinic_name
+            ?? $user?->clinic_name
+            ?? 'SmartVet';
 
-            // Check if current user is from the same clinic as pet owner
-            $petOwnerClinic = $pet->owner?->user?->clinic_name;
-            $currentUserClinic = $user?->clinic_name;
+        // Get the pet's owner clinic ID
+        $petOwnerClinicId = $pet->owner?->user_id;
 
-            return $petOwnerClinic && $currentUserClinic && $petOwnerClinic === $currentUserClinic;
-        });
+        // Check if current clinic has permission to view this pet's history
+        $hasPermission = $this->canViewClinicHistory($currentClinicId, $petOwnerClinicId);
+
+        // Only show history if they have permission
+        $visibleConsultations = $hasPermission ? $pet->consultations : collect();
 
         $documents = $visibleConsultations->flatMap(fn ($c) => $c->files)->map(fn ($f) => [
             'id'            => $f->getKey(),
@@ -64,6 +80,7 @@ class PetScanController extends Controller
 
         return response()->json([
             'clinicName' => $clinicName,
+            'hasHistoryAccess' => $hasPermission,
             'pet' => [
                 'name'        => $pet->name,
                 'species'     => $pet->species->name,
@@ -92,25 +109,7 @@ class PetScanController extends Controller
                 'clinicUserId'     => $pet->owner->user_id,
             ],
             'documents'      => $documents,
-            'vaccinations'   => $pet->vaccinations->filter(function ($vaccination) use ($pet, $currentUserId, $user) {
-                // If history is public, show all vaccinations
-                if ($pet->history_visibility === 'public') {
-                    return true;
-                }
-
-                // If history is private, only show if:
-                // 1. Created by current user, OR
-                // 2. Current user is from the same clinic as the pet owner
-                if ($vaccination->created_by === $currentUserId) {
-                    return true;
-                }
-
-                // Check if current user is from the same clinic as pet owner
-                $petOwnerClinic = $pet->owner?->user?->clinic_name;
-                $currentUserClinic = $user?->clinic_name;
-
-                return $petOwnerClinic && $currentUserClinic && $petOwnerClinic === $currentUserClinic;
-            })->map(function ($v) use ($pet, $clinicName) {
+            'vaccinations'   => ($hasPermission ? $pet->vaccinations : collect())->map(function ($v) use ($pet, $clinicName) {
                 $ownerClinicName = $pet->owner?->user?->clinic_name ?? $clinicName;
                 return [
                     'vaccine'    => $v->vaccine_name,

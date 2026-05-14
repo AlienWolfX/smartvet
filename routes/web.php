@@ -139,9 +139,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureEmailIsVerified::class])->
         Route::patch('owner-management/{owner}/toggle-status', [App\Http\Controllers\OwnerManagementController::class, 'toggleStatus'])->name('admin.owner-management.toggle-status');
         Route::delete('owner-management/{owner}', [App\Http\Controllers\OwnerManagementController::class, 'destroy'])->name('admin.owner-management.destroy');
 
-        // Pet visibility settings
-        Route::get('pet-records/visibility', [App\Http\Controllers\PetController::class, 'visibilitySettings'])->name('pet-records.visibility');
-        Route::patch('pet-records/{pet}/visibility', [App\Http\Controllers\PetController::class, 'updateVisibility'])->name('pet-records.update-visibility');
+        // Clinic visibility management
+        Route::get('clinic-visibility', [App\Http\Controllers\ClinicVisibilityController::class, 'index'])->name('admin.clinic-visibility');
+        Route::get('clinic-visibility/{clinic}/permissions', [App\Http\Controllers\ClinicVisibilityController::class, 'getPermissions'])->name('admin.clinic-visibility.permissions');
+        Route::post('clinic-visibility/grant-permission', [App\Http\Controllers\ClinicVisibilityController::class, 'grantPermission'])->name('admin.clinic-visibility.grant');
+        Route::post('clinic-visibility/revoke-permission', [App\Http\Controllers\ClinicVisibilityController::class, 'revokePermission'])->name('admin.clinic-visibility.revoke');
 
         Route::get('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminEdit'])->name('admin.admin-settings');
         Route::post('admin/settings', [App\Http\Controllers\AppearanceSettingsController::class, 'adminUpdate'])->name('admin.admin-settings.update');

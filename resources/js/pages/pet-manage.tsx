@@ -100,7 +100,6 @@ interface Pet {
     color: string;
     imageUrl: string | null;
     status: string;
-    historyVisibility: 'public' | 'private';
     lastVisit: string;
     registrationDate: string;
     qrToken: string | null;
@@ -211,8 +210,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
     const [consultationInventory, setConsultationInventory] = useState<InventoryLine[]>([]);
     const [vaccinationInventory, setVaccinationInventory] = useState<InventoryLine[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [historyVisibility, setHistoryVisibility] = useState<'public' | 'private'>(pet.historyVisibility || 'public');
-    const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
     const [inventorySelections, setInventorySelections] = useState({
         consultation: { itemId: '', quantity: 1 },
         vaccination: { itemId: '', quantity: 1 },
@@ -313,31 +310,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
     const handleUpdateProfile = (e: React.FormEvent) => {
         e.preventDefault();
         handleSaveProfile();
-    };
-
-    const handleUpdateVisibility = async (newVisibility: 'public' | 'private') => {
-        setIsUpdatingVisibility(true);
-        try {
-            const response = await fetch(`/pet-records/${pet.id}/visibility`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: JSON.stringify({ history_visibility: newVisibility }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update visibility');
-            }
-
-            setHistoryVisibility(newVisibility);
-            success(`Clinic history visibility set to ${newVisibility}!`);
-        } catch (err) {
-            error('Failed to update visibility setting');
-        } finally {
-            setIsUpdatingVisibility(false);
-        }
     };
 
     const handleConsultationTypeChange = (value: string) => {
@@ -962,89 +934,6 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                         </CardContent>
                     </Card>
                 </TabsContent>
-
-                {/* Clinic History Visibility Card */}
-                <div className="mb-6">
-                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Clinic History Visibility</CardTitle>
-                                    <CardDescription>
-                                        Control who can view this pet's clinic history
-                                    </CardDescription>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div
-                                        onClick={() => !isUpdatingVisibility && handleUpdateVisibility('public')}
-                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                            historyVisibility === 'public'
-                                                ? 'border-green-500 bg-green-50 dark:bg-green-500/10'
-                                                : 'border-neutral-200 dark:border-neutral-700 hover:border-green-300'
-                                        } ${isUpdatingVisibility ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-1">
-                                                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{
-                                                    borderColor: historyVisibility === 'public' ? themeColor : '#d1d5db',
-                                                    backgroundColor: historyVisibility === 'public' ? themeColor : 'transparent'
-                                                }}>
-                                                    {historyVisibility === 'public' && (
-                                                        <div className="w-2 h-2 rounded-full bg-white" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm">Public</h4>
-                                                <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                                                    All authorized clinics can view the complete history of consultations
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        onClick={() => !isUpdatingVisibility && handleUpdateVisibility('private')}
-                                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                                            historyVisibility === 'private'
-                                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10'
-                                                : 'border-neutral-200 dark:border-neutral-700 hover:border-blue-300'
-                                        } ${isUpdatingVisibility ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className="mt-1">
-                                                <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{
-                                                    borderColor: historyVisibility === 'private' ? themeColor : '#d1d5db',
-                                                    backgroundColor: historyVisibility === 'private' ? themeColor : 'transparent'
-                                                }}>
-                                                    {historyVisibility === 'private' && (
-                                                        <div className="w-2 h-2 rounded-full bg-white" />
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-sm">Private</h4>
-                                                <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                                                    Only this clinic (the original creator) can view the consultation history
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {isUpdatingVisibility && (
-                                    <div className="p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg text-sm text-neutral-600 dark:text-neutral-400">
-                                        Updating visibility settings...
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
 
                 {/* Consultations Tab */}
                 <TabsContent value="consultations" className="flex-1 min-h-0 mt-0">

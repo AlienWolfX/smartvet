@@ -148,13 +148,6 @@ export default function AdminLayout({
             clinicOnly: true
         },
         {
-            name: 'History Visibility',
-            href: '/pet-records/visibility',
-            icon: Globe,
-            adminOnly: true,
-            clinicOnly: false
-        },
-        {
             name: 'Scan Pet QR',
             href: '/pet-records/scan',
             icon: QrCode,
@@ -207,6 +200,13 @@ export default function AdminLayout({
             name: 'Owner Management',
             href: '/owner-management',
             icon: PawPrint,
+            adminOnly: true,
+            clinicOnly: false
+        },
+        {
+            name: 'Clinic Visibility',
+            href: '/clinic-visibility',
+            icon: Globe,
             adminOnly: true,
             clinicOnly: false
         },

@@ -136,4 +136,36 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(InventoryItem::class, 'user_id', 'user_id');
     }
+
+    /**
+     * Get the clinic visibility permissions this clinic has granted to view others.
+     */
+    public function grantedVisibilityPermissions()
+    {
+        return $this->hasMany(ClinicVisibilityPermission::class, 'granting_clinic_id', 'user_id');
+    }
+
+    /**
+     * Get the clinic visibility permissions this clinic has received to be viewed.
+     */
+    public function receivedVisibilityPermissions()
+    {
+        return $this->hasMany(ClinicVisibilityPermission::class, 'receiving_clinic_id', 'user_id');
+    }
+
+    /**
+     * Check if this clinic can view another clinic's history.
+     */
+    public function canViewClinicHistory($targetClinicId): bool
+    {
+        // Can always view own history
+        if ($this->getKey() === $targetClinicId) {
+            return true;
+        }
+
+        // Check if explicit permission exists
+        return ClinicVisibilityPermission::where('granting_clinic_id', $targetClinicId)
+            ->where('receiving_clinic_id', $this->getKey())
+            ->exists();
+    }
 }

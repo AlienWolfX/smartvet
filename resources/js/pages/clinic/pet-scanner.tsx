@@ -81,6 +81,7 @@ interface PetResult {
     };
     documents: ConsultationFile[];
     clinicName?: string;
+    hasHistoryAccess: boolean;
     vaccinations: { vaccine: string; date: string; nextDue: string; clinicName?: string }[];
     consultations: {
         clinicName: string | undefined;
@@ -233,6 +234,7 @@ export default function PetScanner() {
                 return;
             }
             const data: PetResult = await res.json();
+            // console.log('scan-lookup response:', data);
             setResult(data);
             success('Pet found!');
         } catch {
@@ -547,6 +549,12 @@ export default function PetScanner() {
                                             )}
                                         </div>
                                     </div>
+
+                                    {!result.hasHistoryAccess && (
+                                        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                                            You do not currently have access to {result.clinicName}'s history. Please contact <b>{result.clinicName}</b> to request permission.
+                                        </div>
+                                    )}
 
                                     {documents.length > 0 && (
                                         <div className="rounded-xl border border-slate-100 p-4">
