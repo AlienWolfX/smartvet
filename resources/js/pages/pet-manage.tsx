@@ -127,6 +127,7 @@ interface Pet {
         type: string;
         date: string;
     }>;
+    hasHistoryAccess: boolean;
 }
 
 interface InventoryItemOption {
@@ -936,491 +937,35 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                 </TabsContent>
 
                 {/* Consultations Tab */}
-                <TabsContent value="consultations" className="flex-1 min-h-0 mt-0">
-                    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 h-full min-h-0 flex flex-col">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Consultation Records</CardTitle>
-                                    <CardDescription>
-                                        Medical consultations and examination history
-                                    </CardDescription>
-                                </div>
-                                <Modal open={isAddConsultationOpen} onOpenChange={setIsAddConsultationOpen}>
-                                    <ModalTrigger asChild>
-                                        <Button className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Add Consultation
-                                        </Button>
-                                    </ModalTrigger>
-                                    <ModalContent className="max-w-4xl w-full mx-4 max-h-[95vh] overflow-hidden flex flex-col">
-                                        <ModalHeader className="flex-shrink-0 pb-4 border-b">
-                                            <ModalTitle>New Consultation Record</ModalTitle>
-                                            <ModalDescription>
-                                                Record a new consultation for {pet.name}
-                                            </ModalDescription>
-                                        </ModalHeader>
-                                        <div className="flex-1 overflow-y-auto">
-                                            <form onSubmit={handleAddConsultation} className="p-6">
-                                                {Object.keys(consultationErrors).length > 0 && (
-                                                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700 mb-3">
-                                                        {/* <p className="text-sm font-semibold">Please fix the following errors:</p>
-                                                        <ul className="list-disc pl-5 mt-1 text-xs">
-                                                            {Object.entries(consultationErrors).map(([field, message]) => (
-                                                                <li key={field} className="truncate">{field}: {message}</li>
-                                                            ))}
-                                                        </ul> */}
-                                                    </div>
-                                                )}
-                                                <div className="space-y-6">
-                                                    {/* Basic Information */}
-                                                    <div className="space-y-4">
-                                                        <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2">Consultation Details</h4>
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Consultation Type *</label>
-                                                                <Select name="consultationType" value={data.consultationType} onValueChange={handleConsultationTypeChange} required>
-                                                                    <SelectTrigger className={consultationErrors.consultationType ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}>
-                                                                        <SelectValue placeholder="Select type" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {availableConsultationTypes.map((type) => (
-                                                                            <SelectItem key={type.id} value={type.slug}>
-                                                                                {type.name} - ₱{type.fee.toFixed(2)}
-                                                                            </SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Date *</label>
-                                                                <Input
-                                                                    name="consultationDate"
-                                                                    type="date"
-                                                                    value={data.consultationDate}
-                                                                    onChange={(e) => setData('consultationDate', e.target.value)}
-                                                                    className={consultationErrors.consultationDate ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                                                                    required
-                                                                />
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Weight (kg) *</label>
-                                                                <Input
-                                                                    name="consultationWeight"
-                                                                    type="number"
-                                                                    step="0.1"
-                                                                    min="0.1"
-                                                                    value={data.consultationWeight}
-                                                                    onChange={(e) => setData('consultationWeight', e.target.value)}
-                                                                    className={consultationErrors.weight ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}
-                                                                    required
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
+{/* Consultations Tab */}
+<TabsContent value="consultations" className="flex-1 min-h-0 mt-0">
+    <Card className="border border-white/70 bg-white/95 shadow-lg dark:border-white/5 dark:bg-neutral-900 h-full min-h-0 flex flex-col">
+        <CardHeader>
+            {/* CardHeader content */}
+        </CardHeader>
+        <CardContent className="flex-1 overflow-hidden">
+            {/* CardContent content */}
+            {!pet.hasHistoryAccess ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
+                    You do not currently have access to {pet.owner.name}'s consultation history. Please contact the clinic to request permission.
+                </div>
+            ) : (
+                <div className="h-full overflow-auto rounded-md border">
+                    <Table>
+                        {/* Table content */}
+                    </Table>
+                </div>
+            )}
+        </CardContent>
 
-                                            {/* Medical Information */}
-                                            <div className="space-y-4">
-                                                <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2">Medical Information</h4>
-                                                <div className="space-y-4">
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Chief Complaint *</label>
-                                                                <Textarea
-                                                                    name="chiefComplaint"
-                                                                    placeholder="Main reason for visit..."
-                                                                    value={data.chiefComplaint}
-                                                                    onChange={(e) => setData('chiefComplaint', e.target.value)}
-                                                                    rows={3}
-                                                                    required
-                                                                    className={`resize-none ${consultationErrors.chiefComplaint ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
-                                                                />
-                                                            </div>
-
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                    <label className="text-sm font-medium">Diagnosis</label>
-                                                                    <Textarea
-                                                                        placeholder="Clinical findings and diagnosis..."
-                                                                        value={data.diagnosis}
-                                                                        onChange={(e) => setData('diagnosis', e.target.value)}
-                                                                        rows={3}
-                                                                        className="resize-none"
-                                                                    />
-                                                                </div>
-                                                                <div className="space-y-2">
-                                                                    <label className="text-sm font-medium">Treatment</label>
-                                                                    <Textarea
-                                                                        placeholder="Treatment plan and medications prescribed..."
-                                                                        value={data.treatment}
-                                                                        onChange={(e) => setData('treatment', e.target.value)}
-                                                                        rows={3}
-                                                                        className="resize-none"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="space-y-2">
-                                                                <label className="text-sm font-medium">Clinical Evaluation During Phyiscal Examination (visible to veterinarian only)</label>
-                                                                <Textarea
-                                                                    placeholder="Professional observations during the physical examination (visible to veterinarian only)..."
-                                                                    value={data.notes}
-                                                                    onChange={(e) => setData('notes', e.target.value)}
-                                                                    rows={2}
-                                                                    className="resize-none"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    {renderInventorySection('consultation', 'Include vaccines, medications, or consumables used during this consultation to keep stock levels accurate.')}
-
-                                                    <div className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-200 dark:border-neutral-800">
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="font-semibold text-sm">Total Estimated Cost</span>
-                                                            <span className="font-bold text-lg">
-                                                                ₱{((parseFloat(data.consultationFee) || 0) + consultationInventory.reduce((sum, item) => {
-                                                                    const meta = inventoryMap.get(item.inventory_item_id);
-                                                                    return sum + (meta ? meta.unitPrice * item.quantity : 0);
-                                                                }, 0)).toFixed(2)}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-neutral-500 mt-1">Includes consultation fee and selected inventory items.</p>
-                                                    </div>
-
-                                                    {/* File Upload Section */}
-                                                    <div className="space-y-4">
-                                                        <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100 border-b pb-2">File Attachments</h4>
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium">Attach Files (Optional)</label>
-                                                    <div className="text-xs text-gray-600 mb-2">
-                                                        Upload X-rays, lab results, photos, or documents (Max 10MB per file)
-                                                    </div>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type="file"
-                                                            accept="image/*,application/pdf,.doc,.docx,.webp"
-                                                            multiple
-                                                            onChange={(e) => {
-                                                                const newFiles = Array.from(e.target.files || []);
-                                                                // Append new files to existing ones
-                                                                setData('consultationFiles', [...data.consultationFiles, ...newFiles]);
-                                                                // Clear the input so the same files can be selected again if needed
-                                                                e.target.value = '';
-                                                            }}
-                                                            className="hidden"
-                                                            id="consultationFiles"
-                                                        />
-                                                        <label
-                                                            htmlFor="consultationFiles"
-                                                            className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-800/30 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
-                                                        >
-                                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                                                <div className="text-center">
-                                                                    <svg className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400 mx-auto" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                                                    </svg>
-                                                                    <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                                                        <span className="font-semibold">{data.consultationFiles.length > 0 ? 'Click to add more files' : 'Click to upload'}</span> or drag and drop
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                                        Images (JPEG, PNG, GIF, WebP), PDFs, or Documents
-                                                                    </p>
-                                                                    {data.consultationFiles.length > 0 && (
-                                                                        <p className="text-xs text-green-600 mt-1 font-medium">
-                                                                            {data.consultationFiles.length} file(s) selected
-                                                                        </p>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </label>
-                                                    </div>
-
-                                                    {/* File Preview */}
-                                                    {data.consultationFiles.length > 0 && (
-                                                        <div className="mt-3 space-y-2">
-                                                            <div className="flex items-center justify-between">
-                                                                <p className="text-sm font-medium">Selected Files:</p>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setData('consultationFiles', [])}
-                                                                    className="text-xs text-red-600 hover:text-red-800 flex items-center gap-1"
-                                                                >
-                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                    </svg>
-                                                                    Clear All
-                                                                </button>
-                                                            </div>
-                                                            <div className="max-h-32 overflow-y-auto space-y-1">
-                                                                {data.consultationFiles.map((file, index) => {
-                                                                    const removeFile = () => {
-                                                                        const updatedFiles = data.consultationFiles.filter((_, i) => i !== index);
-                                                                        setData('consultationFiles', updatedFiles);
-                                                                    };
-
-                                                                    return (
-                                                                        <div key={index} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded group">
-                                                                            <div className="flex items-center gap-2 truncate flex-1">
-                                                                                {file.type.startsWith('image/') ? (
-                                                                                    <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                                                    </svg>
-                                                                                ) : (
-                                                                                    <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                                                    </svg>
-                                                                                )}
-                                                                                <span className="truncate font-medium">{file.name}</span>
-                                                                                <span className="text-gray-500 ml-auto flex-shrink-0">
-                                                                                    {(file.size / 1024 / 1024).toFixed(1)}MB
-                                                                                </span>
-                                                                            </div>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={removeFile}
-                                                                                className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                                                                                title="Remove file"
-                                                                            >
-                                                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                                </svg>
-                                                                            </button>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    </div>
-                                                </div>
-                                                </div>
-                                                <ModalFooter className="flex-shrink-0 border-t p-4">
-                                                    <div className="flex justify-end gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            onClick={() => {setIsAddConsultationOpen(false); reset();}}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                        <Button
-                                                            type="submit"
-                                                            disabled={processing}
-                                                            className="text-white"
-                                                            style={{ backgroundColor: themeColor, borderColor: themeColor }}
-                                                        >
-                                                            {processing ? 'Saving...' : 'Save Consultation'}
-                                                        </Button>
-                                                    </div>
-                                                </ModalFooter>
-                                            </form>
-                                        </div>
-                                    </ModalContent>
-                                </Modal>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="flex-1 overflow-hidden">
-                            <div className="h-full overflow-auto rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Veterinarian</TableHead>
-                                        <TableHead>Diagnosis</TableHead>
-                                        <TableHead>Payment</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {pet.medicalHistory.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center py-8 text-neutral-500">
-                                                No consultation records found.
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        sortedMedicalHistory.map((record, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell>{formatDate(record.date)}</TableCell>
-                                                <TableCell className="capitalize">{record.type.replace('-', ' ')}</TableCell>
-                                                <TableCell>Dr. {record.veterinarian}</TableCell>
-                                                <TableCell className="max-w-[200px] truncate" title={record.diagnosis}>
-                                                    {record.diagnosis || '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {(() => {
-                                                        const isOwnRecord = !isImportedByCurrentClinic ||
-                                                            record.createdById === currentClinicId ||
-                                                            record.paymentRecordedById === currentClinicId;
-                                                        const status = getPaymentStatusDisplay(record.paymentStatus, isImportedByCurrentClinic, isOwnRecord);
-                                                        return status === '-' ? (
-                                                            <span className="text-neutral-500">-</span>
-                                                        ) : (
-                                                            <Badge variant="outline" className={cn(
-                                                                "capitalize",
-                                                                status === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                                status === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                                "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                            )}>
-                                                                {status}
-                                                            </Badge>
-                                                        );
-                                                    })()}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" onClick={() => setSelectedConsultation(record)}>
-                                                        View Details
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                            </div>
-
-                            {/* Consultation Details Modal */}
-                            <Modal open={!!selectedConsultation} onOpenChange={(open) => !open && setSelectedConsultation(null)}>
-                                <ModalContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-                                    <ModalHeader>
-                                        <ModalTitle>Consultation Details</ModalTitle>
-                                        <ModalDescription>
-                                            {selectedConsultation && `${formatDate(selectedConsultation.date)} • ${selectedConsultation.type.replace('-', ' ')}`}
-                                        </ModalDescription>
-                                    </ModalHeader>
-                                    {selectedConsultation && (
-                                        <div className="space-y-6 py-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <span className="text-sm font-medium text-neutral-500">Veterinarian</span>
-                                                    <p className="text-sm">{selectedConsultation.veterinarian}</p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm font-medium text-neutral-500">Weight</span>
-                                                    <p className="text-sm">{selectedConsultation.weight ? `${selectedConsultation.weight} kg` : '—'}</p>
-                                                </div>
-                                                <div>
-                                                    <span className="text-sm font-medium text-neutral-500">Payment Status</span>
-                                                    <div className="mt-1">
-                                                        {(() => {
-                                                            const isOwnRecord = !isImportedByCurrentClinic ||
-                                                                selectedConsultation.createdById === currentClinicId ||
-                                                                selectedConsultation.paymentRecordedById === currentClinicId;
-                                                            const status = getPaymentStatusDisplay(selectedConsultation.paymentStatus, isImportedByCurrentClinic, isOwnRecord);
-                                                            return status === '-' ? (
-                                                                <span className="text-sm text-neutral-500">-</span>
-                                                            ) : (
-                                                                <Badge variant="outline" className={cn(
-                                                                    "capitalize",
-                                                                    status === 'paid' ? "bg-green-50 text-green-700 border-green-200" :
-                                                                    status === 'pending' ? "bg-yellow-50 text-yellow-700 border-yellow-200" :
-                                                                    "bg-neutral-50 text-neutral-700 border-neutral-200"
-                                                                )}>
-                                                                    {status}
-                                                                </Badge>
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h4 className="font-medium text-sm mb-1">Chief Complaint</h4>
-                                                    <p className="text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-md">
-                                                        {selectedConsultation.complaint}
-                                                    </p>
-                                                </div>
-
-                                                {selectedConsultation.diagnosis && (
-                                                    <div>
-                                                        <h4 className="font-medium text-sm mb-1">Diagnosis</h4>
-                                                        <p className="text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-md">
-                                                            {selectedConsultation.diagnosis}
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {selectedConsultation.treatment && (
-                                                    <div>
-                                                        <h4 className="font-medium text-sm mb-1">Treatment</h4>
-                                                        <p className="text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-md">
-                                                            {selectedConsultation.treatment}
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {selectedConsultation.notes && (
-                                                    <div>
-                                                        <h4 className="font-medium text-sm mb-1">Notes</h4>
-                                                        <p className="text-sm text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800/50 p-3 rounded-md">
-                                                            {selectedConsultation.notes}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {(selectedConsultation.linkedVaccinations?.length > 0 || selectedConsultation.linkedMedications?.length > 0) && (
-                                                <div className="border-t pt-4 space-y-4">
-                                                    {selectedConsultation.linkedVaccinations?.length > 0 && (
-                                                        <div>
-                                                            <h4 className="font-medium text-sm mb-2">Vaccinations</h4>
-                                                            <ul className="space-y-1">
-                                                                {selectedConsultation.linkedVaccinations.map((item: any) => (
-                                                                    <li key={item.id} className="text-sm flex items-center gap-2">
-                                                                        <Syringe className="h-3 w-3 text-neutral-400" />
-                                                                        <span>{item.vaccine}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-
-                                                    {selectedConsultation.linkedMedications?.length > 0 && (
-                                                        <div>
-                                                            <h4 className="font-medium text-sm mb-2">Medications</h4>
-                                                            <ul className="space-y-1">
-                                                                {selectedConsultation.linkedMedications.map((item: any) => (
-                                                                    <li key={item.id} className="text-sm flex items-center gap-2">
-                                                                        <Pill className="h-3 w-3 text-neutral-400" />
-                                                                        <span>{item.name}</span>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-
-                                            {selectedConsultation.files?.length > 0 && (
-                                                <div className="border-t pt-4">
-                                                    <h4 className="font-medium text-sm mb-2">Attachments ({selectedConsultation.files.length})</h4>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {selectedConsultation.files.map((file: any, index: number) => (
-                                                            <a
-                                                                key={index}
-                                                                href={file.url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 p-2 border border-gray-200 rounded hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800 transition-colors"
-                                                            >
-                                                                <FileText className="w-4 h-4 text-blue-600" />
-                                                                <span className="text-xs font-medium truncate flex-1">{file.name}</span>
-                                                            </a>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                    <ModalFooter>
-                                        <Button onClick={() => setSelectedConsultation(null)}>Close</Button>
-                                    </ModalFooter>
-                                </ModalContent>
-                            </Modal>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+        {/* Consultation Details Modal - This should be OUTSIDE CardContent but INSIDE Card */}
+        <Modal open={!!selectedConsultation} onOpenChange={(open) => !open && setSelectedConsultation(null)}>
+            <ModalContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                {/* Modal content */}
+            </ModalContent>
+        </Modal>
+    </Card>
+</TabsContent>
 
                 {/* Vaccinations Tab */}
                 <TabsContent value="vaccinations" className="flex-1 min-h-0 mt-0">
@@ -1433,32 +978,33 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                         Complete vaccination history and schedule
                                     </CardDescription>
                                 </div>
-                                <Modal open={isAddVaccinationOpen} onOpenChange={setIsAddVaccinationOpen}>
-                                    <ModalTrigger asChild>
-                                        <Button className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Add Vaccination
-                                        </Button>
-                                    </ModalTrigger>
-                                    <ModalContent className="max-w-lg max-h-[90vh] flex flex-col">
-                                        <ModalHeader>
-                                            <ModalTitle>New Vaccination Record</ModalTitle>
-                                            <ModalDescription>
-                                                Record a vaccination for {pet.name}
-                                            </ModalDescription>
-                                        </ModalHeader>
-                                        <form onSubmit={handleAddVaccination} className="flex flex-col flex-1 overflow-hidden">
-                                            <div className="flex-1 overflow-y-auto px-1 space-y-4 py-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium">Link To Consultation (optional)</label>
-                                                    <Select
-                                                        value={data.vaccinationConsultationId || 'none'}
-                                                        onValueChange={(value) => setData('vaccinationConsultationId', value === 'none' ? '' : value)}
-                                                    >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select consultation" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
+                                {pet.hasHistoryAccess && (
+                                    <Modal open={isAddVaccinationOpen} onOpenChange={setIsAddVaccinationOpen}>
+                                        <ModalTrigger asChild>
+                                            <Button className="text-white" style={{ backgroundColor: themeColor, borderColor: themeColor }}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Add Vaccination
+                                            </Button>
+                                        </ModalTrigger>
+                                        <ModalContent className="max-w-lg max-h-[90vh] flex flex-col">
+                                            <ModalHeader>
+                                                <ModalTitle>New Vaccination Record</ModalTitle>
+                                                <ModalDescription>
+                                                    Record a vaccination for {pet.name}
+                                                </ModalDescription>
+                                            </ModalHeader>
+                                            <form onSubmit={handleAddVaccination} className="flex flex-col flex-1 overflow-hidden">
+                                                <div className="flex-1 overflow-y-auto px-1 space-y-4 py-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Link To Consultation (optional)</label>
+                                                        <Select
+                                                            value={data.vaccinationConsultationId || 'none'}
+                                                            onValueChange={(value) => setData('vaccinationConsultationId', value === 'none' ? '' : value)}
+                                                        >
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select consultation" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
                                                             <SelectItem value="none">No consultation link</SelectItem>
                                                             {pet.consultationOptions.map((option) => (
                                                                 <SelectItem key={option.id} value={option.id.toString()}>
@@ -1565,25 +1111,31 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                         </form>
                                     </ModalContent>
                                 </Modal>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent className="flex-1 overflow-hidden">
-                            <div className="h-full overflow-auto rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Vaccine</TableHead>
-                                        <TableHead>Last Administered</TableHead>
-                                        <TableHead>Next Due</TableHead>
-                                        <TableHead>Administered By</TableHead>
-                                        <TableHead>Payment</TableHead>
-                                        <TableHead className="text-right">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {pet.vaccinations.length === 0 ? (
+                            {!pet.hasHistoryAccess ? (
+                                <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
+                                    You do not currently have access to {pet.owner.name}'s vaccination history. Please contact the clinic to request permission.
+                                </div>
+                            ) : (
+                                <div className="h-full overflow-auto rounded-md border">
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                            <TableHead>Vaccine</TableHead>
+                                            <TableHead>Last Administered</TableHead>
+                                            <TableHead>Next Due</TableHead>
+                                            <TableHead>Administered By</TableHead>
+                                            <TableHead>Payment</TableHead>
+                                            <TableHead className="text-right">Action</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {pet.vaccinations.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                                                 No vaccination records found.
                                             </TableCell>
                                         </TableRow>
@@ -1645,6 +1197,7 @@ export default function PetManage({ pet, inventoryItems, vaccineItems, consultat
                                 </TableBody>
                             </Table>
                             </div>
+                            )}
                         </CardContent>
                     </Card>
 

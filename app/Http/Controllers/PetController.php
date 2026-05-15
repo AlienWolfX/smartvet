@@ -10,6 +10,7 @@ use App\Models\Consultation;
 use App\Models\ConsultationFile;
 use App\Models\ConsultationType;
 use App\Models\InventoryItem;
+use App\Models\ClinicVisibilityPermission;
 use App\Http\Traits\ScopesToTenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -290,8 +291,19 @@ class PetController extends Controller
             ->where('pet_id', $numericId)
             ->firstOrFail();
 
+        // Check if current clinic has permission to view this pet's history
+        $currentUser = Auth::user();
+        $currentClinicId = $currentUser?->getKey();
+        $petOwnerClinicId = $pet->owner?->user_id;
+
+        $hasHistoryAccess = $this->canViewClinicHistory($currentClinicId, $petOwnerClinicId);
+
+        // If no access, use empty collections for history
+        $consultationsForDisplay = $hasHistoryAccess ? $pet->consultations : collect();
+        $vaccinationsForDisplay = $hasHistoryAccess ? $pet->vaccinations : collect();
+
         // Format consultation data
-        $consultations = $pet->consultations->map(function ($consultation) {
+        $consultations = $consultationsForDisplay->map(function ($consultation) {
             return [
                 'id' => $consultation->getKey(),
                 'type' => $consultation->consultation_type,
@@ -333,7 +345,7 @@ class PetController extends Controller
         });
 
         // Format vaccination data
-        $vaccinations = $pet->vaccinations->map(function ($vaccination) {
+        $vaccinations = $vaccinationsForDisplay->map(function ($vaccination) {
             return [
                 'id' => $vaccination->getKey(),
                 'vaccine' => $vaccination->vaccine_name,
@@ -420,6 +432,7 @@ class PetController extends Controller
             'currentMedications' => $medications,
             'consultationOptions' => $consultationOptions,
             'qrToken' => $pet->qr_token,
+            'hasHistoryAccess' => $hasHistoryAccess,
         ];
 
         $inventoryItems = $this->scopeToUser(InventoryItem::with('category'))
@@ -478,6 +491,22 @@ class PetController extends Controller
         }
 
         return 'document';
+    }
+
+    /**
+     * Check if a clinic has permission to view another clinic's history.
+     */
+    private function canViewClinicHistory($currentClinicId, $targetClinicId): bool
+    {
+        // Own clinic can always view its own history
+        if ($currentClinicId === $targetClinicId) {
+            return true;
+        }
+
+        // Check if there's an explicit permission
+        return ClinicVisibilityPermission::where('granting_clinic_id', $targetClinicId)
+            ->where('receiving_clinic_id', $currentClinicId)
+            ->exists();
     }
 
     public function export(Request $request)
